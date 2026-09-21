@@ -9,7 +9,7 @@
     const COCO = Object.freeze({1:'person',2:'bicycle',3:'car',4:'motorcycle',5:'airplane',6:'bus',7:'train',8:'truck',9:'boat',10:'traffic light',11:'fire hydrant',13:'stop sign',14:'parking meter',15:'bench',16:'bird',17:'cat',18:'dog',19:'horse',20:'sheep',21:'cow',22:'elephant',23:'bear',24:'zebra',25:'giraffe',27:'backpack',28:'umbrella',31:'handbag',32:'tie',33:'suitcase',34:'frisbee',35:'skis',36:'snowboard',37:'sports ball',38:'kite',39:'baseball bat',40:'baseball glove',41:'skateboard',42:'surfboard',43:'tennis racket',44:'bottle',46:'wine glass',47:'cup',48:'fork',49:'knife',50:'spoon',51:'bowl',52:'banana',53:'apple',54:'sandwich',55:'orange',56:'broccoli',57:'carrot',58:'hot dog',59:'pizza',60:'donut',61:'cake',62:'chair',63:'couch',64:'potted plant',65:'bed',67:'dining table',70:'toilet',72:'tv',73:'laptop',74:'mouse',75:'remote',76:'keyboard',77:'cell phone',78:'microwave',79:'oven',80:'toaster',81:'sink',82:'refrigerator',84:'book',85:'clock',86:'vase',87:'scissors',88:'teddy bear',89:'hair drier',90:'toothbrush'});
 
     const $ = id => document.getElementById(id);
-    const state = {activeModel:'ssd',session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false};
+    const state = {activeModel:'ssd',session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -26,11 +26,11 @@
     function setStatus(message, kind=''){ const el=$('status'); el.textContent=message; el.className=`status ${kind}`.trim(); }
     function setMetric(id,value){ $(id).textContent=value; }
     function activeModel(){ return REGISTRY[state.activeModel] || MODEL; }
-    function resetRunMetrics(){['m-pre','m-inf','m-post','m-total','m-count'].forEach(id=>setMetric(id,'—'));setMetric('m-run-label','not run');state.lastResults=null;state.lastDims=null;state.inferenceCount=0;}
+    function resetRunMetrics(){['m-pre','m-inf','m-post','m-total','m-count'].forEach(id=>setMetric(id,'—'));setMetric('m-run-label','not run');state.lastResults=null;state.lastRunResult=null;state.lastDims=null;state.inferenceCount=0;}
     function resetStartupMetrics(){setMetric('m-download','—');setMetric('m-init','—');$('m-progress-bar').style.width='0%';$('m-progress-text').textContent='No model transfer yet.';$('backend-badge').textContent='Not loaded';}
     function drawSourceOnly(source=state.image){if(!source)return;const canvas=$('image-canvas'),{w,h}=sourceSize(source),scale=Math.min(1,640/Math.max(w,h));canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));canvas.getContext('2d').drawImage(source,0,0,canvas.width,canvas.height);$('image-empty').hidden=true;canvas.hidden=false;}
     function renderProvenance(model){const ui=model.ui||{};$('active-provenance-title').textContent=model.title;$('active-provenance-text').textContent=ui.provenance||`${model.family} · ${model.license}`;const links=$('active-provenance-links');links.replaceChildren();for(const link of ui.links||[]){const a=document.createElement('a');a.href=link.url;a.textContent=link.label;a.target='_blank';a.rel='noreferrer';links.appendChild(a);}}
-    function updateActiveModelUI(){const model=activeModel(),ui=model.ui||{};$('active-model-title').textContent=model.title;$('active-model-subtitle').textContent=ui.subtitle||`${model.task} · ${model.family}`;$('rerun').textContent=`Run ${model.title}`;$('m-transfer-label').textContent='Model transfer';$('m-init-label').textContent=state.activeModel==='rtdetr'?'Pipeline load':'Session init';setMetric('m-bytes',state.activeModel==='rtdetr'?'~21.7 MB q8 / 41.4 MB fp16':bytes(model.bytes));setMetric('m-cache',state.activeModel==='rtdetr'?'checked at load':'checking…');setMetric('d-input',model.input?`${model.input}×${model.input}`:'dynamic ≤640');$('input-size').textContent=state.image?'Source ready · not run':'No input';renderProvenance(model);}
+    function updateActiveModelUI(){const model=activeModel(),ui=model.ui||{};$('active-model-title').textContent=model.title;$('active-model-subtitle').textContent=ui.subtitle||`${model.task} · ${model.family}`;$('rerun').textContent=`Run ${model.title}`;$('m-transfer-label').textContent='Model transfer';$('m-init-label').textContent=state.activeModel==='rtdetr'?'Pipeline load':'Session init';setMetric('m-bytes',state.activeModel==='rtdetr'?'~21.7 MB q8 / 41.4 MB fp16':bytes(model.bytes));setMetric('m-cache',state.activeModel==='rtdetr'?'checked at load':'checking…');setMetric('d-input',model.input?`${model.input}×${model.input}`:'dynamic ≤640');$('input-size').textContent=state.image?'Source ready · not run':'No input';renderProvenance(model);updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}
     async function updateActiveCacheState(){const key=state.activeModel,model=activeModel();if(key==='rtdetr')return;try{const info=await ModelLoader.status(model);if(state.activeModel===key)setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state);}catch(_){}}
     function selectActiveModel(key,{scroll=true}={}){if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}if(!['ssd','yolox','rtdetr'].includes(key)||!REGISTRY[key])return;state.activeModel=key;document.querySelectorAll('[data-runnable-model]').forEach(btn=>btn.classList.toggle('active',btn.dataset.runnableModel===key));resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();if(state.image){drawSourceOnly();setStatus(`${activeModel().title} selected. Run the current image when ready.`);}else setStatus(`${activeModel().title} selected. Choose an image to run this generation.`);if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});}
     function reportRuntimeEvent(model,event){if(model!==state.activeModel||!event)return;if(event.type==='progress')updateMainModelProgress(event.info||{});if(event.type==='cache')setMetric('m-cache',event.text||'checking…');if(event.type==='runtime'){if(event.backend)$('backend-badge').textContent=event.dtype?`${String(event.backend).toUpperCase()} · ${event.dtype}`:String(event.backend).toUpperCase();if(Number.isFinite(event.downloadMs))setMetric('m-download',ms(event.downloadMs));if(Number.isFinite(event.initMs))setMetric('m-init',ms(event.initMs));if(event.bytes)setMetric('m-bytes',bytes(event.bytes));if(event.source)setMetric('m-cache',event.cacheState?`${event.cacheState} · ${event.source}`:event.source);}}
@@ -41,47 +41,17 @@
         return WebAssembly.validate(probe);
       }catch(_){ return false; }
     }
-    function detectBrowser(){
-      const ua=navigator.userAgent;
-      const match=(re,name)=>{const m=ua.match(re);return m?`${name} ${m[1]}`:'';};
-      return match(/Edg\/([\d.]+)/,'Edge') ||
-        match(/CriOS\/([\d.]+)/,'Chrome iOS') ||
-        match(/Chrome\/([\d.]+)/,'Chrome') ||
-        match(/FxiOS\/([\d.]+)/,'Firefox iOS') ||
-        match(/Firefox\/([\d.]+)/,'Firefox') ||
-        match(/Version\/([\d.]+).*Safari/,'Safari') || 'Unknown';
+    async function detectBrowser(){
+      const ua=navigator.userAgent,brands=navigator.userAgentData&&navigator.userAgentData.brands?navigator.userAgentData.brands:[],braveBrand=brands.find(function(x){return /Brave/i.test(x.brand||'');});
+      if(braveBrand)return 'Brave '+(braveBrand.version||'')+' · '+(/iPhone|iPad|iPod/.test(ua)?'WebKit':'Blink');
+      if(navigator.brave&&typeof navigator.brave.isBrave==='function'){try{if(await navigator.brave.isBrave())return /iPhone|iPad|iPod/.test(ua)?'Brave · WebKit':'Brave';}catch(_){}}
+      const match=function(re,name){const m=ua.match(re);return m?name+' '+m[1]:'';};
+      if(/iPhone|iPad|iPod/.test(ua))return match(/CriOS\/([\d.]+)/,'Chrome iOS')||match(/FxiOS\/([\d.]+)/,'Firefox iOS')||match(/EdgiOS\/([\d.]+)/,'Edge iOS')||match(/OPiOS\/([\d.]+)/,'Opera iOS')||(/Version\/([\d.]+).*Safari/.test(ua)?'Safari-compatible · brand may be masked':'iOS browser · brand not exposed');
+      return match(/Edg\/([\d.]+)/,'Edge')||match(/Chrome\/([\d.]+)/,'Chrome')||match(/Firefox\/([\d.]+)/,'Firefox')||match(/Version\/([\d.]+).*Safari/,'Safari')||'Unknown';
     }
-    function detectOS(){
-      const ua=navigator.userAgent;
-      if(/iPhone|iPad|iPod/.test(ua)){
-        const m=ua.match(/OS ([\d_]+)/);
-        return m?`iOS ${m[1].replaceAll('_','.')}`:'iOS';
-      }
-      if(/Windows NT/.test(ua)){
-        const m=ua.match(/Windows NT ([\d.]+)/);
-        return m?`Windows NT ${m[1]}`:'Windows';
-      }
-      if(/Mac OS X/.test(ua)){
-        const m=ua.match(/Mac OS X ([\d_]+)/);
-        return m?`macOS ${m[1].replaceAll('_','.')}`:'macOS';
-      }
-      if(/Android/.test(ua)){
-        const m=ua.match(/Android ([\d.]+)/);
-        return m?`Android ${m[1]}`:'Android';
-      }
-      if(/Linux/.test(ua)) return 'Linux';
-      return navigator.userAgentData?.platform || navigator.platform || 'Unknown';
-    }
-    function populateDiagnostics(){
-      setMetric('d-browser',detectBrowser());
-      setMetric('d-os',detectOS());
-      setMetric('d-cpu',navigator.hardwareConcurrency?String(navigator.hardwareConcurrency):'not exposed');
-      setMetric('d-memory',navigator.deviceMemory?`~${navigator.deviceMemory} GB`:'not exposed');
-      setMetric('d-webgpu',navigator.gpu?'available':'unavailable');
-      setMetric('d-simd',supportsWasmSimd()?'supported':'unavailable');
-      setMetric('d-threads',String(WASM_THREADS));
-      setMetric('d-isolated',window.crossOriginIsolated?'yes':'no');
-    }
+    function detectEngine(){const ua=navigator.userAgent;if(/iPhone|iPad|iPod/.test(ua))return 'WebKit · iOS required';if(/Edg|Chrome/.test(ua))return 'Blink';if(/Firefox/.test(ua))return 'Gecko';if(/Safari/.test(ua))return 'WebKit';return 'not exposed';}
+    function detectOS(){const ua=navigator.userAgent;if(/iPhone|iPad|iPod/.test(ua)){const m=ua.match(/OS ([\d_]+)/);return m?'iOS · UA '+m[1].replaceAll('_','.'):'iOS · version not exposed';}if(/Windows NT/.test(ua)){const m=ua.match(/Windows NT ([\d.]+)/);return m?'Windows NT '+m[1]:'Windows';}if(/Mac OS X/.test(ua)){const m=ua.match(/Mac OS X ([\d_]+)/);return m?'macOS '+m[1].replaceAll('_','.'):'macOS';}if(/Android/.test(ua)){const m=ua.match(/Android ([\d.]+)/);return m?'Android '+m[1]:'Android';}if(/Linux/.test(ua))return 'Linux';return (navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||'Unknown';}
+    async function populateDiagnostics(){setMetric('d-browser','detecting…');setMetric('d-engine',detectEngine());setMetric('d-os',detectOS());setMetric('d-cpu',navigator.hardwareConcurrency?String(navigator.hardwareConcurrency):'not exposed');setMetric('d-memory',navigator.deviceMemory?'~'+navigator.deviceMemory+' GB':'not exposed');setMetric('d-webgpu',navigator.gpu?'available':'unavailable');setMetric('d-simd',supportsWasmSimd()?'supported':'unavailable');setMetric('d-threads',String(WASM_THREADS));setMetric('d-isolated',window.crossOriginIsolated?'yes':'no');setMetric('d-browser',await detectBrowser());}
     populateDiagnostics();
 
     function selectTab(id){
@@ -173,25 +143,13 @@
       return {rgb,width,height};
     }
 
-    function updateInputInspector(source){
-      if(!state.lastDims) return;
-      const {sourceW,sourceH,width,height}=state.lastDims;
-      const src=$('inside-source-preview'),inputPreview=$('inside-input-preview');
-      const maxPreview=420;
-      const srcScale=Math.min(1,maxPreview/Math.max(sourceW,sourceH));
-      src.width=Math.max(1,Math.round(sourceW*srcScale));
-      src.height=Math.max(1,Math.round(sourceH*srcScale));
-      src.getContext('2d').drawImage(source,0,0,src.width,src.height);
-      const prepared=$('input-canvas');
-      const inputScale=Math.min(1,maxPreview/Math.max(width,height));
-      inputPreview.width=Math.max(1,Math.round(width*inputScale));
-      inputPreview.height=Math.max(1,Math.round(height*inputScale));
-      inputPreview.getContext('2d').drawImage(prepared,0,0,width,height,0,0,inputPreview.width,inputPreview.height);
-      src.hidden=false;inputPreview.hidden=false;
-      $('inside-source-empty').hidden=true;$('inside-input-empty').hidden=true;
-      setMetric('inside-source-size',`${sourceW}×${sourceH}`);
-      setMetric('inside-model-size',`${width}×${height}`);
-    }
+    const INSIDE_SPECS=Object.freeze({
+      ssd:Object.freeze({title:'SSD-MobileNetV1 INT8',input:'dynamic ≤640',resize:'aspect preserve ≤640',tensor:'uint8 · NHWC',channels:'RGB',normalization:'none',step2:['Aspect resize','Longest side is capped at 640 px while preserving aspect ratio.'],step3:['RGB tensor','Canvas RGBA becomes uint8 NHWC RGB data.'],step4:['SSD + MobileNet','MobileNet extracts features; SSD predicts classes, scores and boxes in one pass.'],caption:'SSD prepared-input preview',intermediate:['SSD intermediate tensors not exported','The current ONNX output exposes detections, not selected backbone activations.','A separate inspectable SSD export is required before deeper activations can be shown truthfully.']}),
+      yolox:Object.freeze({title:'YOLOX-Nano',input:'416×416',resize:'aspect preserve · top-left letterbox',tensor:'float32 · NCHW',channels:'BGR',normalization:'none · 0–255',step2:['Letterbox resize','Aspect-preserving resize into 416×416 with top-left placement and fill value 114.'],step3:['BGR tensor','Pixels become float32 NCHW in BGR channel order.'],step4:['YOLOX detection head','Anchor-free decoupled head predicts boxes, objectness and classes across three strides.'],caption:'YOLOX 416×416 letterbox preview',intermediate:['Real YOLOX detection-head maps','Pre-NMS objectness tensors from the latest YOLOX inference.','These are real exported detection-head objectness values at strides 8/16/32. They are not backbone feature maps.']}),
+      rtdetr:Object.freeze({title:'RT-DETR R18',input:'640×640',resize:'processor resize · no pad',tensor:'float32 · NCHW',channels:'RGB',normalization:'rescale 1/255',step2:['Processor resize','Transformers.js resizes the source to 640×640 without page-side padding.'],step3:['Processor tensor','RGB pixels are rescaled by 1/255 and arranged as float NCHW input.'],step4:['RT-DETR','End-to-end transformer set prediction returns scored boxes without page-side NMS.'],caption:'Processor-equivalent 640×640 preview',intermediate:['RT-DETR intermediate tensors not exposed','The production pipeline exposes detections but not selected encoder/decoder activations.','A separate inspectable ONNX export is required for truthful RT-DETR intermediate activation visualization.']})
+    });
+    function prepareInsidePreview(modelKey,source){if(!source)return null;const spec=INSIDE_SPECS[modelKey]||INSIDE_SPECS.ssd,size=sourceSize(source),w=size.w,h=size.h,src=$('inside-source-preview'),preview=$('inside-input-preview'),maxPreview=420,srcScale=Math.min(1,maxPreview/Math.max(w,h));src.width=Math.max(1,Math.round(w*srcScale));src.height=Math.max(1,Math.round(h*srcScale));src.getContext('2d').drawImage(source,0,0,src.width,src.height);let iw,ih;const ctx=preview.getContext('2d');if(modelKey==='yolox'){iw=416;ih=416;preview.width=iw;preview.height=ih;ctx.fillStyle='rgb(114,114,114)';ctx.fillRect(0,0,iw,ih);const ratio=Math.min(iw/h,iw/w),rw=Math.max(1,Math.floor(w*ratio)),rh=Math.max(1,Math.floor(h*ratio));ctx.drawImage(source,0,0,rw,rh);}else if(modelKey==='rtdetr'){iw=640;ih=640;preview.width=iw;preview.height=ih;ctx.drawImage(source,0,0,iw,ih);}else{const scale=Math.min(1,640/Math.max(w,h));iw=Math.max(1,Math.round(w*scale));ih=Math.max(1,Math.round(h*scale));preview.width=iw;preview.height=ih;ctx.drawImage(source,0,0,iw,ih);}src.hidden=false;preview.hidden=false;$('inside-source-empty').hidden=true;$('inside-input-empty').hidden=true;setMetric('inside-source-size',w+'×'+h);setMetric('inside-model-size',modelKey==='ssd'?iw+'×'+ih:spec.input);return{w:w,h:h,iw:iw,ih:ih};}
+    function updateInsideModelUI(modelKey,result,source){modelKey=modelKey||state.activeModel;result=result||null;source=source||state.image;const spec=INSIDE_SPECS[modelKey]||INSIDE_SPECS.ssd;$('inside-active-model').textContent=spec.title;$('inside-active-contract').textContent='Following Time Machine selection · '+spec.input+' · '+spec.tensor;$('inside-step2-title').textContent=spec.step2[0];$('inside-step2-text').textContent=spec.step2[1];$('inside-step3-title').textContent=spec.step3[0];$('inside-step3-text').textContent=spec.step3[1];$('inside-step4-title').textContent=spec.step4[0];$('inside-step4-text').textContent=spec.step4[1];setMetric('inside-resize-policy',spec.resize);setMetric('inside-tensor',spec.tensor);setMetric('inside-channels',spec.channels);setMetric('inside-normalization',spec.normalization);$('inside-input-caption').textContent=spec.caption;const dims=prepareInsidePreview(modelKey,source);if(dims)$('inside-size').textContent=modelKey==='ssd'?'1 × '+dims.ih+' × '+dims.iw+' × 3':'1 × 3 × '+(modelKey==='yolox'?416:640)+' × '+(modelKey==='yolox'?416:640);else{$('inside-size').textContent='No image yet';$('inside-source-preview').hidden=true;$('inside-input-preview').hidden=true;$('inside-source-empty').hidden=false;$('inside-input-empty').hidden=false;setMetric('inside-source-size','—');setMetric('inside-model-size',spec.input);}const maps=modelKey==='yolox'&&window.VisionRace&&window.VisionRace.getHeadMaps?window.VisionRace.getHeadMaps():null;$('feature-map-grid').hidden=modelKey!=='yolox';$('inside-intermediate-empty').hidden=modelKey==='yolox';$('inside-intermediate-title').textContent=spec.intermediate[0];$('inside-intermediate-subtitle').textContent=spec.intermediate[1];$('inside-intermediate-note').textContent=spec.intermediate[2];if(modelKey==='yolox')$('feature-map-status').textContent=maps&&maps.length?'Live from latest YOLOX inference':'Run YOLOX to populate real objectness tensors.';else $('feature-map-status').textContent='Intermediate activations not exposed';if(result){const retained=Number.isFinite(result.retained)?result.retained:(result.detections?result.detections.length:0),visible=Number.isFinite(result.visible)?result.visible:0,inf=Number.isFinite(result.infMs)?' · inference '+ms(result.infMs):'',invalid=Number.isFinite(result.droppedInvalid)&&result.droppedInvalid>0?' · dropped '+result.droppedInvalid+' invalid boxes':'';$('inside-summary').textContent=spec.title+': '+visible+' visible at UI confidence '+Number($('confidence').value).toFixed(2)+' · '+retained+' retained outputs'+invalid+inf+'. '+(modelKey==='rtdetr'?'No page-side NMS is added.':'UI threshold changes redraw retained outputs without new inference.');}else $('inside-summary').textContent=spec.title+' selected. The preview reflects its native preprocessing contract; run the model to populate runtime output details.';}
 
     function pick(results, text){
       const key=Object.keys(results).find(name => name.toLowerCase().includes(text));
@@ -268,6 +226,7 @@
       const visible=drawDetections(targetCanvas,detections);
       const postMs=performance.now()-postStart;
       const totalMs=performance.now()-totalStart;
+      const summaryResult={preMs:preMs,infMs:infMs,postMs:postMs,totalMs:totalMs,visible:visible,detections:detections,width:width,height:height,retained:detections.length,retentionThreshold:Number($('confidence').min)||0.1};
       if(updateMain){
         state.lastResults=detections;
         state.inferenceCount++;
@@ -275,18 +234,16 @@
         setMetric('m-pre',ms(preMs));setMetric('m-inf',ms(infMs));setMetric('m-post',ms(postMs));setMetric('m-total',ms(totalMs));setMetric('m-count',String(visible));
         $('input-size').textContent=`${width} × ${height} input`;
         setMetric('d-input',`${width}×${height}`);
-        $('inside-size').textContent=`1 × ${height} × ${width} × 3`;
-        updateInputInspector(source);
-        $('inside-summary').textContent=`Source ${state.lastDims.sourceW}×${state.lastDims.sourceH} → model input ${width}×${height}. Current preprocess ${ms(preMs)}; inference ${ms(infMs)}.`;
+        state.lastRunResult=summaryResult;updateInsideModelUI('ssd',summaryResult,source);
         setStatus(`${visible} detection${visible===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}. User pixels stayed in this browser.`);
       }
-      return {preMs,infMs,postMs,totalMs,visible,detections,width,height};
+      return summaryResult;
     }
 
-    function redrawUploaded(){if(!state.image||!state.lastResults)return;const canvas=$('image-canvas');drawSourceOnly();const count=drawDetections(canvas,state.lastResults);setMetric('m-count',String(count));setStatus(`${count} detection${count===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}. Threshold changes only redraw existing model outputs.`);}
-    function applyExternalRun(model,result,targetCanvas){const runtime=window.VisionRace?.getRuntimeInfo(model)||{},{w,h}=sourceSize(state.image);state.lastResults=result.detections;state.lastDims={sourceW:w,sourceH:h,width:targetCanvas.width,height:targetCanvas.height};state.inferenceCount++;setMetric('m-run-label',state.inferenceCount===1?'first inference':`warm run #${state.inferenceCount}`);setMetric('m-pre',ms(result.preMs));setMetric('m-inf',ms(result.infMs));setMetric('m-post',ms(result.postMs));setMetric('m-total',ms(result.totalMs));setMetric('m-count',String(result.visible));$('input-size').textContent=`${result.width} × ${result.height} model input`;setMetric('d-input',`${result.width}×${result.height}`);if(runtime.backend)$('backend-badge').textContent=runtime.dtype?`${runtime.backend.toUpperCase()} · ${runtime.dtype}`:runtime.backend.toUpperCase();if(Number.isFinite(runtime.downloadMs))setMetric('m-download',ms(runtime.downloadMs));if(Number.isFinite(runtime.initMs))setMetric('m-init',ms(runtime.initMs));if(runtime.bytes)setMetric('m-bytes',bytes(runtime.bytes));if(runtime.cacheState)setMetric('m-cache',runtime.source?`${runtime.cacheState} · ${runtime.source}`:runtime.cacheState);if(model==='rtdetr'&&!Number.isFinite(runtime.downloadMs))setMetric('m-download','managed by pipeline');const boundary=model==='rtdetr'?' RT-DETR inference is the Transformers.js pipeline call, including processor/model/postprocessor work.':'';setStatus(`${result.visible} detection${result.visible===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}.${boundary}`);}
+    function redrawUploaded(){if(!state.image||!state.lastResults)return;const canvas=$('image-canvas');drawSourceOnly();const count=drawDetections(canvas,state.lastResults);setMetric('m-count',String(count));if(state.lastRunResult){state.lastRunResult.visible=count;updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}setStatus(`${count} detection${count===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}. Retained outputs were re-filtered without new inference.`);}
+    function applyExternalRun(model,result,targetCanvas){const runtime=window.VisionRace&&window.VisionRace.getRuntimeInfo?window.VisionRace.getRuntimeInfo(model):{},size=sourceSize(state.image),w=size.w,h=size.h;state.lastResults=result.detections;state.lastRunResult=Object.assign({},result);state.lastDims={sourceW:w,sourceH:h,width:targetCanvas.width,height:targetCanvas.height};state.inferenceCount++;setMetric('m-run-label',state.inferenceCount===1?'first inference':'warm run #'+state.inferenceCount);setMetric('m-pre',ms(result.preMs));setMetric('m-inf',ms(result.infMs));setMetric('m-post',ms(result.postMs));setMetric('m-total',ms(result.totalMs));setMetric('m-count',String(result.visible));$('input-size').textContent=result.width+' × '+result.height+' model input';setMetric('d-input',result.width+'×'+result.height);if(runtime.backend)$('backend-badge').textContent=runtime.dtype?runtime.backend.toUpperCase()+' · '+runtime.dtype:runtime.backend.toUpperCase();if(Number.isFinite(runtime.downloadMs))setMetric('m-download',ms(runtime.downloadMs));if(Number.isFinite(runtime.initMs))setMetric('m-init',ms(runtime.initMs));if(runtime.bytes)setMetric('m-bytes',bytes(runtime.bytes));if(runtime.cacheState)setMetric('m-cache',runtime.source?runtime.cacheState+' · '+runtime.source:runtime.cacheState);if(model==='rtdetr'&&!Number.isFinite(runtime.downloadMs))setMetric('m-download','managed by pipeline');updateInsideModelUI(model,state.lastRunResult,state.image);const boundary=model==='rtdetr'?' RT-DETR inference is the Transformers.js pipeline call, including processor/model/postprocessor work.':'';setStatus(result.visible+' detection'+(result.visible===1?'':'s')+' above confidence '+Number($('confidence').value).toFixed(2)+'.'+boundary);}
     async function runActiveModel(source,targetCanvas,{updateMain=true,benchmarking=false}={}){const model=state.activeModel;if(model==='ssd')return inferSource(source,targetCanvas,{updateMain});const race=window.VisionRace;if(!race||typeof race.runModel!=='function')throw new Error('Active model runtime is not ready. Reload the page and try again.');const result=await race.runModel(model,source,targetCanvas,{benchmarking});if(updateMain&&model===state.activeModel)applyExternalRun(model,result,targetCanvas);return result;}
-    async function runUploaded(){if(!state.image||state.running||state.benchmarking)return;state.running=true;$('image-file').disabled=true;$('rerun').disabled=true;$('benchmark').disabled=true;try{await runActiveModel(state.image,$('image-canvas'));}catch(err){console.error(err);setStatus(err.message||String(err),'error');}finally{state.running=false;$('image-file').disabled=false;$('rerun').disabled=false;$('benchmark').disabled=!state.image;}}
+    async function runUploaded(){if(!state.image||state.running||state.benchmarking)return;state.running=true;$('image-file').disabled=true;$('confidence').disabled=true;$('rerun').disabled=true;$('benchmark').disabled=true;try{await runActiveModel(state.image,$('image-canvas'));}catch(err){console.error(err);setStatus(err.message||String(err),'error');}finally{state.running=false;$('image-file').disabled=false;$('confidence').disabled=false;$('rerun').disabled=false;$('benchmark').disabled=!state.image;}}
 
     function percentile(values,p){
       if(!values.length) return NaN;
@@ -308,6 +265,7 @@
       if(!state.image || state.benchmarking) return;
       state.benchmarking=true;
       $('image-file').disabled=true;
+      $('confidence').disabled=true;
       $('benchmark').disabled=true;
       $('rerun').disabled=true;
       const canvas=$('benchmark-canvas');
@@ -344,6 +302,7 @@
       }finally{
         state.benchmarking=false;
         $('image-file').disabled=false;
+        $('confidence').disabled=false;
         $('benchmark').disabled=!state.image;
         $('rerun').disabled=!state.image;
       }
@@ -408,7 +367,8 @@
       bytes,
       getActiveModel:()=>state.activeModel,
       selectActiveModel,
-      reportRuntimeEvent
+      reportRuntimeEvent,
+      getRetentionThreshold:()=>Number($('confidence').min)||0.1
     });
 
     updateActiveModelUI();updateActiveCacheState();
