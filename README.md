@@ -2,16 +2,17 @@
 
 A static, browser-native computer vision lab built for GitHub Pages.
 
-## v0.1
+## v0.1.1
 
 - Vision Time Machine shell with research provenance.
 - Runnable SSD-MobileNetV1 INT8 object detection in the browser.
 - ONNX Runtime Web with per-model execution-provider policy and run-time WebGPU → WASM recovery. The current SSD-MobileNetV1 INT8 baseline intentionally uses WASM because its dynamic-shape graph can initialize on ORT WebGPU but fail during `OrtRun()`.
 - Local image upload. User pixels are not uploaded by this application.
-- Separate model transfer, session initialization, preprocessing, inference, postprocessing, and end-to-end timings.
+- Startup costs are separated from current-run timings, with an optional 5-run warm benchmark reporting median and p90 inference.
 - Inside the Model pipeline view based on the actual preprocessing path.
 - Live Camera mode with sequential inference and rolling latency measurements.
 - Model Race UI prepared for the second architecture.
+- Mobile tab/timeline scroll affordances make hidden horizontal content discoverable.
 
 There is no application backend, database, account system, or analytics in v0.1. The browser still makes ordinary network requests to jsDelivr for ONNX Runtime Web and to Hugging Face for the model file.
 

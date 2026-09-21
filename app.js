@@ -13,7 +13,7 @@
     const COCO = Object.freeze({1:'person',2:'bicycle',3:'car',4:'motorcycle',5:'airplane',6:'bus',7:'train',8:'truck',9:'boat',10:'traffic light',11:'fire hydrant',13:'stop sign',14:'parking meter',15:'bench',16:'bird',17:'cat',18:'dog',19:'horse',20:'sheep',21:'cow',22:'elephant',23:'bear',24:'zebra',25:'giraffe',27:'backpack',28:'umbrella',31:'handbag',32:'tie',33:'suitcase',34:'frisbee',35:'skis',36:'snowboard',37:'sports ball',38:'kite',39:'baseball bat',40:'baseball glove',41:'skateboard',42:'surfboard',43:'tennis racket',44:'bottle',46:'wine glass',47:'cup',48:'fork',49:'knife',50:'spoon',51:'bowl',52:'banana',53:'apple',54:'sandwich',55:'orange',56:'broccoli',57:'carrot',58:'hot dog',59:'pizza',60:'donut',61:'cake',62:'chair',63:'couch',64:'potted plant',65:'bed',67:'dining table',70:'toilet',72:'tv',73:'laptop',74:'mouse',75:'remote',76:'keyboard',77:'cell phone',78:'microwave',79:'oven',80:'toaster',81:'sink',82:'refrigerator',84:'book',85:'clock',86:'vase',87:'scissors',88:'teddy bear',89:'hair drier',90:'toothbrush'});
 
     const $ = id => document.getElementById(id);
-    const state = {session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0};
+    const state = {session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,benchmarking:false};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -36,6 +36,21 @@
     }
     document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.tab)));
     document.querySelectorAll('[data-jump]').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.jump)));
+
+    function updateScrollCue(shell){
+      const area=shell.querySelector('[data-scroll-area]');
+      if(!area) return;
+      const canScroll=area.scrollWidth>area.clientWidth+2;
+      const atEnd=area.scrollLeft+area.clientWidth>=area.scrollWidth-6;
+      shell.classList.toggle('can-scroll',canScroll);
+      shell.classList.toggle('at-end',!canScroll||atEnd);
+    }
+    document.querySelectorAll('[data-scroll-shell]').forEach(shell=>{
+      const area=shell.querySelector('[data-scroll-area]');
+      if(area) area.addEventListener('scroll',()=>updateScrollCue(shell),{passive:true});
+      updateScrollCue(shell);
+    });
+    window.addEventListener('resize',()=>document.querySelectorAll('[data-scroll-shell]').forEach(updateScrollCue));
 
     async function fetchModel(){
       if(state.modelBuffer) return {buffer:state.modelBuffer, downloadMs:0, cachedInMemory:true};
@@ -181,6 +196,8 @@
       const totalMs=performance.now()-totalStart;
       if(updateMain){
         state.lastResults=detections;
+        state.inferenceCount++;
+        setMetric('m-run-label',state.inferenceCount===1?'first inference':`warm run #${state.inferenceCount}`);
         setMetric('m-pre',ms(preMs));setMetric('m-inf',ms(infMs));setMetric('m-post',ms(postMs));setMetric('m-total',ms(totalMs));setMetric('m-count',String(visible));
         $('input-size').textContent=`${width} × ${height} input`;
         $('inside-size').textContent=`1 × ${height} × ${width} × 3`;
@@ -202,22 +219,78 @@
     }
 
     async function runUploaded(){
-      if(!state.image) return;
+      if(!state.image || state.benchmarking) return;
       $('rerun').disabled=true;
+      $('benchmark').disabled=true;
       try{ await inferSource(state.image,$('image-canvas')); }
       catch(err){ console.error(err); setStatus(err.message || String(err),'error'); }
-      finally{$('rerun').disabled=false;}
+      finally{
+        $('rerun').disabled=false;
+        $('benchmark').disabled=!state.image;
+      }
+    }
+
+    function percentile(values,p){
+      if(!values.length) return NaN;
+      const sorted=[...values].sort((a,b)=>a-b);
+      const index=Math.max(0,Math.min(sorted.length-1,Math.ceil(p*sorted.length)-1));
+      return sorted[index];
+    }
+    function median(values){
+      if(!values.length) return NaN;
+      const sorted=[...values].sort((a,b)=>a-b);
+      const mid=Math.floor(sorted.length/2);
+      return sorted.length%2 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2;
+    }
+    function resetBenchmark(){
+      ['b-inf-med','b-inf-p90','b-total-med','b-fps'].forEach(id=>setMetric(id,'—'));
+      $('benchmark-note').textContent='Run one image first, then Benchmark ×5. Startup time is excluded.';
+    }
+    async function runBenchmark(){
+      if(!state.image || state.benchmarking) return;
+      state.benchmarking=true;
+      $('benchmark').disabled=true;
+      $('rerun').disabled=true;
+      const canvas=$('benchmark-canvas');
+      const samples=[];
+      try{
+        setStatus('Running 5 warm measurements on the same image…','loading');
+        for(let i=0;i<5;i++){
+          const r=await inferSource(state.image,canvas,{updateMain:false});
+          samples.push(r);
+          $('benchmark-note').textContent=`Warm benchmark: ${i+1}/5 complete. Startup time is excluded.`;
+          await new Promise(requestAnimationFrame);
+        }
+        const inf=samples.map(x=>x.infMs), total=samples.map(x=>x.totalMs);
+        const infMed=median(inf);
+        const infP90=percentile(inf,.90);
+        setMetric('b-inf-med',ms(infMed));
+        setMetric('b-inf-p90',ms(infP90));
+        setMetric('b-total-med',ms(median(total)));
+        setMetric('b-fps',infMed>0?(1000/infMed).toFixed(1):'—');
+        $('benchmark-note').textContent='Median and p90 from 5 sequential warm runs; model transfer and session init excluded.';
+        setStatus(`Warm benchmark complete: median inference ${ms(infMed)}, p90 ${ms(infP90)}.`);
+      }catch(err){
+        console.error(err);
+        setStatus(err.message || String(err),'error');
+        $('benchmark-note').textContent='Benchmark failed; current-run metrics were left unchanged.';
+      }finally{
+        state.benchmarking=false;
+        $('benchmark').disabled=!state.image;
+        $('rerun').disabled=!state.image;
+      }
     }
 
     $('image-file').addEventListener('change', async event => {
       const file=event.target.files && event.target.files[0]; if(!file) return;
       if(!file.type.startsWith('image/')){setStatus('Please choose an image file.','error');return;}
       const url=URL.createObjectURL(file); const img=new Image();
-      img.onload=async()=>{URL.revokeObjectURL(url);state.image=img;$('image-empty').hidden=true;$('image-canvas').hidden=false;await runUploaded();};
+      img.onload=async()=>{URL.revokeObjectURL(url);state.image=img;resetBenchmark();$('image-empty').hidden=true;$('image-canvas').hidden=false;await runUploaded();};
       img.onerror=()=>{URL.revokeObjectURL(url);setStatus('The selected image could not be decoded.','error');};
       img.src=url;
     });
     $('rerun').addEventListener('click',runUploaded);
+    $('benchmark').addEventListener('click',runBenchmark);
     $('confidence').addEventListener('input',()=>{$('confidence-value').textContent=Number($('confidence').value).toFixed(2);redrawUploaded();});
 
     async function startCamera(){
