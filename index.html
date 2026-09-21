@@ -6,7 +6,7 @@
   <meta name="description" content="Vision Evolution Lab: run object detection locally in your browser and explore how computer vision evolved.">
   <meta name="theme-color" content="#f5f0e7">
   <title>Vision Evolution Lab</title>
-  <link rel="stylesheet" href="styles.css?v=0.1.1">
+  <link rel="stylesheet" href="styles.css?v=0.1.2">
 </head>
 <body>
   <main class="shell">
@@ -57,7 +57,7 @@
             <label class="btn" for="image-file">Choose image</label>
             <input class="file-input" id="image-file" type="file" accept="image/*">
             <button class="btn secondary" id="rerun" disabled>Run again</button>
-            <button class="btn secondary" id="benchmark" disabled>Benchmark ×5</button>
+            <button class="btn secondary" id="benchmark" disabled>Benchmark ×20</button>
             <span class="control-spacer"></span>
             <label class="range-wrap">Confidence <input id="confidence" type="range" min="0.10" max="0.90" step="0.05" value="0.40"><b id="confidence-value">0.40</b></label>
           </div>
@@ -85,14 +85,31 @@
             </div>
           </div>
           <div class="metric-section benchmark-section">
-            <div class="metric-section-head"><span>Warm benchmark</span><small>5 sequential runs</small></div>
+            <div class="metric-section-head"><span>Warm benchmark</span><small>20 sequential runs</small></div>
             <div class="metrics">
-              <div class="metric"><span>Median inference</span><b id="b-inf-med">—</b></div>
+              <div class="metric"><span>p50 / median inference</span><b id="b-inf-med">—</b></div>
               <div class="metric"><span>p90 inference</span><b id="b-inf-p90">—</b></div>
-              <div class="metric"><span>Median end-to-end</span><b id="b-total-med">—</b></div>
+              <div class="metric"><span>Inference min–max</span><b id="b-inf-range">—</b></div>
+              <div class="metric"><span>Stability (CV)</span><b id="b-cv">—</b></div>
+              <div class="metric"><span>p50 end-to-end</span><b id="b-total-med">—</b></div>
               <div class="metric"><span>Approx. inference FPS</span><b id="b-fps">—</b></div>
             </div>
-            <div class="benchmark-note" id="benchmark-note">Run one image first, then Benchmark ×5. Startup time is excluded.</div>
+            <div class="benchmark-note" id="benchmark-note">Run one image first, then Benchmark ×20. Startup time is excluded.</div>
+          </div>
+          <div class="metric-section diagnostics-section">
+            <div class="metric-section-head"><span>Runtime / device</span><small>browser reported</small></div>
+            <div class="metrics">
+              <div class="metric"><span>Browser</span><b id="d-browser">—</b></div>
+              <div class="metric"><span>OS / platform</span><b id="d-os">—</b></div>
+              <div class="metric"><span>Logical CPU</span><b id="d-cpu">—</b></div>
+              <div class="metric"><span>Device memory</span><b id="d-memory">—</b></div>
+              <div class="metric"><span>WebGPU</span><b id="d-webgpu">—</b></div>
+              <div class="metric"><span>WASM SIMD</span><b id="d-simd">—</b></div>
+              <div class="metric"><span>WASM threads</span><b id="d-threads">—</b></div>
+              <div class="metric"><span>Cross-origin isolated</span><b id="d-isolated">—</b></div>
+              <div class="metric"><span>Model input</span><b id="d-input">—</b></div>
+            </div>
+            <div class="benchmark-note">GitHub Pages normally runs without cross-origin isolation, so multi-threaded WASM may be unavailable even on multi-core devices.</div>
           </div>
           <div class="research">
             <div class="research-label">Research provenance</div>
@@ -184,10 +201,10 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.1.1 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.1.2 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
-  <script src="app.js?v=0.1.1"></script>
+  <script src="app.js?v=0.1.2"></script>
 </body>
 </html>

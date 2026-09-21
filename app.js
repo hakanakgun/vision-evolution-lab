@@ -22,12 +22,62 @@
     }
 
     ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/';
-    ort.env.wasm.numThreads = window.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
+    const WASM_THREADS = window.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
+    ort.env.wasm.numThreads = WASM_THREADS;
 
     function ms(v){ return Number.isFinite(v) ? `${v.toFixed(v < 10 ? 2 : 1)} ms` : '—'; }
     function bytes(v){ if(!v) return '—'; const mb=v/1048576; return `${mb.toFixed(mb<10?2:1)} MB`; }
     function setStatus(message, kind=''){ const el=$('status'); el.textContent=message; el.className=`status ${kind}`.trim(); }
     function setMetric(id,value){ $(id).textContent=value; }
+
+    function supportsWasmSimd(){
+      try{
+        const probe=Uint8Array.from([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,8,1,6,0,65,0,253,15,11]);
+        return WebAssembly.validate(probe);
+      }catch(_){ return false; }
+    }
+    function detectBrowser(){
+      const ua=navigator.userAgent;
+      const match=(re,name)=>{const m=ua.match(re);return m?`${name} ${m[1]}`:'';};
+      return match(/Edg\/([\d.]+)/,'Edge') ||
+        match(/CriOS\/([\d.]+)/,'Chrome iOS') ||
+        match(/Chrome\/([\d.]+)/,'Chrome') ||
+        match(/FxiOS\/([\d.]+)/,'Firefox iOS') ||
+        match(/Firefox\/([\d.]+)/,'Firefox') ||
+        match(/Version\/([\d.]+).*Safari/,'Safari') || 'Unknown';
+    }
+    function detectOS(){
+      const ua=navigator.userAgent;
+      if(/iPhone|iPad|iPod/.test(ua)){
+        const m=ua.match(/OS ([\d_]+)/);
+        return m?`iOS ${m[1].replaceAll('_','.')}`:'iOS';
+      }
+      if(/Windows NT/.test(ua)){
+        const m=ua.match(/Windows NT ([\d.]+)/);
+        return m?`Windows NT ${m[1]}`:'Windows';
+      }
+      if(/Mac OS X/.test(ua)){
+        const m=ua.match(/Mac OS X ([\d_]+)/);
+        return m?`macOS ${m[1].replaceAll('_','.')}`:'macOS';
+      }
+      if(/Android/.test(ua)){
+        const m=ua.match(/Android ([\d.]+)/);
+        return m?`Android ${m[1]}`:'Android';
+      }
+      if(/Linux/.test(ua)) return 'Linux';
+      return navigator.userAgentData?.platform || navigator.platform || 'Unknown';
+    }
+    function populateDiagnostics(){
+      setMetric('d-browser',detectBrowser());
+      setMetric('d-os',detectOS());
+      setMetric('d-cpu',navigator.hardwareConcurrency?String(navigator.hardwareConcurrency):'not exposed');
+      setMetric('d-memory',navigator.deviceMemory?`~${navigator.deviceMemory} GB`:'not exposed');
+      setMetric('d-webgpu',navigator.gpu?'available':'unavailable');
+      setMetric('d-simd',supportsWasmSimd()?'supported':'unavailable');
+      setMetric('d-threads',String(WASM_THREADS));
+      setMetric('d-isolated',window.crossOriginIsolated?'yes':'no');
+    }
+    populateDiagnostics();
 
     function selectTab(id){
       document.querySelectorAll('.tab').forEach(btn => btn.setAttribute('aria-selected', String(btn.dataset.tab === id)));
@@ -200,6 +250,7 @@
         setMetric('m-run-label',state.inferenceCount===1?'first inference':`warm run #${state.inferenceCount}`);
         setMetric('m-pre',ms(preMs));setMetric('m-inf',ms(infMs));setMetric('m-post',ms(postMs));setMetric('m-total',ms(totalMs));setMetric('m-count',String(visible));
         $('input-size').textContent=`${width} × ${height} input`;
+        setMetric('d-input',`${width}×${height}`);
         $('inside-size').textContent=`1 × ${height} × ${width} × 3`;
         $('inside-summary').innerHTML=`<div><span class="pill">Real tensor</span><h2 style="margin:10px 0 6px">uint8 · NHWC</h2><p style="margin:0">Source ${state.lastDims.sourceW}×${state.lastDims.sourceH} → model input ${width}×${height}. Preprocess ${ms(preMs)}, inference ${ms(infMs)}.</p></div>`;
         setStatus(`${visible} detection${visible===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}. User pixels stayed in this browser.`);
@@ -243,8 +294,8 @@
       return sorted.length%2 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2;
     }
     function resetBenchmark(){
-      ['b-inf-med','b-inf-p90','b-total-med','b-fps'].forEach(id=>setMetric(id,'—'));
-      $('benchmark-note').textContent='Run one image first, then Benchmark ×5. Startup time is excluded.';
+      ['b-inf-med','b-inf-p90','b-inf-range','b-cv','b-total-med','b-fps'].forEach(id=>setMetric(id,'—'));
+      $('benchmark-note').textContent='Run one image first, then Benchmark ×20. Startup time is excluded.';
     }
     async function runBenchmark(){
       if(!state.image || state.benchmarking) return;
@@ -254,22 +305,28 @@
       const canvas=$('benchmark-canvas');
       const samples=[];
       try{
-        setStatus('Running 5 warm measurements on the same image…','loading');
-        for(let i=0;i<5;i++){
+        const RUNS=20;
+        setStatus(`Running ${RUNS} warm measurements on the same image…`,'loading');
+        for(let i=0;i<RUNS;i++){
           const r=await inferSource(state.image,canvas,{updateMain:false});
           samples.push(r);
-          $('benchmark-note').textContent=`Warm benchmark: ${i+1}/5 complete. Startup time is excluded.`;
+          $('benchmark-note').textContent=`Warm benchmark: ${i+1}/${RUNS} complete. Startup time is excluded.`;
           await new Promise(requestAnimationFrame);
         }
         const inf=samples.map(x=>x.infMs), total=samples.map(x=>x.totalMs);
         const infMed=median(inf);
         const infP90=percentile(inf,.90);
+        const mean=inf.reduce((a,b)=>a+b,0)/inf.length;
+        const variance=inf.reduce((sum,x)=>sum+(x-mean)*(x-mean),0)/inf.length;
+        const cv=mean>0?Math.sqrt(variance)/mean*100:NaN;
         setMetric('b-inf-med',ms(infMed));
         setMetric('b-inf-p90',ms(infP90));
+        setMetric('b-inf-range',`${ms(Math.min(...inf))} – ${ms(Math.max(...inf))}`);
+        setMetric('b-cv',Number.isFinite(cv)?`${cv.toFixed(1)}%`:'—');
         setMetric('b-total-med',ms(median(total)));
         setMetric('b-fps',infMed>0?(1000/infMed).toFixed(1):'—');
-        $('benchmark-note').textContent='Median and p90 from 5 sequential warm runs; model transfer and session init excluded.';
-        setStatus(`Warm benchmark complete: median inference ${ms(infMed)}, p90 ${ms(infP90)}.`);
+        $('benchmark-note').textContent='p50, p90, min–max and CV from 20 sequential warm runs; model transfer and session init excluded.';
+        setStatus(`Warm benchmark complete: p50 inference ${ms(infMed)}, p90 ${ms(infP90)}, CV ${cv.toFixed(1)}%.`);
       }catch(err){
         console.error(err);
         setStatus(err.message || String(err),'error');

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Contribution guide
+    url: https://github.com/hakanakgun/vision-evolution-lab/blob/main/CONTRIBUTING.md
+    about: Read the contribution and model-provenance requirements before substantial work.
+  - name: Live demo
+    url: https://hakanakgun.github.io/vision-evolution-lab/
+    about: Reproduce browser/runtime behavior on the deployed site.

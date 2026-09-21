@@ -1,0 +1,61 @@
+name: Bug report
+description: Report a reproducible problem in the web app
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please avoid attaching private or sensitive images.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open ...\n2. Choose image ...\n3. Click ..."
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: "Chrome 153, Safari 26, Edge ..."
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS / device
+      placeholder: "Windows 11 / Dell desktop, iOS / iPhone ..."
+    validations:
+      required: true
+  - type: input
+    id: backend
+    attributes:
+      label: Backend / model
+      placeholder: "WASM · SSD-MobileNetV1 INT8"
+  - type: textarea
+    id: console
+    attributes:
+      label: Console error or diagnostics
+      description: Paste relevant errors or Runtime / Device values. Remove private data first.
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Screenshots are useful for UI bugs, but do not upload sensitive source images.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: I removed private or sensitive information from this report.
+          required: true

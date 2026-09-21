@@ -1,0 +1,51 @@
+name: Feature request
+description: Propose an improvement to the executable computer-vision timeline
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / learning goal
+      description: What should the project help a user understand or do?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Time Machine
+        - Model Race
+        - Inside the Model
+        - Live Camera
+        - Browser Benchmark
+        - Failure Gallery
+        - Classical CV / Efficiency
+        - Documentation / community
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Describe the smallest useful version first.
+    validations:
+      required: true
+  - type: textarea
+    id: research
+    attributes:
+      label: Research / model references
+      description: Link primary papers, official repositories, model cards, or comparable projects if relevant.
+  - type: textarea
+    id: licensing
+    attributes:
+      label: Licensing / provenance considerations
+      description: For models or dependencies, note code license, weights license, dataset terms, and source if known.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for similar proposals.
+          required: true
