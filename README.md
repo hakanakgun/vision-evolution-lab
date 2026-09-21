@@ -2,7 +2,7 @@
 
 A static, browser-native computer vision lab built for GitHub Pages.
 
-## v0.5.0
+## v0.5.1
 
 - Vision Time Machine now uses one active-model runner. Selecting SSD-MobileNet, YOLOX-Nano, or RT-DETR R18 keeps the user in Time Machine and switches model metadata, preprocessing, runtime/cache state, inference, and warm benchmark behavior in place.
 - Runnable SSD-MobileNetV1 INT8 object detection in the browser.
@@ -17,7 +17,7 @@ A static, browser-native computer vision lab built for GitHub Pages.
 - Central model registry (`models.js`) owns model URLs/IDs, year, license note, preprocessing contract, decoder, backend policy, and pinned revisions.
 - Shared cache-aware model loader (`model-loader.js`) adds streamed download progress, Cache API persistence, retry/fallback, and visible cache state for raw ONNX assets.
 
-There is no application backend, database, account system, or analytics in v0.5.0. The browser makes ordinary network requests to jsDelivr for ONNX Runtime Web, Hugging Face for the pinned SSD-MobileNet model, and the official Megvii YOLOX GitHub Release for YOLOX-Nano. If that release asset cannot be fetched by the browser, YOLOX falls back to a pinned Apache-2.0 Hugging Face mirror that states it hosts Megvii's published ONNX checkpoints.
+There is no application backend, database, account system, or analytics in v0.5.1. The browser makes ordinary network requests to jsDelivr for ONNX Runtime Web, Hugging Face for the pinned SSD-MobileNet model, and the official Megvii YOLOX GitHub Release for YOLOX-Nano. If that release asset cannot be fetched by the browser, YOLOX falls back to a pinned Apache-2.0 Hugging Face mirror that states it hosts Megvii's published ONNX checkpoints.
 
 ## Runtime model
 

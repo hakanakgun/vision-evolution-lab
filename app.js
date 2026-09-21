@@ -9,7 +9,7 @@
     const COCO = Object.freeze({1:'person',2:'bicycle',3:'car',4:'motorcycle',5:'airplane',6:'bus',7:'train',8:'truck',9:'boat',10:'traffic light',11:'fire hydrant',13:'stop sign',14:'parking meter',15:'bench',16:'bird',17:'cat',18:'dog',19:'horse',20:'sheep',21:'cow',22:'elephant',23:'bear',24:'zebra',25:'giraffe',27:'backpack',28:'umbrella',31:'handbag',32:'tie',33:'suitcase',34:'frisbee',35:'skis',36:'snowboard',37:'sports ball',38:'kite',39:'baseball bat',40:'baseball glove',41:'skateboard',42:'surfboard',43:'tennis racket',44:'bottle',46:'wine glass',47:'cup',48:'fork',49:'knife',50:'spoon',51:'bowl',52:'banana',53:'apple',54:'sandwich',55:'orange',56:'broccoli',57:'carrot',58:'hot dog',59:'pizza',60:'donut',61:'cake',62:'chair',63:'couch',64:'potted plant',65:'bed',67:'dining table',70:'toilet',72:'tv',73:'laptop',74:'mouse',75:'remote',76:'keyboard',77:'cell phone',78:'microwave',79:'oven',80:'toaster',81:'sink',82:'refrigerator',84:'book',85:'clock',86:'vase',87:'scissors',88:'teddy bear',89:'hair drier',90:'toothbrush'});
 
     const $ = id => document.getElementById(id);
-    const state = {activeModel:'ssd',session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,benchmarking:false};
+    const state = {activeModel:'ssd',session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -32,7 +32,7 @@
     function renderProvenance(model){const ui=model.ui||{};$('active-provenance-title').textContent=model.title;$('active-provenance-text').textContent=ui.provenance||`${model.family} · ${model.license}`;const links=$('active-provenance-links');links.replaceChildren();for(const link of ui.links||[]){const a=document.createElement('a');a.href=link.url;a.textContent=link.label;a.target='_blank';a.rel='noreferrer';links.appendChild(a);}}
     function updateActiveModelUI(){const model=activeModel(),ui=model.ui||{};$('active-model-title').textContent=model.title;$('active-model-subtitle').textContent=ui.subtitle||`${model.task} · ${model.family}`;$('rerun').textContent=`Run ${model.title}`;$('m-transfer-label').textContent='Model transfer';$('m-init-label').textContent=state.activeModel==='rtdetr'?'Pipeline load':'Session init';setMetric('m-bytes',state.activeModel==='rtdetr'?'~21.7 MB q8 / 41.4 MB fp16':bytes(model.bytes));setMetric('m-cache',state.activeModel==='rtdetr'?'checked at load':'checking…');setMetric('d-input',model.input?`${model.input}×${model.input}`:'dynamic ≤640');$('input-size').textContent=state.image?'Source ready · not run':'No input';renderProvenance(model);}
     async function updateActiveCacheState(){const key=state.activeModel,model=activeModel();if(key==='rtdetr')return;try{const info=await ModelLoader.status(model);if(state.activeModel===key)setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state);}catch(_){}}
-    function selectActiveModel(key,{scroll=true}={}){if(!['ssd','yolox','rtdetr'].includes(key)||!REGISTRY[key])return;state.activeModel=key;document.querySelectorAll('[data-runnable-model]').forEach(btn=>btn.classList.toggle('active',btn.dataset.runnableModel===key));resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();if(state.image){drawSourceOnly();setStatus(`${activeModel().title} selected. Run the current image when ready.`);}else setStatus(`${activeModel().title} selected. Choose an image to run this generation.`);if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});}
+    function selectActiveModel(key,{scroll=true}={}){if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}if(!['ssd','yolox','rtdetr'].includes(key)||!REGISTRY[key])return;state.activeModel=key;document.querySelectorAll('[data-runnable-model]').forEach(btn=>btn.classList.toggle('active',btn.dataset.runnableModel===key));resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();if(state.image){drawSourceOnly();setStatus(`${activeModel().title} selected. Run the current image when ready.`);}else setStatus(`${activeModel().title} selected. Choose an image to run this generation.`);if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});}
     function reportRuntimeEvent(model,event){if(model!==state.activeModel||!event)return;if(event.type==='progress')updateMainModelProgress(event.info||{});if(event.type==='cache')setMetric('m-cache',event.text||'checking…');if(event.type==='runtime'){if(event.backend)$('backend-badge').textContent=event.dtype?`${String(event.backend).toUpperCase()} · ${event.dtype}`:String(event.backend).toUpperCase();if(Number.isFinite(event.downloadMs))setMetric('m-download',ms(event.downloadMs));if(Number.isFinite(event.initMs))setMetric('m-init',ms(event.initMs));if(event.bytes)setMetric('m-bytes',bytes(event.bytes));if(event.source)setMetric('m-cache',event.cacheState?`${event.cacheState} · ${event.source}`:event.source);}}
 
     function supportsWasmSimd(){
@@ -285,8 +285,8 @@
 
     function redrawUploaded(){if(!state.image||!state.lastResults)return;const canvas=$('image-canvas');drawSourceOnly();const count=drawDetections(canvas,state.lastResults);setMetric('m-count',String(count));setStatus(`${count} detection${count===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}. Threshold changes only redraw existing model outputs.`);}
     function applyExternalRun(model,result,targetCanvas){const runtime=window.VisionRace?.getRuntimeInfo(model)||{},{w,h}=sourceSize(state.image);state.lastResults=result.detections;state.lastDims={sourceW:w,sourceH:h,width:targetCanvas.width,height:targetCanvas.height};state.inferenceCount++;setMetric('m-run-label',state.inferenceCount===1?'first inference':`warm run #${state.inferenceCount}`);setMetric('m-pre',ms(result.preMs));setMetric('m-inf',ms(result.infMs));setMetric('m-post',ms(result.postMs));setMetric('m-total',ms(result.totalMs));setMetric('m-count',String(result.visible));$('input-size').textContent=`${result.width} × ${result.height} model input`;setMetric('d-input',`${result.width}×${result.height}`);if(runtime.backend)$('backend-badge').textContent=runtime.dtype?`${runtime.backend.toUpperCase()} · ${runtime.dtype}`:runtime.backend.toUpperCase();if(Number.isFinite(runtime.downloadMs))setMetric('m-download',ms(runtime.downloadMs));if(Number.isFinite(runtime.initMs))setMetric('m-init',ms(runtime.initMs));if(runtime.bytes)setMetric('m-bytes',bytes(runtime.bytes));if(runtime.cacheState)setMetric('m-cache',runtime.source?`${runtime.cacheState} · ${runtime.source}`:runtime.cacheState);if(model==='rtdetr'&&!Number.isFinite(runtime.downloadMs))setMetric('m-download','managed by pipeline');const boundary=model==='rtdetr'?' RT-DETR inference is the Transformers.js pipeline call, including processor/model/postprocessor work.':'';setStatus(`${result.visible} detection${result.visible===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}.${boundary}`);}
-    async function runActiveModel(source,targetCanvas,{updateMain=true,benchmarking=false}={}){if(state.activeModel==='ssd')return inferSource(source,targetCanvas,{updateMain});const race=window.VisionRace;if(!race||typeof race.runModel!=='function')throw new Error('Active model runtime is not ready. Reload the page and try again.');const result=await race.runModel(state.activeModel,source,targetCanvas,{benchmarking});if(updateMain)applyExternalRun(state.activeModel,result,targetCanvas);return result;}
-    async function runUploaded(){if(!state.image||state.benchmarking)return;$('rerun').disabled=true;$('benchmark').disabled=true;try{await runActiveModel(state.image,$('image-canvas'));}catch(err){console.error(err);setStatus(err.message||String(err),'error');}finally{$('rerun').disabled=false;$('benchmark').disabled=!state.image;}}
+    async function runActiveModel(source,targetCanvas,{updateMain=true,benchmarking=false}={}){const model=state.activeModel;if(model==='ssd')return inferSource(source,targetCanvas,{updateMain});const race=window.VisionRace;if(!race||typeof race.runModel!=='function')throw new Error('Active model runtime is not ready. Reload the page and try again.');const result=await race.runModel(model,source,targetCanvas,{benchmarking});if(updateMain&&model===state.activeModel)applyExternalRun(model,result,targetCanvas);return result;}
+    async function runUploaded(){if(!state.image||state.running||state.benchmarking)return;state.running=true;$('image-file').disabled=true;$('rerun').disabled=true;$('benchmark').disabled=true;try{await runActiveModel(state.image,$('image-canvas'));}catch(err){console.error(err);setStatus(err.message||String(err),'error');}finally{state.running=false;$('image-file').disabled=false;$('rerun').disabled=false;$('benchmark').disabled=!state.image;}}
 
     function percentile(values,p){
       if(!values.length) return NaN;
@@ -307,15 +307,18 @@
     async function runBenchmark(){
       if(!state.image || state.benchmarking) return;
       state.benchmarking=true;
+      $('image-file').disabled=true;
       $('benchmark').disabled=true;
       $('rerun').disabled=true;
       const canvas=$('benchmark-canvas');
+      const benchmarkImage=state.image;
+      const benchmarkModel=state.activeModel;
       const samples=[];
       try{
         const RUNS=20;
         setStatus(`Running ${RUNS} warm measurements on the same image…`,'loading');
         for(let i=0;i<RUNS;i++){
-          const r=await runActiveModel(state.image,canvas,{updateMain:false,benchmarking:true});
+          const r=await runActiveModel(benchmarkImage,canvas,{updateMain:false,benchmarking:true});
           samples.push(r);
           $('benchmark-note').textContent=`Warm benchmark: ${i+1}/${RUNS} complete. Startup time is excluded.`;
           await new Promise(requestAnimationFrame);
@@ -332,7 +335,7 @@
         setMetric('b-cv',Number.isFinite(cv)?`${cv.toFixed(1)}%`:'—');
         setMetric('b-total-med',ms(median(total)));
         setMetric('b-fps',infMed>0?(1000/infMed).toFixed(1):'—');
-        $('benchmark-note').textContent=state.activeModel==='rtdetr'?'p50, p90, min–max and CV from 20 warm Transformers.js pipeline calls; pipeline/model load excluded.':'p50, p90, min–max and CV from 20 sequential warm runs; model transfer and session init excluded.';
+        $('benchmark-note').textContent=benchmarkModel==='rtdetr'?'p50, p90, min–max and CV from 20 warm Transformers.js pipeline calls; pipeline/model load excluded.':'p50, p90, min–max and CV from 20 sequential warm runs; model transfer and session init excluded.';
         setStatus(`Warm benchmark complete: p50 inference ${ms(infMed)}, p90 ${ms(infP90)}, CV ${cv.toFixed(1)}%.`);
       }catch(err){
         console.error(err);
@@ -340,6 +343,7 @@
         $('benchmark-note').textContent='Benchmark failed; current-run metrics were left unchanged.';
       }finally{
         state.benchmarking=false;
+        $('image-file').disabled=false;
         $('benchmark').disabled=!state.image;
         $('rerun').disabled=!state.image;
       }

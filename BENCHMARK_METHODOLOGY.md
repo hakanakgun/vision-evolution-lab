@@ -21,7 +21,7 @@ The UI reports startup and per-run costs separately.
 
 ## 2. Warm benchmark
 
-The Time Machine benchmark runs **20 sequential warm executions** for whichever runnable model is active after its model/session or pipeline already exists.
+The Time Machine benchmark runs **20 sequential warm executions** for whichever runnable model is active after its model/session or pipeline already exists. The selected model and source image are locked for the full 20-run sample so interaction cannot mix benchmark populations.
 
 Reported values:
 
