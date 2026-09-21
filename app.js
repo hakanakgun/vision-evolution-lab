@@ -169,6 +169,26 @@
       return {rgb,width,height};
     }
 
+    function updateInputInspector(source){
+      if(!state.lastDims) return;
+      const {sourceW,sourceH,width,height}=state.lastDims;
+      const src=$('inside-source-preview'),inputPreview=$('inside-input-preview');
+      const maxPreview=420;
+      const srcScale=Math.min(1,maxPreview/Math.max(sourceW,sourceH));
+      src.width=Math.max(1,Math.round(sourceW*srcScale));
+      src.height=Math.max(1,Math.round(sourceH*srcScale));
+      src.getContext('2d').drawImage(source,0,0,src.width,src.height);
+      const prepared=$('input-canvas');
+      const inputScale=Math.min(1,maxPreview/Math.max(width,height));
+      inputPreview.width=Math.max(1,Math.round(width*inputScale));
+      inputPreview.height=Math.max(1,Math.round(height*inputScale));
+      inputPreview.getContext('2d').drawImage(prepared,0,0,width,height,0,0,inputPreview.width,inputPreview.height);
+      src.hidden=false;inputPreview.hidden=false;
+      $('inside-source-empty').hidden=true;$('inside-input-empty').hidden=true;
+      setMetric('inside-source-size',`${sourceW}×${sourceH}`);
+      setMetric('inside-model-size',`${width}×${height}`);
+    }
+
     function pick(results, text){
       const key=Object.keys(results).find(name => name.toLowerCase().includes(text));
       if(!key) throw new Error(`Expected model output not found: ${text}`);
@@ -252,7 +272,8 @@
         $('input-size').textContent=`${width} × ${height} input`;
         setMetric('d-input',`${width}×${height}`);
         $('inside-size').textContent=`1 × ${height} × ${width} × 3`;
-        $('inside-summary').innerHTML=`<div><span class="pill">Real tensor</span><h2 style="margin:10px 0 6px">uint8 · NHWC</h2><p style="margin:0">Source ${state.lastDims.sourceW}×${state.lastDims.sourceH} → model input ${width}×${height}. Preprocess ${ms(preMs)}, inference ${ms(infMs)}.</p></div>`;
+        updateInputInspector(source);
+        $('inside-summary').textContent=`Source ${state.lastDims.sourceW}×${state.lastDims.sourceH} → model input ${width}×${height}. Current preprocess ${ms(preMs)}; inference ${ms(infMs)}.`;
         setStatus(`${visible} detection${visible===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}. User pixels stayed in this browser.`);
       }
       return {preMs,infMs,postMs,totalMs,visible,detections,width,height};

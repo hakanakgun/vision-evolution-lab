@@ -44,3 +44,30 @@ Training-dataset terms are separate from code/model licenses and should be revie
 The official YOLOX repository is Apache-2.0 and the ONNX file is distributed directly as an asset of the official YOLOX GitHub release. The release page does not state a separate restrictive license for the ONNX asset. Vision Evolution Lab does **not** mirror or bundle this binary; the browser requests the official release asset directly.
 
 If this project later redistributes or modifies YOLOX weights instead of referencing the official asset, re-check upstream notices and model-weight terms at that time. Dataset terms remain separate from the project/model code license.
+
+
+## Research-only candidates
+
+These entries are displayed as research references but are not downloaded or executed by the current site.
+
+### RT-DETR R18
+
+- Hugging Face model: `PekingU/rtdetr_r18vd`.
+- Hugging Face metadata: Apache-2.0, COCO, Transformers object-detection model, approximately 20.2M parameters.
+- Official implementation: `lyuwenyu/RT-DETR`, Apache-2.0.
+- Runnable promotion requires browser execution-provider validation and exact browser-side preprocessing/postprocessing review.
+
+### LW-DETR-tiny
+
+- Official implementation: `Atten4Vis/LW-DETR`, Apache-2.0.
+- Official repository points model downloads to Hugging Face `xbsu/LW-DETR`.
+- Hugging Face repository metadata: Apache-2.0.
+- Upstream reports 12.1M parameters, 11.2 GFLOPs and 42.6 (42.9 reimplementation) COCO mAP for LW-DETR-tiny.
+- Upstream provides ONNX export tooling, but this project has not yet validated its ONNX graph in ONNX Runtime Web.
+
+### D-FINE-N
+
+- Official implementation: `Peterande/D-FINE`, Apache-2.0.
+- Upstream reports 4M parameters, 7 GFLOPs and 42.8 COCO AP for D-FINE-N.
+- D-FINE's own documentation warns that Objects365-trained/pretrained checkpoints may have separate dataset terms.
+- The current site therefore treats D-FINE as research-only until the exact checkpoint, pretraining chain, and browser graph are re-verified.

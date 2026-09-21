@@ -6,7 +6,7 @@
   <meta name="description" content="Vision Evolution Lab: run object detection locally in your browser and explore how computer vision evolved.">
   <meta name="theme-color" content="#f5f0e7">
   <title>Vision Evolution Lab</title>
-  <link rel="stylesheet" href="styles.css?v=0.2.0">
+  <link rel="stylesheet" href="styles.css?v=0.3.0">
 </head>
 <body>
   <main class="shell">
@@ -41,7 +41,9 @@
           <div class="milestone active"><div class="dot"></div><div class="year">2017</div><strong>SSD + MobileNet</strong><span>run now</span></div>
           <div class="milestone"><div class="dot"></div><div class="year">2020</div><strong>DETR</strong><span>milestone</span></div>
           <div class="milestone runnable"><div class="dot"></div><div class="year">2021</div><strong>YOLOX-Nano</strong><span>run now</span></div>
-          <div class="milestone"><div class="dot"></div><div class="year">2024+</div><strong>Real-time Transformers</strong><span>next</span></div>
+          <div class="milestone research-only"><div class="dot"></div><div class="year">2023</div><strong>RT-DETR</strong><span>research</span></div>
+          <div class="milestone research-only"><div class="dot"></div><div class="year">2024</div><strong>LW-DETR</strong><span>research</span></div>
+          <div class="milestone research-only"><div class="dot"></div><div class="year">2024</div><strong>D-FINE</strong><span>research</span></div>
           </div>
         </div>
         <div class="scroll-cue timeline-cue" aria-hidden="true">Swipe through history →</div>
@@ -125,6 +127,66 @@
           </div>
         </aside>
       </div>
+
+      <section class="evolution-section">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">What changed?</div>
+            <h2>Detector generations, not just model names</h2>
+          </div>
+          <div class="tiny">Reported paper/model-card metrics are upstream references, not measurements from this browser.</div>
+        </div>
+        <div class="evolution-grid">
+          <article class="card evolution-card">
+            <div class="evolution-top"><span class="pill pending">2016 · milestone</span><span class="license-chip">paper</span></div>
+            <h3>SSD</h3>
+            <p>Single-shot dense detection replaced multi-stage proposal pipelines with predefined default boxes across multiple feature scales.</p>
+            <div class="change-line"><b>Introduced</b><span>multi-scale dense box prediction</span></div>
+            <div class="links"><a href="https://arxiv.org/abs/1512.02325" target="_blank" rel="noreferrer">Paper ↗</a></div>
+          </article>
+
+          <article class="card evolution-card runnable-card">
+            <div class="evolution-top"><span class="pill">2017 · runnable</span><span class="license-chip">permissive</span></div>
+            <h3>SSD + MobileNetV1</h3>
+            <p>The SSD idea was paired with a lightweight mobile backbone, making practical low-compute detection a central design target.</p>
+            <div class="change-line"><b>Browser now</b><span>INT8 · WASM · 9.10 MB</span></div>
+            <div class="links"><a href="#" data-jump="time-machine">Run ↗</a><a href="MODEL_SOURCES.md#ssd-mobilenetv1-12-int8" target="_blank">Provenance ↗</a></div>
+          </article>
+
+          <article class="card evolution-card runnable-card">
+            <div class="evolution-top"><span class="pill generation">2021 · runnable</span><span class="license-chip apache">Apache-2.0</span></div>
+            <h3>YOLOX-Nano</h3>
+            <p>YOLOX removed anchors and separated classification from regression in a decoupled head while preserving real-time CNN deployment.</p>
+            <div class="change-line"><b>Reported</b><span>0.91M params · 25.8 COCO AP</span></div>
+            <div class="links"><a href="#" data-jump="model-race">Race ↗</a><a href="https://github.com/Megvii-BaseDetection/YOLOX" target="_blank" rel="noreferrer">Official repo ↗</a></div>
+          </article>
+
+          <article class="card evolution-card research-card">
+            <div class="evolution-top"><span class="pill research-pill">2023 · research</span><span class="license-chip apache">Apache-2.0</span></div>
+            <h3>RT-DETR R18</h3>
+            <p>Real-time DETR brought end-to-end set prediction into practical detector latency regimes and removed conventional NMS from the core design.</p>
+            <div class="change-line"><b>HF model</b><span>20.2M params · COCO · Transformers</span></div>
+            <div class="links"><a href="https://huggingface.co/PekingU/rtdetr_r18vd" target="_blank" rel="noreferrer">Hugging Face ↗</a><a href="https://github.com/lyuwenyu/RT-DETR" target="_blank" rel="noreferrer">Official repo ↗</a></div>
+          </article>
+
+          <article class="card evolution-card research-card">
+            <div class="evolution-top"><span class="pill research-pill">2024 · research</span><span class="license-chip apache">Apache-2.0</span></div>
+            <h3>LW-DETR-tiny</h3>
+            <p>A lightweight ViT encoder plus shallow DETR decoder targets the real-time regime with a transformer-first architecture.</p>
+            <div class="change-line"><b>Reported</b><span>12.1M params · 42.6/42.9 COCO mAP</span></div>
+            <div class="links"><a href="https://huggingface.co/xbsu/LW-DETR" target="_blank" rel="noreferrer">Hugging Face ↗</a><a href="https://github.com/Atten4Vis/LW-DETR" target="_blank" rel="noreferrer">Official repo ↗</a></div>
+          </article>
+
+          <article class="card evolution-card research-card">
+            <div class="evolution-top"><span class="pill research-pill">2024 · research</span><span class="license-chip apache">Apache-2.0 code</span></div>
+            <h3>D-FINE-N</h3>
+            <p>D-FINE reframes DETR box regression as fine-grained distribution refinement, targeting better localization without adding inference-time machinery.</p>
+            <div class="change-line"><b>Reported</b><span>4M params · 42.8 COCO AP</span></div>
+            <div class="links"><a href="https://arxiv.org/abs/2410.13842" target="_blank" rel="noreferrer">Paper ↗</a><a href="https://github.com/Peterande/D-FINE" target="_blank" rel="noreferrer">Official repo ↗</a></div>
+          </article>
+        </div>
+        <div class="note evolution-note">Research cards are references only. They are not downloaded or executed by this site yet. A permissive code license alone is not treated as sufficient evidence to redistribute model weights; runnable promotion requires checkpoint and dataset provenance review.</div>
+      </section>
     </section>
 
     <section class="panel" id="model-race" role="tabpanel">
@@ -209,14 +271,38 @@
           <div class="step"><span class="step-num">05</span><strong>Browser overlay</strong><p>Normalized boxes are mapped back onto the local canvas.</p></div>
         </div>
       </div>
-      <div class="inside-grid" style="margin-top:18px">
-        <div class="card">
-          <div class="side-head"><div class="side-title">Current input</div><div class="tiny" id="inside-size">No image yet</div></div>
-          <div class="placeholder" id="inside-summary">Run an image in Time Machine to populate the real tensor dimensions and timing.</div>
+      <div class="inside-grid inspector-grid" style="margin-top:18px">
+        <div class="card inspector-card">
+          <div class="side-head"><div class="side-title">Input inspector</div><div class="tiny" id="inside-size">No image yet</div></div>
+          <div class="inspector-previews">
+            <figure><canvas id="inside-source-preview" hidden></canvas><div class="preview-empty" id="inside-source-empty">Source image</div><figcaption>Source</figcaption></figure>
+            <div class="arrow">→</div>
+            <figure><canvas id="inside-input-preview" hidden></canvas><div class="preview-empty" id="inside-input-empty">Model tensor pixels</div><figcaption>Actual SSD input pixels</figcaption></figure>
+          </div>
+          <div class="metrics inspector-metrics">
+            <div class="metric"><span>Source</span><b id="inside-source-size">—</b></div>
+            <div class="metric"><span>Model input</span><b id="inside-model-size">—</b></div>
+            <div class="metric"><span>Resize policy</span><b id="inside-resize-policy">aspect preserve ≤640</b></div>
+            <div class="metric"><span>Tensor</span><b id="inside-tensor">uint8 · NHWC</b></div>
+            <div class="metric"><span>Channels</span><b>RGB</b></div>
+            <div class="metric"><span>Normalization</span><b>none in page</b></div>
+          </div>
+          <div class="note" id="inside-summary">Run an image in Time Machine to populate the real tensor dimensions and timing.</div>
         </div>
-        <div class="card">
-          <div class="side-head"><div class="side-title">Feature inspection</div><div class="tiny">planned</div></div>
-          <div class="placeholder">This ONNX export exposes final detection outputs, not selected intermediate feature maps. A later inspectable export will expose a small, explicit set of internal tensors rather than pretending final boxes are “what the model sees.”</div>
+
+        <div class="card preprocessing-card">
+          <div class="side-head"><div class="side-title">Native preprocessing</div><div class="tiny">fairness context</div></div>
+          <div class="preprocess-table">
+            <div class="preprocess-row preprocess-head"><span></span><b>SSD-MobileNet</b><b>YOLOX-Nano</b></div>
+            <div class="preprocess-row"><span>Input</span><b>dynamic ≤640</b><b>416×416</b></div>
+            <div class="preprocess-row"><span>Resize</span><b>aspect preserve</b><b>aspect preserve</b></div>
+            <div class="preprocess-row"><span>Padding</span><b>none</b><b>top-left · 114</b></div>
+            <div class="preprocess-row"><span>Layout</span><b>NHWC</b><b>NCHW</b></div>
+            <div class="preprocess-row"><span>Dtype</span><b>uint8</b><b>float32</b></div>
+            <div class="preprocess-row"><span>Channel order</span><b>RGB</b><b>BGR</b></div>
+          </div>
+          <div class="note">Model Race intentionally uses the same source image and confidence threshold, not an artificially identical tensor. Each checkpoint receives the preprocessing expected by its official deployment path.</div>
+          <div class="links inspector-links"><a href="BENCHMARK_METHODOLOGY.md" target="_blank">Benchmark methodology ↗</a><a href="MODEL_CATALOG.md" target="_blank">Model catalog ↗</a></div>
         </div>
       </div>
     </section>
@@ -254,11 +340,11 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.2.0 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.3.0 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
-  <script src="app.js?v=0.2.0"></script>
-  <script src="race.js?v=0.2.0"></script>
+  <script src="app.js?v=0.3.0"></script>
+  <script src="race.js?v=0.3.0"></script>
 </body>
 </html>
