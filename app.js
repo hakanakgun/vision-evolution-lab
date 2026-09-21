@@ -5,7 +5,9 @@
       id: 'ssd-mobilenet-v1-12-int8',
       url: 'https://huggingface.co/onnxmodelzoo/ssd_mobilenet_v1_12-int8/resolve/929618539097dbeb779c13aed75dfe346d016d48/ssd_mobilenet_v1_12-int8.onnx',
       sha256: '2b79e6a7fb1ec6a33f332b9b10d82d9de4b7b49dcd26b5946921bb356895c954',
-      maxSide: 640
+      maxSide: 640,
+      executionProviders: ['wasm'],
+      providerNote: 'WASM is intentional for this INT8 baseline: the current ORT WebGPU path can initialize this dynamic-shape graph but fail during OrtRun().'
     });
 
     const COCO = Object.freeze({1:'person',2:'bicycle',3:'car',4:'motorcycle',5:'airplane',6:'bus',7:'train',8:'truck',9:'boat',10:'traffic light',11:'fire hydrant',13:'stop sign',14:'parking meter',15:'bench',16:'bird',17:'cat',18:'dog',19:'horse',20:'sheep',21:'cow',22:'elephant',23:'bear',24:'zebra',25:'giraffe',27:'backpack',28:'umbrella',31:'handbag',32:'tie',33:'suitcase',34:'frisbee',35:'skis',36:'snowboard',37:'sports ball',38:'kite',39:'baseball bat',40:'baseball glove',41:'skateboard',42:'surfboard',43:'tennis racket',44:'bottle',46:'wine glass',47:'cup',48:'fork',49:'knife',50:'spoon',51:'bowl',52:'banana',53:'apple',54:'sandwich',55:'orange',56:'broccoli',57:'carrot',58:'hot dog',59:'pizza',60:'donut',61:'cake',62:'chair',63:'couch',64:'potted plant',65:'bed',67:'dining table',70:'toilet',72:'tv',73:'laptop',74:'mouse',75:'remote',76:'keyboard',77:'cell phone',78:'microwave',79:'oven',80:'toaster',81:'sink',82:'refrigerator',84:'book',85:'clock',86:'vase',87:'scissors',88:'teddy bear',89:'hair drier',90:'toothbrush'});
@@ -49,10 +51,11 @@
       return {buffer,downloadMs,cachedInMemory:false};
     }
 
-    async function createSession(){
-      if(state.session) return state.session;
+    async function createSession(forceProvider=''){
+      if(state.session && (!forceProvider || state.provider===forceProvider)) return state.session;
       const {buffer}=await fetchModel();
-      const candidates=navigator.gpu ? ['webgpu','wasm'] : ['wasm'];
+      const configured=MODEL.executionProviders || (navigator.gpu ? ['webgpu','wasm'] : ['wasm']);
+      const candidates=forceProvider ? [forceProvider] : configured.filter(provider => provider !== 'webgpu' || navigator.gpu);
       let lastError;
       for(const provider of candidates){
         try{
@@ -60,11 +63,16 @@
           const start=performance.now();
           const session=await ort.InferenceSession.create(buffer, {executionProviders:[provider], graphOptimizationLevel:'all'});
           const initMs=performance.now()-start;
+          const previous=state.session;
           state.session=session; state.provider=provider;
+          if(previous && previous!==session && typeof previous.release==='function'){
+            try{ await previous.release(); }catch(releaseError){ console.warn('Session release failed', releaseError); }
+          }
           setMetric('m-init', ms(initMs));
           $('backend-badge').textContent=provider.toUpperCase();
           $('live-backend').textContent=provider.toUpperCase();
-          setStatus(`Model ready on ${provider.toUpperCase()}. First inference can include backend compilation overhead.`);
+          const note=MODEL.providerNote && provider==='wasm' ? ` ${MODEL.providerNote}` : ' First inference can include backend compilation overhead.';
+          setStatus(`Model ready on ${provider.toUpperCase()}.${note}`);
           return session;
         }catch(err){ lastError=err; console.warn(`Provider ${provider} failed`, err); }
       }
@@ -137,16 +145,34 @@
       return kept.length;
     }
 
+    async function runWithProviderFallback(session,tensor){
+      const run = current => current.run({[current.inputNames[0]]:tensor});
+      try{
+        return {results:await run(session),session,fallback:false};
+      }catch(err){
+        if(state.provider!=='webgpu') throw err;
+        console.warn('WebGPU OrtRun failed; retrying this inference on WASM', err);
+        const failedSession=state.session;
+        state.session=null; state.provider='';
+        if(failedSession && typeof failedSession.release==='function'){
+          try{ await failedSession.release(); }catch(releaseError){ console.warn('WebGPU session release failed', releaseError); }
+        }
+        const wasmSession=await createSession('wasm');
+        setStatus('WebGPU initialized but failed during inference; switched to WASM for this model.');
+        return {results:await run(wasmSession),session:wasmSession,fallback:true};
+      }
+    }
+
     async function inferSource(source,targetCanvas,{updateMain=true}={}){
       const session=await createSession();
       const totalStart=performance.now();
       const preStart=performance.now();
       const {rgb,width,height}=prepareSource(source,targetCanvas);
-      const inputName=session.inputNames[0];
       const tensor=new ort.Tensor('uint8',rgb,[1,height,width,3]);
       const preMs=performance.now()-preStart;
       const infStart=performance.now();
-      const results=await session.run({[inputName]:tensor});
+      const runResult=await runWithProviderFallback(session,tensor);
+      const results=runResult.results;
       const infMs=performance.now()-infStart;
       const postStart=performance.now();
       const detections=decode(results);
