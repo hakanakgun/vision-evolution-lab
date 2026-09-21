@@ -36,12 +36,14 @@ Training-dataset terms are separate from code/model licenses and should be revie
 - GitHub release asset ID: `42724905`.
 - Release API size: 3,659,407 bytes (3.49 MiB).
 - Model input: float32 NCHW 1×3×416×416 using the official top-left padded preprocessing path with pixel value 114.
+- Primary runtime source: official Megvii GitHub Release asset.
+- Browser fallback source: Hugging Face `Heliosoph/yolox-onnx`, pinned to revision `9206d80cbad9ed54986edeff8d7457eb5333882a`. Its model card identifies the repository as Apache-2.0 and states that the ONNX checkpoints are Megvii's published YOLOX checkpoints rather than local conversions.
 - Postprocessing follows the official ONNX Runtime demo: strides 8/16/32, YOLOX grid decode, objectness × class probability, and class-agnostic NMS at IoU 0.45.
 - Training/benchmark dataset reported by the official project: MS COCO.
 
 ### License note
 
-The official YOLOX repository is Apache-2.0 and the ONNX file is distributed directly as an asset of the official YOLOX GitHub release. The release page does not state a separate restrictive license for the ONNX asset. Vision Evolution Lab does **not** mirror or bundle this binary; the browser requests the official release asset directly.
+The official YOLOX repository is Apache-2.0 and the ONNX file is distributed directly as an asset of the official YOLOX GitHub release. The release page does not state a separate restrictive license for the ONNX asset. Vision Evolution Lab does **not** bundle this binary. The browser first requests the official release asset; if browser/CORS behavior blocks that path, it tries the pinned Apache-2.0 Hugging Face mirror documented above.
 
 If this project later redistributes or modifies YOLOX weights instead of referencing the official asset, re-check upstream notices and model-weight terms at that time. Dataset terms remain separate from the project/model code license.
 

@@ -6,7 +6,7 @@
   <meta name="description" content="Vision Evolution Lab: run object detection locally in your browser and explore how computer vision evolved.">
   <meta name="theme-color" content="#f5f0e7">
   <title>Vision Evolution Lab</title>
-  <link rel="stylesheet" href="styles.css?v=0.3.0">
+  <link rel="stylesheet" href="styles.css?v=0.3.1">
 </head>
 <body>
   <main class="shell">
@@ -38,15 +38,16 @@
           <div class="milestone"><div class="dot"></div><div class="year">2001</div><strong>Viola–Jones</strong><span>historical</span></div>
           <div class="milestone"><div class="dot"></div><div class="year">2005</div><strong>HOG + SVM</strong><span>historical</span></div>
           <div class="milestone"><div class="dot"></div><div class="year">2016</div><strong>SSD</strong><span>milestone</span></div>
-          <div class="milestone active"><div class="dot"></div><div class="year">2017</div><strong>SSD + MobileNet</strong><span>run now</span></div>
+          <button class="milestone active runnable-launch" type="button" data-runnable-model="ssd" aria-label="Run SSD MobileNet 2017"><div class="dot"></div><div class="year">2017</div><strong>SSD + MobileNet</strong><span>tap to run</span></button>
           <div class="milestone"><div class="dot"></div><div class="year">2020</div><strong>DETR</strong><span>milestone</span></div>
-          <div class="milestone runnable"><div class="dot"></div><div class="year">2021</div><strong>YOLOX-Nano</strong><span>run now</span></div>
+          <button class="milestone runnable runnable-launch" type="button" data-runnable-model="yolox" aria-label="Run YOLOX Nano 2021"><div class="dot"></div><div class="year">2021</div><strong>YOLOX-Nano</strong><span>tap to run</span></button>
           <div class="milestone research-only"><div class="dot"></div><div class="year">2023</div><strong>RT-DETR</strong><span>research</span></div>
           <div class="milestone research-only"><div class="dot"></div><div class="year">2024</div><strong>LW-DETR</strong><span>research</span></div>
           <div class="milestone research-only"><div class="dot"></div><div class="year">2024</div><strong>D-FINE</strong><span>research</span></div>
           </div>
         </div>
         <div class="scroll-cue timeline-cue" aria-hidden="true">Swipe through history →</div>
+        <div class="timeline-help">Outlined runnable milestones are tappable. YOLOX opens the executable Model Race and reuses your current image when available.</div>
       </div>
 
       <div class="grid">
@@ -226,6 +227,7 @@
           <div class="metrics">
             <div class="metric"><span>Input</span><b>416×416</b></div>
             <div class="metric"><span>Model file</span><b>3.49 MB</b></div>
+            <div class="metric"><span>Asset source</span><b id="race-yolo-source">—</b></div>
             <div class="metric"><span>Transfer / init</span><b id="race-yolo-startup">—</b></div>
             <div class="metric"><span>Inference</span><b id="race-yolo-inf">—</b></div>
             <div class="metric"><span>End-to-end</span><b id="race-yolo-total">—</b></div>
@@ -340,11 +342,11 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.3.0 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.3.1 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
-  <script src="app.js?v=0.3.0"></script>
-  <script src="race.js?v=0.3.0"></script>
+  <script src="app.js?v=0.3.1"></script>
+  <script src="race.js?v=0.3.1"></script>
 </body>
 </html>

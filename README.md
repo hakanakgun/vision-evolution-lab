@@ -2,9 +2,9 @@
 
 A static, browser-native computer vision lab built for GitHub Pages.
 
-## v0.3.0
+## v0.3.1
 
-- Vision Time Machine now includes a sourced evolution atlas that separates runnable models from research-only transformer-era candidates.
+- Vision Time Machine now includes a sourced evolution atlas that separates runnable models from research-only transformer-era candidates. Runnable timeline milestones are interactive: SSD scrolls to its runner; YOLOX opens Model Race and reuses the current Time Machine image when available.
 - Runnable SSD-MobileNetV1 INT8 object detection in the browser.
 - ONNX Runtime Web with per-model execution-provider policy and run-time WebGPU → WASM recovery. The current SSD-MobileNetV1 INT8 baseline intentionally uses WASM because its dynamic-shape graph can initialize on ORT WebGPU but fail during `OrtRun()`.
 - Local image upload. User pixels are not uploaded by this application.
@@ -15,7 +15,7 @@ A static, browser-native computer vision lab built for GitHub Pages.
 - Mobile tab/timeline scroll affordances make hidden horizontal content discoverable.
 - Runtime diagnostics expose browser/OS, logical CPU count, approximate device memory when available, WebGPU availability, WASM SIMD capability, configured WASM thread count, cross-origin isolation, and the current model input size.
 
-There is no application backend, database, account system, or analytics in v0.2. The browser makes ordinary network requests to jsDelivr for ONNX Runtime Web, Hugging Face for the pinned SSD-MobileNet model, and the official Megvii YOLOX GitHub Release for YOLOX-Nano.
+There is no application backend, database, account system, or analytics in v0.3.1. The browser makes ordinary network requests to jsDelivr for ONNX Runtime Web, Hugging Face for the pinned SSD-MobileNet model, and the official Megvii YOLOX GitHub Release for YOLOX-Nano. If that release asset cannot be fetched by the browser, YOLOX falls back to a pinned Apache-2.0 Hugging Face mirror that states it hosts Megvii's published ONNX checkpoints.
 
 ## Runtime model
 

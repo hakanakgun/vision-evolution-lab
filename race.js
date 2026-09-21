@@ -7,7 +7,18 @@
 
   const MODEL=Object.freeze({
     id:'yolox-nano-0.1.1rc0',
-    url:'https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_nano.onnx',
+    sources:Object.freeze([
+      Object.freeze({
+        label:'GitHub official',
+        url:'https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_nano.onnx',
+        provenance:'Megvii-BaseDetection/YOLOX release 0.1.1rc0'
+      }),
+      Object.freeze({
+        label:'HF mirror',
+        url:'https://huggingface.co/Heliosoph/yolox-onnx/resolve/9206d80cbad9ed54986edeff8d7457eb5333882a/yolox_nano.onnx',
+        provenance:'Heliosoph/yolox-onnx @ 9206d80cbad9ed54986edeff8d7457eb5333882a'
+      })
+    ]),
     assetId:42724905,
     bytes:3659407,
     input:416,
@@ -27,7 +38,7 @@
     'hair drier','toothbrush'
   ]);
 
-  const state={image:null,buffer:null,session:null,provider:'',downloadMs:NaN,initMs:NaN,running:false};
+  const state={image:null,buffer:null,session:null,provider:'',downloadMs:NaN,initMs:NaN,running:false,modelSource:''};
 
   function setStatus(text,kind=''){
     const el=$('race-status'); el.textContent=text; el.className=`status ${kind}`.trim();
@@ -41,15 +52,27 @@
 
   async function fetchModel(){
     if(state.buffer) return state.buffer;
-    setStatus('Downloading official YOLOX-Nano ONNX release asset…','loading');
-    const start=performance.now();
-    const response=await fetch(MODEL.url,{cache:'force-cache'});
-    if(!response.ok) throw new Error(`YOLOX model download failed: HTTP ${response.status}`);
-    const buffer=await response.arrayBuffer();
-    state.downloadMs=performance.now()-start;
-    state.buffer=buffer;
-    if(buffer.byteLength!==MODEL.bytes) console.warn('YOLOX asset byte size differs from pinned release metadata',buffer.byteLength,MODEL.bytes);
-    return buffer;
+    const errors=[];
+    for(const source of MODEL.sources){
+      const start=performance.now();
+      try{
+        setStatus(`Downloading YOLOX-Nano from ${source.label}…`,'loading');
+        const response=await fetch(source.url,{cache:'force-cache',mode:'cors'});
+        if(!response.ok) throw new Error(`HTTP ${response.status}`);
+        const buffer=await response.arrayBuffer();
+        if(buffer.byteLength<1000000) throw new Error(`unexpected payload size ${buffer.byteLength} bytes`);
+        state.downloadMs=performance.now()-start;
+        state.buffer=buffer;
+        state.modelSource=source.label;
+        $('race-yolo-source').textContent=source.label;
+        if(buffer.byteLength!==MODEL.bytes) console.warn('YOLOX asset byte size differs from official release metadata',buffer.byteLength,MODEL.bytes,source.provenance);
+        return buffer;
+      }catch(err){
+        errors.push(`${source.label}: ${err && err.message ? err.message : String(err)}`);
+        console.warn(`YOLOX download source failed: ${source.label}`,err);
+      }
+    }
+    throw new Error(`YOLOX model download failed. ${errors.join(' | ')}`);
   }
 
   async function createSession(forceProvider=''){
@@ -220,6 +243,29 @@
     useImage(img,'Time Machine image');
   });
 
+  function openRaceFor(model){
+    const raceTab=document.querySelector('.tab[data-tab="model-race"]');
+    if(raceTab) raceTab.click();
+    if(model==='yolox'){
+      const img=api.getImage();
+      if(img) useImage(img,'Time Machine image');
+      else setStatus('YOLOX-Nano selected from Time Machine. Choose a race image, then run the comparison.');
+      setTimeout(()=>document.querySelector('.race-model:nth-of-type(2)')?.scrollIntoView({behavior:'smooth',block:'center'}),80);
+    }
+  }
+
+  document.querySelectorAll('[data-runnable-model]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      const model=button.dataset.runnableModel;
+      document.querySelectorAll('.milestone').forEach(m=>m.classList.toggle('active',m===button));
+      if(model==='ssd'){
+        document.getElementById('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});
+      }else if(model==='yolox'){
+        openRaceFor('yolox');
+      }
+    });
+  });
+
   $('race-run').addEventListener('click',async()=>{
     if(!state.image||state.running) return;
     state.running=true;$('race-run').disabled=true;$('race-use-current').disabled=true;
@@ -248,7 +294,9 @@
       $('race-yolo-only').textContent=String(diff.yoloOnly);
       setStatus(`Race complete: SSD ${ssd.visible} detections vs YOLOX ${yolo.visible}; ${diff.both} spatial/class matches.`);
     }catch(err){
-      console.error(err);setStatus(err.message||String(err),'error');
+      console.error(err);
+      const message=err && err.message ? err.message : String(err);
+      setStatus(message==='Load failed' ? 'YOLOX load failed in this browser. Both the official GitHub asset and pinned Hugging Face fallback were attempted; see console for details.' : message,'error');
     }finally{
       state.running=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false;
     }
