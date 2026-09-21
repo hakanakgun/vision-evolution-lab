@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.21-v0.5.1">
+<html lang="en" data-build="2026.09.21-v0.6.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.21-v0.5.1';
+      const CURRENT_BUILD = '2026.09.21-v0.6.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.5.1">
+  <link rel="stylesheet" href="styles.css?v=0.6.0">
 </head>
 <body>
   <main class="shell">
@@ -152,6 +152,7 @@
             <div class="metric-section-head"><span>Runtime / device</span><small>browser reported</small></div>
             <div class="metrics">
               <div class="metric"><span>Browser</span><b id="d-browser">—</b></div>
+              <div class="metric"><span>Engine</span><b id="d-engine">—</b></div>
               <div class="metric"><span>OS / platform</span><b id="d-os">—</b></div>
               <div class="metric"><span>Logical CPU</span><b id="d-cpu">—</b></div>
               <div class="metric"><span>Device memory</span><b id="d-memory">—</b></div>
@@ -161,7 +162,7 @@
               <div class="metric"><span>Cross-origin isolated</span><b id="d-isolated">—</b></div>
               <div class="metric"><span>Model input</span><b id="d-input">—</b></div>
             </div>
-            <div class="benchmark-note">GitHub Pages normally runs without cross-origin isolation, so multi-threaded WASM may be unavailable even on multi-core devices.</div>
+            <div class="benchmark-note">On iOS, all browsers use WebKit and some third-party browsers expose a Safari-compatible user agent. Browser brand/version is therefore shown conservatively when the browser does not expose a reliable identifier. GitHub Pages normally runs without cross-origin isolation, so multi-threaded WASM may be unavailable.</div>
           </div>
           <div class="research">
             <div class="research-label">Research provenance</div>
@@ -299,6 +300,8 @@
             <div class="metric"><span>Pipeline</span><b id="race-rt-inf">—</b></div>
             <div class="metric"><span>End-to-end</span><b id="race-rt-total">—</b></div>
             <div class="metric"><span>Detections</span><b id="race-rt-count">—</b></div>
+            <div class="metric"><span>Retained outputs</span><b id="race-rt-retained">—</b></div>
+            <div class="metric"><span>Invalid boxes dropped</span><b id="race-rt-invalid">—</b></div>
           </div>
           <div class="model-progress"><div class="model-progress-bar" id="race-rt-progress-bar"></div></div>
           <div class="progress-caption" id="race-rt-progress-text">Transformers.js model not loaded.</div>
@@ -326,19 +329,22 @@
 
       <div class="card race-summary">
         <div class="race-summary-head">
-          <div><div class="eyebrow">Detection overlap</div><h2>What changed on this image?</h2></div>
-          <div class="tiny">IoU ≥ 0.35 · same class · not ground truth</div>
+          <div><div class="eyebrow">Three-model detection overlap</div><h2>What changed on this image?</h2></div>
+          <div class="tiny">IoU ≥ 0.35 · same class · current UI confidence · not ground truth</div>
         </div>
         <div class="race-diff-grid">
-          <div><span>Matched by both</span><b id="race-both">—</b></div>
-          <div><span>SSD-only</span><b id="race-ssd-only">—</b></div>
-          <div><span>YOLOX-only</span><b id="race-yolo-only">—</b></div>
+          <div><span>SSD ↔ YOLOX matches</span><b id="race-match-ssd-yolo">—</b></div>
+          <div><span>SSD ↔ RT-DETR matches</span><b id="race-match-ssd-rt">—</b></div>
+          <div><span>YOLOX ↔ RT-DETR matches</span><b id="race-match-yolo-rt">—</b></div>
+          <div><span>SSD unmatched by both</span><b id="race-only-ssd">—</b></div>
+          <div><span>YOLOX unmatched by both</span><b id="race-only-yolo">—</b></div>
+          <div><span>RT-DETR unmatched by both</span><b id="race-only-rt">—</b></div>
         </div>
-        <div class="note">“Only” means the other model did not produce a matching box/class above the current confidence threshold. It does not imply which model is correct without ground-truth labels.</div>
-        <div class="architecture-diff">
+        <div class="note">Pairwise matches require the same class and IoU ≥ 0.35. “Unmatched by both” means neither of the other two models produced a matching detection above the current UI threshold. These counts are comparison evidence, not accuracy or correctness labels.</div>
+        <div class="architecture-diff three">
           <div><strong>SSD-MobileNet</strong><span>predefined anchors · lightweight CNN backbone · single-shot dense prediction</span></div>
-          <div class="arrow">→</div>
           <div><strong>YOLOX-Nano</strong><span>anchor-free head · decoupled classification/regression · modern real-time CNN detector</span></div>
+          <div><strong>RT-DETR R18</strong><span>end-to-end set prediction · transformer detector · no page-side NMS</span></div>
         </div>
       </div>
       <canvas id="race-yolo-work" hidden></canvas>
@@ -347,35 +353,35 @@
 
     <section class="panel" id="inside-model" role="tabpanel">
       <div class="card pipeline">
-        <div class="eyebrow">What the model actually receives</div>
-        <h2 style="margin:7px 0 18px;font-size:30px;letter-spacing:-.035em">From pixels to detections</h2>
-        <div class="steps">
-          <div class="step"><span class="step-num">01</span><strong>Source</strong><p>Your image or camera frame. It never leaves the browser.</p></div><div class="arrow">→</div>
-          <div class="step"><span class="step-num">02</span><strong>Resize cap</strong><p>Longest side is capped at 640 px while preserving aspect ratio.</p></div><div class="arrow">→</div>
-          <div class="step"><span class="step-num">03</span><strong>RGB tensor</strong><p>Canvas RGBA pixels become NHWC uint8 RGB tensor data.</p></div><div class="arrow">→</div>
-          <div class="step"><span class="step-num">04</span><strong>SSD + MobileNet</strong><p>MobileNet extracts features; SSD predicts classes, scores and boxes in one pass.</p></div><div class="arrow">→</div>
-          <div class="step"><span class="step-num">05</span><strong>Browser overlay</strong><p>Normalized boxes are mapped back onto the local canvas.</p></div>
+        <div class="eyebrow">Inside the active Time Machine model</div>
+        <h2 style="margin:7px 0 4px;font-size:30px;letter-spacing:-.035em">Inside <span id="inside-active-model">SSD-MobileNetV1 INT8</span></h2>
+        <div class="tiny inside-active-contract" id="inside-active-contract">The inspector follows the model selected in Time Machine.</div>
+        <div class="steps" style="margin-top:18px">
+          <div class="step"><span class="step-num">01</span><strong>Source</strong><p>Your local image. It never leaves the browser.</p></div><div class="arrow">→</div>
+          <div class="step"><span class="step-num">02</span><strong id="inside-step2-title">Aspect resize</strong><p id="inside-step2-text">Longest side ≤640 while preserving aspect ratio.</p></div><div class="arrow">→</div>
+          <div class="step"><span class="step-num">03</span><strong id="inside-step3-title">RGB tensor</strong><p id="inside-step3-text">uint8 NHWC RGB input.</p></div><div class="arrow">→</div>
+          <div class="step"><span class="step-num">04</span><strong id="inside-step4-title">SSD + MobileNet</strong><p id="inside-step4-text">MobileNet extracts features; SSD predicts classes, scores and boxes.</p></div><div class="arrow">→</div>
+          <div class="step"><span class="step-num">05</span><strong>Browser overlay</strong><p>The UI confidence threshold filters retained detections and draws normalized boxes locally.</p></div>
         </div>
       </div>
       <div class="inside-grid inspector-grid" style="margin-top:18px">
         <div class="card inspector-card">
-          <div class="side-head"><div class="side-title">Input inspector</div><div class="tiny" id="inside-size">No image yet</div></div>
+          <div class="side-head"><div class="side-title">Active input inspector</div><div class="tiny" id="inside-size">No image yet</div></div>
           <div class="inspector-previews">
             <figure><canvas id="inside-source-preview" hidden></canvas><div class="preview-empty" id="inside-source-empty">Source image</div><figcaption>Source</figcaption></figure>
             <div class="arrow">→</div>
-            <figure><canvas id="inside-input-preview" hidden></canvas><div class="preview-empty" id="inside-input-empty">Model tensor pixels</div><figcaption>Actual SSD input pixels</figcaption></figure>
+            <figure><canvas id="inside-input-preview" hidden></canvas><div class="preview-empty" id="inside-input-empty">Model input preview</div><figcaption id="inside-input-caption">Prepared input preview</figcaption></figure>
           </div>
           <div class="metrics inspector-metrics">
             <div class="metric"><span>Source</span><b id="inside-source-size">—</b></div>
             <div class="metric"><span>Model input</span><b id="inside-model-size">—</b></div>
             <div class="metric"><span>Resize policy</span><b id="inside-resize-policy">aspect preserve ≤640</b></div>
             <div class="metric"><span>Tensor</span><b id="inside-tensor">uint8 · NHWC</b></div>
-            <div class="metric"><span>Channels</span><b>RGB</b></div>
-            <div class="metric"><span>Normalization</span><b>none in page</b></div>
+            <div class="metric"><span>Channels</span><b id="inside-channels">RGB</b></div>
+            <div class="metric"><span>Normalization</span><b id="inside-normalization">none</b></div>
           </div>
-          <div class="note" id="inside-summary">Run an image in Time Machine to populate the real tensor dimensions and timing.</div>
+          <div class="note" id="inside-summary">Run the active Time Machine model to populate runtime-specific details.</div>
         </div>
-
         <div class="card preprocessing-card">
           <div class="side-head"><div class="side-title">Native preprocessing</div><div class="tiny">fairness context</div></div>
           <div class="preprocess-table">
@@ -387,22 +393,22 @@
             <div class="preprocess-row four"><span>Dtype</span><b>uint8</b><b>float32</b><b>float input</b></div>
             <div class="preprocess-row four"><span>Channel order</span><b>RGB</b><b>BGR</b><b>RGB · 1/255</b></div>
           </div>
-          <div class="note">Model Race intentionally uses the same source image and confidence threshold, not an artificially identical tensor. Each checkpoint receives the preprocessing expected by its official deployment path.</div>
+          <div class="note">Model Race intentionally uses the same source image and UI confidence threshold, not an artificially identical tensor. Each checkpoint receives its native preprocessing contract.</div>
           <div class="links inspector-links"><a href="BENCHMARK_METHODOLOGY.md" target="_blank">Benchmark methodology ↗</a><a href="MODEL_CATALOG.md" target="_blank">Model catalog ↗</a></div>
         </div>
       </div>
-
       <div class="card feature-map-card" style="margin-top:18px">
         <div class="side-head">
-          <div><div class="side-title">Real YOLOX detection-head maps</div><div class="tiny">pre-NMS objectness tensors from the last YOLOX run</div></div>
-          <div class="tiny" id="feature-map-status">Run YOLOX in Model Race first.</div>
+          <div><div class="side-title" id="inside-intermediate-title">Intermediate representation</div><div class="tiny" id="inside-intermediate-subtitle">Active-model evidence</div></div>
+          <div class="tiny" id="feature-map-status">SSD intermediate tensors are not exported.</div>
         </div>
-        <div class="feature-map-grid">
+        <div class="inside-intermediate-empty" id="inside-intermediate-empty">This model currently exposes its real preprocessing contract and detections, but not a selected backbone/intermediate activation tensor.</div>
+        <div class="feature-map-grid" id="feature-map-grid" hidden>
           <figure><canvas id="feature-s8" width="208" height="208"></canvas><figcaption>stride 8 · 52×52</figcaption></figure>
           <figure><canvas id="feature-s16" width="208" height="208"></canvas><figcaption>stride 16 · 26×26</figcaption></figure>
           <figure><canvas id="feature-s32" width="208" height="208"></canvas><figcaption>stride 32 · 13×13</figcaption></figure>
         </div>
-        <div class="note">These are real values from YOLOX’s exported detection-head output before thresholding and NMS. They visualize objectness over the three detection scales. They are not synthetic saliency maps and are not hidden backbone activations; exposing deeper backbone tensors would require a separate inspectable ONNX export.</div>
+        <div class="note" id="inside-intermediate-note">A separate inspectable export is required before deeper SSD activations can be shown truthfully.</div>
       </div>
     </section>
 
@@ -439,13 +445,13 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.5.1 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.6.0 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
-  <script src="models.js?v=0.5.1"></script>
-  <script src="model-loader.js?v=0.5.1"></script>
-  <script src="app.js?v=0.5.1"></script>
-  <script src="race.js?v=0.5.1"></script>
+  <script src="models.js?v=0.6.0"></script>
+  <script src="model-loader.js?v=0.6.0"></script>
+  <script src="app.js?v=0.6.0"></script>
+  <script src="race.js?v=0.6.0"></script>
 </body>
 </html>

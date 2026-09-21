@@ -21,7 +21,7 @@ The UI reports startup and per-run costs separately.
 
 ## 2. Warm benchmark
 
-The Time Machine benchmark runs **20 sequential warm executions** for whichever runnable model is active after its model/session or pipeline already exists. The selected model and source image are locked for the full 20-run sample so interaction cannot mix benchmark populations.
+The Time Machine benchmark runs **20 sequential warm executions** for whichever runnable model is active after its model/session or pipeline already exists. The selected model, source image, and UI confidence threshold are locked for the full 20-run sample so interaction cannot mix benchmark populations.
 
 Reported values:
 
@@ -72,7 +72,11 @@ Therefore latency differences combine architecture/runtime differences with each
 
 ### Three-model race benchmark
 
-After a successful race, the optional race benchmark executes 20 warm runs per model on the same source image. SSD and YOLOX report isolated ONNX Runtime model execution in the p50/p90 columns. RT-DETR reports the elapsed Transformers.js object-detection pipeline call, which includes its processor/model/postprocessor path. The same distinction applies when RT-DETR is the active Time Machine model. The UI labels this instead of treating the numbers as identical timing boundaries. Feature-map rendering is disabled during warm benchmark loops so inspection work is not added to benchmark timing.
+After a successful race, the optional race benchmark executes 20 warm runs per model on the same source image with the UI confidence threshold locked. SSD and YOLOX report isolated ONNX Runtime model execution in the p50/p90 columns. RT-DETR reports the elapsed Transformers.js object-detection pipeline call, which includes its processor/model/postprocessor path. The same distinction applies when RT-DETR is the active Time Machine model. The UI labels this instead of treating the numbers as identical timing boundaries. Feature-map rendering is disabled during warm benchmark loops so inspection work is not added to benchmark timing.
+
+### Confidence retention
+
+The slider minimum is also the internal retention floor. YOLOX decoding and the RT-DETR Transformers.js pipeline retain detections down to that floor, while the current UI threshold is applied during draw/comparison. This allows threshold changes within the slider range to re-filter existing outputs without a new inference. SSD already exposes its decoded detections before the UI draw threshold. The retention floor is not an accuracy claim and does not change the benchmark's user-visible confidence contract.
 
 ## 5. Detection overlap is not accuracy
 
@@ -81,7 +85,7 @@ The Model Race overlap summary matches boxes when:
 - class label is the same; and
 - intersection-over-union (IoU) is at least 0.35.
 
-`SSD-only` or `YOLOX-only` means only that the other model did not produce a matching detection above the current threshold.
+The UI reports all three pairwise match counts (SSD↔YOLOX, SSD↔RT-DETR, YOLOX↔RT-DETR) plus, for each model, detections unmatched by either of the other two models at the current threshold.
 
 Without ground-truth annotations this does **not** establish which model is correct.
 
