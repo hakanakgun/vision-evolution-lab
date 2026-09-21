@@ -22,3 +22,19 @@ Model checkpoints are not bundled in this repository. The browser fetches the SS
 - The fallback model card states that its ONNX files are Megvii's published checkpoints and are not locally converted.
 
 The original Vision Evolution Lab source code is licensed under the repository's [MIT License](LICENSE).
+
+
+## Hugging Face Transformers.js 3.8.1
+
+- Project: Hugging Face Transformers.js
+- Browser import: jsDelivr, pinned to `@huggingface/transformers@3.8.1`
+- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for RT-DETR R18.
+- Upstream package/project terms remain their own.
+
+## RT-DETR R18 browser conversion
+
+- Base model: `PekingU/rtdetr_r18vd`
+- Base model license: Apache-2.0
+- Browser conversion: `onnx-community/rtdetr_r18vd`
+- Pinned conversion revision: `ec641af14c7cc8f93cd641a1458f498abbbbb533`
+- The conversion is referenced from Hugging Face at runtime and is not bundled in this repository.

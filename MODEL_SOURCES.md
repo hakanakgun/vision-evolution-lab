@@ -54,10 +54,20 @@ These entries are displayed as research references but are not downloaded or exe
 
 ### RT-DETR R18
 
-- Hugging Face model: `PekingU/rtdetr_r18vd`.
-- Hugging Face metadata: Apache-2.0, COCO, Transformers object-detection model, approximately 20.2M parameters.
+- Status: runnable from v0.4.0.
+- Base Hugging Face model: `PekingU/rtdetr_r18vd`.
+- Base metadata: Apache-2.0, COCO, Transformers object-detection model, approximately 20.2M parameters.
+- Browser ONNX conversion: `onnx-community/rtdetr_r18vd`, identified by Hugging Face as a Transformers.js / ONNX conversion of the PekingU base model.
+- Pinned ONNX conversion revision: `ec641af14c7cc8f93cd641a1458f498abbbbb533`.
+- That revision contains fp16 (~41.4 MB) and q8/uint8 (~21.7 MB) variants.
+- The pinned preprocessor resizes to 640×640, rescales by 1/255, does not normalize, and does not pad.
+- Runtime policy: WebGPU + fp16 first; WASM + q8 fallback.
 - Official implementation: `lyuwenyu/RT-DETR`, Apache-2.0.
-- Runnable promotion requires browser execution-provider validation and exact browser-side preprocessing/postprocessing review.
+- Vision Evolution Lab uses Transformers.js for processor/model/postprocessor compatibility instead of reimplementing RT-DETR decoding by hand.
+
+#### RT-DETR license/provenance note
+
+The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Community repository is a Hugging Face Staff conversion whose model card identifies `PekingU/rtdetr_r18vd` as the base model and marks it for Transformers.js. The browser references the pinned Hub conversion at runtime; the binary is not redistributed by this repository.
 
 ### LW-DETR-tiny
 

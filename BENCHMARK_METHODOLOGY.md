@@ -66,8 +66,13 @@ That is deliberate. Each model receives the preprocessing expected by its upstre
 | --- | --- | --- | --- | --- |
 | SSD-MobileNetV1 INT8 | aspect-preserving, longest side ≤640 | NHWC | uint8 | no page-side padding |
 | YOLOX-Nano | 416×416 | NCHW | float32 | aspect-preserving top-left letterbox, fill 114 |
+| RT-DETR R18 | 640×640 | processor-managed NCHW | rescaled float input | resize to 640×640, no pad; Transformers.js processor/postprocessor |
 
 Therefore latency differences combine architecture/runtime differences with each model's native input contract. The UI exposes those contracts instead of presenting the race as a controlled academic benchmark.
+
+### Three-model race benchmark
+
+After a successful race, the optional race benchmark executes 20 warm runs per model on the same source image. SSD and YOLOX report isolated ONNX Runtime model execution in the p50/p90 columns. RT-DETR currently reports the elapsed Transformers.js object-detection pipeline call, which includes its processor/model/postprocessor path. The UI labels this distinction instead of treating the numbers as identical timing boundaries.
 
 ## 5. Detection overlap is not accuracy
 

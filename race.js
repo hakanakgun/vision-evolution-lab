@@ -1,304 +1,48 @@
 (() => {
   'use strict';
-
-  const api=window.VisionLab;
-  if(!api || !window.ort) return;
-  const $=id=>document.getElementById(id);
-
-  const MODEL=Object.freeze({
-    id:'yolox-nano-0.1.1rc0',
-    sources:Object.freeze([
-      Object.freeze({
-        label:'GitHub official',
-        url:'https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_nano.onnx',
-        provenance:'Megvii-BaseDetection/YOLOX release 0.1.1rc0'
-      }),
-      Object.freeze({
-        label:'HF mirror',
-        url:'https://huggingface.co/Heliosoph/yolox-onnx/resolve/9206d80cbad9ed54986edeff8d7457eb5333882a/yolox_nano.onnx',
-        provenance:'Heliosoph/yolox-onnx @ 9206d80cbad9ed54986edeff8d7457eb5333882a'
-      })
-    ]),
-    assetId:42724905,
-    bytes:3659407,
-    input:416,
-    nms:0.45,
-    providers:['webgpu','wasm']
-  });
-
-  const COCO80=Object.freeze([
-    'person','bicycle','car','motorcycle','airplane','bus','train','truck','boat','traffic light',
-    'fire hydrant','stop sign','parking meter','bench','bird','cat','dog','horse','sheep','cow',
-    'elephant','bear','zebra','giraffe','backpack','umbrella','handbag','tie','suitcase','frisbee',
-    'skis','snowboard','sports ball','kite','baseball bat','baseball glove','skateboard','surfboard',
-    'tennis racket','bottle','wine glass','cup','fork','knife','spoon','bowl','banana','apple',
-    'sandwich','orange','broccoli','carrot','hot dog','pizza','donut','cake','chair','couch',
-    'potted plant','bed','dining table','toilet','tv','laptop','mouse','remote','keyboard','cell phone',
-    'microwave','oven','toaster','sink','refrigerator','book','clock','vase','scissors','teddy bear',
-    'hair drier','toothbrush'
-  ]);
-
-  const state={image:null,buffer:null,session:null,provider:'',downloadMs:NaN,initMs:NaN,running:false,modelSource:''};
-
-  function setStatus(text,kind=''){
-    const el=$('race-status'); el.textContent=text; el.className=`status ${kind}`.trim();
-  }
-  function threshold(){ return api.getConfidence(); }
-  function syncConfidence(){ $('race-confidence').textContent=threshold().toFixed(2); }
-  syncConfidence();
-  $('confidence').addEventListener('input',syncConfidence);
-
-  function sourceDims(source){ return api.sourceSize(source); }
-
-  async function fetchModel(){
-    if(state.buffer) return state.buffer;
-    const errors=[];
-    for(const source of MODEL.sources){
-      const start=performance.now();
-      try{
-        setStatus(`Downloading YOLOX-Nano from ${source.label}…`,'loading');
-        const response=await fetch(source.url,{cache:'force-cache',mode:'cors'});
-        if(!response.ok) throw new Error(`HTTP ${response.status}`);
-        const buffer=await response.arrayBuffer();
-        if(buffer.byteLength<1000000) throw new Error(`unexpected payload size ${buffer.byteLength} bytes`);
-        state.downloadMs=performance.now()-start;
-        state.buffer=buffer;
-        state.modelSource=source.label;
-        $('race-yolo-source').textContent=source.label;
-        if(buffer.byteLength!==MODEL.bytes) console.warn('YOLOX asset byte size differs from official release metadata',buffer.byteLength,MODEL.bytes,source.provenance);
-        return buffer;
-      }catch(err){
-        errors.push(`${source.label}: ${err && err.message ? err.message : String(err)}`);
-        console.warn(`YOLOX download source failed: ${source.label}`,err);
-      }
-    }
-    throw new Error(`YOLOX model download failed. ${errors.join(' | ')}`);
-  }
-
-  async function createSession(forceProvider=''){
-    if(state.session && (!forceProvider || state.provider===forceProvider)) return state.session;
-    const buffer=await fetchModel();
-    const candidates=(forceProvider?[forceProvider]:MODEL.providers).filter(p=>p!=='webgpu'||navigator.gpu);
-    let lastError;
-    for(const provider of candidates){
-      try{
-        setStatus(`Initializing YOLOX on ${provider.toUpperCase()}…`,'loading');
-        const start=performance.now();
-        const session=await ort.InferenceSession.create(buffer,{executionProviders:[provider],graphOptimizationLevel:'all'});
-        state.initMs=performance.now()-start;
-        if(state.session && state.session!==session && typeof state.session.release==='function'){
-          try{await state.session.release();}catch(e){console.warn('YOLOX previous session release failed',e);}
-        }
-        state.session=session; state.provider=provider;
-        $('race-yolo-backend').textContent=provider.toUpperCase();
-        $('race-yolo-startup').textContent=`${api.ms(state.downloadMs)} / ${api.ms(state.initMs)}`;
-        return session;
-      }catch(err){ lastError=err; console.warn(`YOLOX ${provider} session failed`,err); }
-    }
-    throw lastError||new Error('No compatible YOLOX execution provider was available.');
-  }
-
-  function prepare(source,outputCanvas){
-    const {w,h}=sourceDims(source);
-    if(!w||!h) throw new Error('Race image has no readable dimensions.');
-    const size=MODEL.input;
-    const ratio=Math.min(size/h,size/w);
-    const rw=Math.max(1,Math.floor(w*ratio)), rh=Math.max(1,Math.floor(h*ratio));
-    const work=$('race-yolo-work'); work.width=size; work.height=size;
-    const ctx=work.getContext('2d',{willReadFrequently:true});
-    ctx.fillStyle='rgb(114,114,114)'; ctx.fillRect(0,0,size,size); ctx.drawImage(source,0,0,rw,rh);
-    const rgba=ctx.getImageData(0,0,size,size).data;
-    const plane=size*size;
-    const chw=new Float32Array(plane*3);
-    for(let p=0,s=0;p<plane;p++,s+=4){
-      chw[p]=rgba[s+2];
-      chw[plane+p]=rgba[s+1];
-      chw[plane*2+p]=rgba[s];
-    }
-
-    const displayScale=Math.min(1,640/Math.max(w,h));
-    const dw=Math.max(1,Math.round(w*displayScale)), dh=Math.max(1,Math.round(h*displayScale));
-    outputCanvas.width=dw; outputCanvas.height=dh;
-    outputCanvas.getContext('2d').drawImage(source,0,0,dw,dh);
-    return {tensor:new ort.Tensor('float32',chw,[1,3,size,size]),ratio,w,h};
-  }
-
-  async function runSession(session,tensor){
-    const run=s=>s.run({[s.inputNames[0]]:tensor});
-    try{return await run(session);}
-    catch(err){
-      if(state.provider!=='webgpu') throw err;
-      console.warn('YOLOX WebGPU run failed; retrying on WASM',err);
-      const old=state.session; state.session=null; state.provider='';
-      if(old&&typeof old.release==='function'){try{await old.release();}catch(e){console.warn(e);}}
-      const wasm=await createSession('wasm');
-      setStatus('YOLOX WebGPU run failed; switched to WASM and retried.');
-      return run(wasm);
-    }
-  }
-
-  function decode(output,ratio,sourceW,sourceH){
-    const data=output.data;
-    const attrs=85;
-    const expected=(52*52+26*26+13*13);
-    const rows=Math.floor(data.length/attrs);
-    if(rows!==expected) throw new Error(`Unexpected YOLOX output shape: ${rows} rows (expected ${expected}).`);
-    const candidates=[];
-    let row=0;
-    for(const stride of [8,16,32]){
-      const grid=MODEL.input/stride;
-      for(let gy=0;gy<grid;gy++){
-        for(let gx=0;gx<grid;gx++,row++){
-          const o=row*attrs;
-          const objectness=Number(data[o+4]);
-          let cls=0,clsProb=-Infinity;
-          for(let c=0;c<80;c++){
-            const p=Number(data[o+5+c]);
-            if(p>clsProb){clsProb=p;cls=c;}
-          }
-          const score=objectness*clsProb;
-          if(score<threshold()) continue;
-          const cx=(Number(data[o])+gx)*stride;
-          const cy=(Number(data[o+1])+gy)*stride;
-          const bw=Math.exp(Number(data[o+2]))*stride;
-          const bh=Math.exp(Number(data[o+3]))*stride;
-          const x1=Math.max(0,(cx-bw/2)/ratio), y1=Math.max(0,(cy-bh/2)/ratio);
-          const x2=Math.min(sourceW,(cx+bw/2)/ratio), y2=Math.min(sourceH,(cy+bh/2)/ratio);
-          if(x2<=x1||y2<=y1) continue;
-          candidates.push({score,classId:cls,label:COCO80[cls],box:[y1/sourceH,x1/sourceW,y2/sourceH,x2/sourceW]});
-        }
-      }
-    }
-    candidates.sort((a,b)=>b.score-a.score);
-    const kept=[];
-    for(const d of candidates){
-      if(kept.every(k=>iou(d.box,k.box)<=MODEL.nms)) kept.push(d);
-      if(kept.length>=100) break;
-    }
-    return kept;
-  }
-
-  function iou(a,b){
-    const top=Math.max(a[0],b[0]),left=Math.max(a[1],b[1]),bottom=Math.min(a[2],b[2]),right=Math.min(a[3],b[3]);
-    const inter=Math.max(0,bottom-top)*Math.max(0,right-left);
-    const aa=Math.max(0,a[2]-a[0])*Math.max(0,a[3]-a[1]);
-    const bb=Math.max(0,b[2]-b[0])*Math.max(0,b[3]-b[1]);
-    const union=aa+bb-inter;
-    return union>0?inter/union:0;
-  }
-
-  async function runYolox(source,canvas){
-    const session=await createSession();
-    const totalStart=performance.now();
-    const preStart=performance.now();
-    const prep=prepare(source,canvas);
-    const preMs=performance.now()-preStart;
-    const infStart=performance.now();
-    const results=await runSession(session,prep.tensor);
-    const infMs=performance.now()-infStart;
-    const postStart=performance.now();
-    const output=results[session.outputNames[0]]||results[Object.keys(results)[0]];
-    const detections=decode(output,prep.ratio,prep.w,prep.h);
-    const visible=api.drawDetections(canvas,detections);
-    const postMs=performance.now()-postStart;
-    return {preMs,infMs,postMs,totalMs:performance.now()-totalStart,detections,visible,width:MODEL.input,height:MODEL.input};
-  }
-
-  function visible(detections){return detections.filter(d=>d.score>=threshold());}
-  function compare(a,b){
-    const aa=visible(a),bb=visible(b),used=new Set();
-    let both=0;
-    for(const old of aa){
-      let best=-1,bestIou=0;
-      for(let i=0;i<bb.length;i++){
-        if(used.has(i)||bb[i].label!==old.label) continue;
-        const v=iou(old.box,bb[i].box);
-        if(v>=0.35&&v>bestIou){best=i;bestIou=v;}
-      }
-      if(best>=0){used.add(best);both++;}
-    }
-    return {both,ssdOnly:aa.length-both,yoloOnly:bb.length-both};
-  }
-
-  function useImage(img,label){
-    state.image=img;
-    $('race-run').disabled=false;
-    $('race-ssd-empty').hidden=false;$('race-yolo-empty').hidden=false;
-    $('race-ssd-canvas').hidden=true;$('race-yolo-canvas').hidden=true;
-    setStatus(`${label} ready. Run both models with confidence ${threshold().toFixed(2)}.`);
-  }
-
-  $('race-image-file').addEventListener('change',event=>{
-    const file=event.target.files&&event.target.files[0]; if(!file) return;
-    if(!file.type.startsWith('image/')){setStatus('Please choose an image file.','error');return;}
-    const url=URL.createObjectURL(file),img=new Image();
-    img.onload=()=>{URL.revokeObjectURL(url);useImage(img,file.name||'Race image');};
-    img.onerror=()=>{URL.revokeObjectURL(url);setStatus('The selected race image could not be decoded.','error');};
-    img.src=url;
-  });
-
-  $('race-use-current').addEventListener('click',()=>{
-    const img=api.getImage();
-    if(!img){setStatus('No Time Machine image is loaded yet.','error');return;}
-    useImage(img,'Time Machine image');
-  });
-
-  function openRaceFor(model){
-    const raceTab=document.querySelector('.tab[data-tab="model-race"]');
-    if(raceTab) raceTab.click();
-    if(model==='yolox'){
-      const img=api.getImage();
-      if(img) useImage(img,'Time Machine image');
-      else setStatus('YOLOX-Nano selected from Time Machine. Choose a race image, then run the comparison.');
-      setTimeout(()=>document.querySelector('.race-model:nth-of-type(2)')?.scrollIntoView({behavior:'smooth',block:'center'}),80);
-    }
-  }
-
-  document.querySelectorAll('[data-runnable-model]').forEach(button=>{
-    button.addEventListener('click',()=>{
-      const model=button.dataset.runnableModel;
-      document.querySelectorAll('.milestone').forEach(m=>m.classList.toggle('active',m===button));
-      if(model==='ssd'){
-        document.getElementById('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});
-      }else if(model==='yolox'){
-        openRaceFor('yolox');
-      }
-    });
-  });
-
-  $('race-run').addEventListener('click',async()=>{
-    if(!state.image||state.running) return;
-    state.running=true;$('race-run').disabled=true;$('race-use-current').disabled=true;
-    syncConfidence();
-    try{
-      setStatus('Running SSD-MobileNet baseline…','loading');
-      const ssdCanvas=$('race-ssd-canvas');
-      const ssd=await api.runBaseline(state.image,ssdCanvas);
-      $('race-ssd-empty').hidden=true;ssdCanvas.hidden=false;
-      $('race-ssd-backend').textContent=(api.getBaselineProvider()||'WASM').toUpperCase();
-      $('race-ssd-input').textContent=`${ssd.width}×${ssd.height}`;
-      $('race-ssd-inf').textContent=api.ms(ssd.infMs);
-      $('race-ssd-total').textContent=api.ms(ssd.totalMs);
-      $('race-ssd-count').textContent=String(ssd.visible);
-
-      setStatus('Running YOLOX-Nano with official preprocessing…','loading');
-      const yCanvas=$('race-yolo-canvas');
-      const yolo=await runYolox(state.image,yCanvas);
-      $('race-yolo-empty').hidden=true;yCanvas.hidden=false;
-      $('race-yolo-inf').textContent=api.ms(yolo.infMs);
-      $('race-yolo-total').textContent=api.ms(yolo.totalMs);
-      $('race-yolo-count').textContent=String(yolo.visible);
-      const diff=compare(ssd.detections,yolo.detections);
-      $('race-both').textContent=String(diff.both);
-      $('race-ssd-only').textContent=String(diff.ssdOnly);
-      $('race-yolo-only').textContent=String(diff.yoloOnly);
-      setStatus(`Race complete: SSD ${ssd.visible} detections vs YOLOX ${yolo.visible}; ${diff.both} spatial/class matches.`);
-    }catch(err){
-      console.error(err);
-      const message=err && err.message ? err.message : String(err);
-      setStatus(message==='Load failed' ? 'YOLOX load failed in this browser. Both the official GitHub asset and pinned Hugging Face fallback were attempted; see console for details.' : message,'error');
-    }finally{
-      state.running=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false;
-    }
-  });
+  const api=window.VisionLab,registry=window.VisionModels,loader=window.VisionModelLoader;
+  if(!api||!registry||!loader||!window.ort)return;
+  const $=id=>document.getElementById(id),YOLO=registry.yolox,RT=registry.rtdetr,COCO80=registry.labels.coco80;
+  const state={image:null,running:false,benchmarking:false,yoloBuffer:null,yoloSession:null,yoloProvider:'',yoloDownloadMs:NaN,yoloInitMs:NaN,rtPipe:null,rtBackend:'',rtDtype:'',rtLoadMs:NaN,rtModule:null,lastHeadMaps:null,lastRun:{ssd:null,yolo:null,rt:null}};
+  const ms=api.ms,threshold=()=>api.getConfidence(),syncConfidence=()=>{$('race-confidence').textContent=threshold().toFixed(2)};syncConfidence();$('confidence').addEventListener('input',syncConfidence);
+  const setStatus=(text,kind='')=>{const el=$('race-status');el.textContent=text;el.className=`status ${kind}`.trim()},sourceDims=s=>api.sourceSize(s),sleepFrame=()=>new Promise(requestAnimationFrame);
+  const median=v=>{const a=[...v].sort((x,y)=>x-y),m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2},percentile=(v,p)=>{const a=[...v].sort((x,y)=>x-y);return a[Math.max(0,Math.min(a.length-1,Math.ceil(p*a.length)-1))]},cv=v=>{const m=v.reduce((a,b)=>a+b,0)/v.length,q=v.reduce((s,x)=>s+(x-m)**2,0)/v.length;return m>0?Math.sqrt(q)/m*100:NaN};
+  function updateProgress(prefix,info){const pct=Number.isFinite(info.percent)?Math.max(0,Math.min(100,info.percent)):null,bar=$(`${prefix}-progress-bar`),text=$(`${prefix}-progress-text`);if(bar)bar.style.width=pct===null?'18%':`${pct.toFixed(1)}%`;if(text){const loaded=loader.formatBytes(info.loaded),total=loader.formatBytes(info.total);text.textContent=pct===null?`${loaded} downloaded`:`${pct.toFixed(0)}% · ${loaded} / ${total}`}}
+  loader.status(YOLO).then(x=>$('race-yolo-cache').textContent=x.source?`${x.state} · ${x.source}`:x.state).catch(()=>{});
+  async function getYoloBuffer(){if(state.yoloBuffer)return state.yoloBuffer;const r=await loader.load(YOLO,{onState:x=>{$('race-yolo-cache').textContent=x.source?`${x.state} · ${x.source}`:x.state;if(x.source)$('race-yolo-source').textContent=x.source},onProgress:x=>updateProgress('race-yolo',x)});state.yoloBuffer=r.buffer;state.yoloDownloadMs=r.downloadMs;$('race-yolo-source').textContent=r.source;$('race-yolo-cache').textContent=`${r.cacheState} · ${r.source}`;return r.buffer}
+  async function createYoloSession(force=''){if(state.yoloSession&&(!force||state.yoloProvider===force))return state.yoloSession;const buffer=await getYoloBuffer(),providers=(force?[force]:YOLO.executionProviders).filter(p=>p!=='webgpu'||navigator.gpu);let lastError;for(const provider of providers)try{setStatus(`Initializing YOLOX on ${provider.toUpperCase()}…`,'loading');const t=performance.now(),session=await ort.InferenceSession.create(buffer,{executionProviders:[provider],graphOptimizationLevel:'all'});state.yoloInitMs=performance.now()-t;if(state.yoloSession&&state.yoloSession!==session&&typeof state.yoloSession.release==='function')try{await state.yoloSession.release()}catch(_){}state.yoloSession=session;state.yoloProvider=provider;$('race-yolo-backend').textContent=provider.toUpperCase();$('race-yolo-startup').textContent=`${ms(state.yoloDownloadMs)} / ${ms(state.yoloInitMs)}`;return session}catch(err){lastError=err;console.warn('YOLOX provider failed',provider,err)}throw lastError||new Error('No compatible YOLOX execution provider.')}
+  function prepareDisplay(source,canvas){const {w,h}=sourceDims(source),scale=Math.min(1,640/Math.max(w,h));canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));canvas.getContext('2d').drawImage(source,0,0,canvas.width,canvas.height)}
+  function prepareYolo(source,canvas){const {w,h}=sourceDims(source),size=YOLO.input;if(!w||!h)throw new Error('Race image has no readable dimensions.');const ratio=Math.min(size/h,size/w),rw=Math.max(1,Math.floor(w*ratio)),rh=Math.max(1,Math.floor(h*ratio)),work=$('race-yolo-work');work.width=size;work.height=size;const ctx=work.getContext('2d',{willReadFrequently:true});ctx.fillStyle='rgb(114,114,114)';ctx.fillRect(0,0,size,size);ctx.drawImage(source,0,0,rw,rh);const rgba=ctx.getImageData(0,0,size,size).data,plane=size*size,chw=new Float32Array(plane*3);for(let p=0,s=0;p<plane;p++,s+=4){chw[p]=rgba[s+2];chw[plane+p]=rgba[s+1];chw[plane*2+p]=rgba[s]}prepareDisplay(source,canvas);return{tensor:new ort.Tensor('float32',chw,[1,3,size,size]),ratio,w,h}}
+  async function runYoloSession(session,tensor){const run=s=>s.run({[s.inputNames[0]]:tensor});try{return await run(session)}catch(err){if(state.yoloProvider!=='webgpu')throw err;console.warn('YOLOX WebGPU run failed; retrying WASM',err);const old=state.yoloSession;state.yoloSession=null;state.yoloProvider='';if(old&&typeof old.release==='function')try{await old.release()}catch(_){}return run(await createYoloSession('wasm'))}}
+  function iou(a,b){const t=Math.max(a[0],b[0]),l=Math.max(a[1],b[1]),bt=Math.min(a[2],b[2]),r=Math.min(a[3],b[3]),inter=Math.max(0,bt-t)*Math.max(0,r-l),aa=Math.max(0,a[2]-a[0])*Math.max(0,a[3]-a[1]),bb=Math.max(0,b[2]-b[0])*Math.max(0,b[3]-b[1]),u=aa+bb-inter;return u>0?inter/u:0}
+  function renderHeadMaps(maps){for(const head of maps){const canvas=$(`feature-s${head.stride}`);if(!canvas)continue;const ctx=canvas.getContext('2d'),img=ctx.createImageData(head.grid,head.grid);let max=0;for(const v of head.data)if(Number.isFinite(v)&&v>max)max=v;const d=max||1;for(let i=0;i<head.data.length;i++){const v=Math.max(0,Math.min(1,head.data[i]/d)),o=i*4;img.data[o]=Math.round(28+v*210);img.data[o+1]=Math.round(48+v*160);img.data[o+2]=Math.round(42+v*70);img.data[o+3]=255}const tiny=document.createElement('canvas');tiny.width=head.grid;tiny.height=head.grid;tiny.getContext('2d').putImageData(img,0,0);ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(tiny,0,0,canvas.width,canvas.height)}const s=$('feature-map-status');if(s)s.textContent='Live from last YOLOX inference'}
+  function decodeYolo(output,ratio,w,h){const data=output.data,attrs=85,expected=52*52+26*26+13*13,rows=Math.floor(data.length/attrs);if(rows!==expected)throw new Error(`Unexpected YOLOX output: ${rows} rows; expected ${expected}.`);const candidates=[],maps=[];let row=0;for(const stride of[8,16,32]){const grid=YOLO.input/stride,map=new Float32Array(grid*grid);let mi=0;for(let gy=0;gy<grid;gy++)for(let gx=0;gx<grid;gx++,row++,mi++){const o=row*attrs,obj=Number(data[o+4]);map[mi]=obj;let cls=0,cp=-Infinity;for(let c=0;c<80;c++){const p=Number(data[o+5+c]);if(p>cp){cp=p;cls=c}}const score=obj*cp;if(score<threshold())continue;const cx=(Number(data[o])+gx)*stride,cy=(Number(data[o+1])+gy)*stride,bw=Math.exp(Number(data[o+2]))*stride,bh=Math.exp(Number(data[o+3]))*stride,x1=Math.max(0,(cx-bw/2)/ratio),y1=Math.max(0,(cy-bh/2)/ratio),x2=Math.min(w,(cx+bw/2)/ratio),y2=Math.min(h,(cy+bh/2)/ratio);if(x2>x1&&y2>y1)candidates.push({score,classId:cls,label:COCO80[cls],box:[y1/h,x1/w,y2/h,x2/w]})}maps.push({stride,grid,data:map})}candidates.sort((a,b)=>b.score-a.score);const kept=[];for(const d of candidates){if(kept.every(k=>iou(d.box,k.box)<=YOLO.nms))kept.push(d);if(kept.length>=100)break}state.lastHeadMaps=maps;renderHeadMaps(maps);return kept}
+  async function runYolo(source,canvas){const session=await createYoloSession(),ts=performance.now(),ps=performance.now(),prep=prepareYolo(source,canvas),preMs=performance.now()-ps,is=performance.now(),results=await runYoloSession(session,prep.tensor),infMs=performance.now()-is,post=performance.now(),output=results[session.outputNames[0]]||results[Object.keys(results)[0]],detections=decodeYolo(output,prep.ratio,prep.w,prep.h),visible=api.drawDetections(canvas,detections),postMs=performance.now()-post;return{preMs,infMs,postMs,totalMs:performance.now()-ts,detections,visible,width:YOLO.input,height:YOLO.input}}
+  async function importTransformers(){if(state.rtModule)return state.rtModule;setStatus('Loading pinned Transformers.js runtime…','loading');state.rtModule=await import(registry.runtime.transformersJsUrl);state.rtModule.env.allowLocalModels=false;state.rtModule.env.cacheKey='vision-evolution-transformers-v1';return state.rtModule}
+  async function rtCached(mod,device,dtype){try{if(mod.ModelRegistry&&typeof mod.ModelRegistry.is_pipeline_cached==='function')return await mod.ModelRegistry.is_pipeline_cached(RT.task,RT.modelId,{revision:RT.revision,device,dtype});if('caches'in window){const cache=await caches.open('vision-evolution-transformers-v1'),keys=await cache.keys();return keys.some(r=>r.url.includes(RT.modelId))}}catch(_){}return false}
+  function rtProgress(info){const bar=$('race-rt-progress-bar'),text=$('race-rt-progress-text');let pct=Number(info&&info.progress);if(Number.isFinite(pct)&&pct<=1)pct*=100;if(Number.isFinite(pct))bar.style.width=`${Math.max(0,Math.min(100,pct)).toFixed(1)}%`;const file=info&&info.file?String(info.file).split('/').pop():'model files',loaded=Number(info&&info.loaded),total=Number(info&&info.total);if(Number.isFinite(loaded)&&Number.isFinite(total)&&total>0)text.textContent=`${file} · ${(loaded/total*100).toFixed(0)}% · ${loader.formatBytes(loaded)} / ${loader.formatBytes(total)}`;else if(info&&info.status)text.textContent=`${info.status} · ${file}`}
+  async function createRT(){if(state.rtPipe)return state.rtPipe;const mod=await importTransformers(),attempts=navigator.gpu?[RT.runtime.webgpu,RT.runtime.wasm]:[RT.runtime.wasm];let lastError;for(const cfg of attempts)try{const cached=await rtCached(mod,cfg.device,cfg.dtype);$('race-rt-cache').textContent=cached?'browser cache':'network/cache miss';$('race-rt-backend').textContent=cfg.device.toUpperCase();$('race-rt-asset').textContent=`${cfg.dtype} · ~${loader.formatBytes(cfg.modelBytes)}`;setStatus(`Loading RT-DETR R18 on ${cfg.device.toUpperCase()} (${cfg.dtype})…`,'loading');const t=performance.now(),pipe=await mod.pipeline(RT.task,RT.modelId,{device:cfg.device,dtype:cfg.dtype,revision:RT.revision,progress_callback:rtProgress});state.rtLoadMs=performance.now()-t;state.rtPipe=pipe;state.rtBackend=cfg.device;state.rtDtype=cfg.dtype;$('race-rt-load').textContent=ms(state.rtLoadMs);$('race-rt-cache').textContent=cached?'browser cache':'cached after load';$('race-rt-progress-bar').style.width='100%';$('race-rt-progress-text').textContent='Ready';return pipe}catch(err){lastError=err;console.warn('RT-DETR load attempt failed',cfg,err);state.rtPipe=null}throw lastError||new Error('RT-DETR could not be loaded.')}
+  async function runRT(source,canvas){const pipe=await createRT();prepareDisplay(source,canvas);const t=performance.now(),output=await pipe(canvas,{threshold:threshold()}),infMs=performance.now()-t,{w,h}=sourceDims(source),list=Array.isArray(output)&&Array.isArray(output[0])?output[0]:output,detections=(list||[]).map(x=>({score:Number(x.score),label:String(x.label),classId:-1,box:[Number(x.box.ymin)/h,Number(x.box.xmin)/w,Number(x.box.ymax)/h,Number(x.box.xmax)/w]})).filter(x=>Number.isFinite(x.score));prepareDisplay(source,canvas);const p=performance.now(),visible=api.drawDetections(canvas,detections),postMs=performance.now()-p;return{preMs:0,infMs,postMs,totalMs:infMs+postMs,detections,visible,width:RT.input,height:RT.input}}
+  const visible=d=>d.filter(x=>x.score>=threshold());
+  function compare(a,b){const aa=visible(a),bb=visible(b),used=new Set();let both=0;for(const old of aa){let best=-1,bi=0;for(let i=0;i<bb.length;i++){if(used.has(i)||bb[i].label!==old.label)continue;const v=iou(old.box,bb[i].box);if(v>=.35&&v>bi){best=i;bi=v}}if(best>=0){used.add(best);both++}}return{both,aOnly:aa.length-both,bOnly:bb.length-both}}
+  function useImage(img,label){state.image=img;$('race-run').disabled=false;$('race-benchmark').disabled=true;for(const k of['ssd','yolo','rt']){$(`race-${k}-empty`).hidden=false;$(`race-${k}-canvas`).hidden=true}setStatus(`${label} ready. Run three generations with confidence ${threshold().toFixed(2)}.`)}
+  $('race-image-file').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')){setStatus('Please choose an image file.','error');return}const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);useImage(img,file.name||'Race image')};img.onerror=()=>{URL.revokeObjectURL(url);setStatus('The selected race image could not be decoded.','error')};img.src=url});
+  $('race-use-current').addEventListener('click',()=>{const img=api.getImage();if(!img){setStatus('No Time Machine image is loaded yet.','error');return}useImage(img,'Time Machine image')});
+  function openRaceFor(model){document.querySelector('.tab[data-tab="model-race"]')?.click();const img=api.getImage();if(img)useImage(img,'Time Machine image');else setStatus(`${model==='rtdetr'?'RT-DETR R18':'YOLOX-Nano'} selected. Choose a race image, then run.`);setTimeout(()=>document.querySelector(model==='rtdetr'?'.transformer-model':'.race-model:nth-of-type(2)')?.scrollIntoView({behavior:'smooth',block:'center'}),80)}
+  document.querySelectorAll('[data-runnable-model]').forEach(b=>b.addEventListener('click',()=>{const model=b.dataset.runnableModel;document.querySelectorAll('.milestone').forEach(m=>m.classList.toggle('active',m===b));if(model==='ssd')document.getElementById('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});else openRaceFor(model)}));
+  async function runRace(){if(!state.image||state.running)return;state.running=true;$('race-run').disabled=true;$('race-benchmark').disabled=true;$('race-use-current').disabled=true;syncConfidence();try{
+    setStatus('Running SSD-MobileNet baseline…','loading');const ssd=await api.runBaseline(state.image,$('race-ssd-canvas'));state.lastRun.ssd=ssd;$('race-ssd-empty').hidden=true;$('race-ssd-canvas').hidden=false;$('race-ssd-backend').textContent=(api.getBaselineProvider()||'WASM').toUpperCase();$('race-ssd-input').textContent=`${ssd.width}×${ssd.height}`;$('race-ssd-inf').textContent=ms(ssd.infMs);$('race-ssd-total').textContent=ms(ssd.totalMs);$('race-ssd-count').textContent=String(ssd.visible);
+    setStatus('Running YOLOX-Nano…','loading');const yolo=await runYolo(state.image,$('race-yolo-canvas'));state.lastRun.yolo=yolo;$('race-yolo-empty').hidden=true;$('race-yolo-canvas').hidden=false;$('race-yolo-inf').textContent=ms(yolo.infMs);$('race-yolo-total').textContent=ms(yolo.totalMs);$('race-yolo-count').textContent=String(yolo.visible);
+    setStatus('Running RT-DETR R18… first load may download 20–40 MB.','loading');const rt=await runRT(state.image,$('race-rt-canvas'));state.lastRun.rt=rt;$('race-rt-empty').hidden=true;$('race-rt-canvas').hidden=false;$('race-rt-inf').textContent=ms(rt.infMs);$('race-rt-total').textContent=ms(rt.totalMs);$('race-rt-count').textContent=String(rt.visible);
+    const d=compare(ssd.detections,yolo.detections);$('race-both').textContent=String(d.both);$('race-ssd-only').textContent=String(d.aOnly);$('race-yolo-only').textContent=String(d.bOnly);setStatus(`Race complete: SSD ${ssd.visible}, YOLOX ${yolo.visible}, RT-DETR ${rt.visible}. SSD↔YOLOX matches: ${d.both}.`);$('race-benchmark').disabled=false;
+  }catch(err){console.error(err);setStatus(err&&err.message?err.message:String(err),'error')}finally{state.running=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false}}
+  $('race-run').addEventListener('click',runRace);
+  function setBench(prefix,backend,samples){const inf=samples.map(x=>x.infMs),tot=samples.map(x=>x.totalMs);$(`rb-${prefix}-backend`).textContent=backend;$(`rb-${prefix}-p50`).textContent=ms(median(inf));$(`rb-${prefix}-p90`).textContent=ms(percentile(inf,.9));$(`rb-${prefix}-total`).textContent=ms(median(tot));$(`rb-${prefix}-cv`).textContent=`${cv(inf).toFixed(1)}%`}
+  async function benchmarkRace(){if(!state.image||state.benchmarking)return;state.benchmarking=true;$('race-benchmark').disabled=true;$('race-run').disabled=true;const runs=20,hidden=document.createElement('canvas');try{for(const spec of[
+    {key:'ssd',label:'SSD-MobileNet',backend:()=>(api.getBaselineProvider()||'wasm').toUpperCase(),run:()=>api.runBaseline(state.image,hidden)},
+    {key:'yolo',label:'YOLOX-Nano',backend:()=>state.yoloProvider.toUpperCase(),run:()=>runYolo(state.image,hidden)},
+    {key:'rt',label:'RT-DETR R18',backend:()=>`${state.rtBackend.toUpperCase()} ${state.rtDtype}`,run:()=>runRT(state.image,hidden)}
+  ]){const samples=[];for(let i=0;i<runs;i++){$('race-benchmark-note').textContent=`${spec.label}: ${i+1}/${runs} warm runs…`;samples.push(await spec.run());await sleepFrame()}setBench(spec.key,spec.backend(),samples)}$('race-benchmark-note').textContent='20 sequential warm runs per model complete. RT-DETR p50/p90 measures its Transformers.js object-detection pipeline call; SSD/YOLOX isolate ORT model execution.';setStatus('Three-generation warm benchmark complete.')}catch(err){console.error(err);$('race-benchmark-note').textContent=`Benchmark failed: ${err.message||err}`;setStatus(err.message||String(err),'error')}finally{state.benchmarking=false;$('race-benchmark').disabled=false;$('race-run').disabled=false}}
+  $('race-benchmark').addEventListener('click',benchmarkRace);
+  window.VisionRace=Object.freeze({runRace,benchmarkRace,getHeadMaps:()=>state.lastHeadMaps,getRTBackend:()=>state.rtBackend});
 })();

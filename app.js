@@ -1,14 +1,9 @@
   (() => {
     'use strict';
 
-    const MODEL = Object.freeze({
-      id: 'ssd-mobilenet-v1-12-int8',
-      url: 'https://huggingface.co/onnxmodelzoo/ssd_mobilenet_v1_12-int8/resolve/929618539097dbeb779c13aed75dfe346d016d48/ssd_mobilenet_v1_12-int8.onnx',
-      sha256: '2b79e6a7fb1ec6a33f332b9b10d82d9de4b7b49dcd26b5946921bb356895c954',
-      maxSide: 640,
-      executionProviders: ['wasm'],
-      providerNote: 'WASM is intentional for this INT8 baseline: the current ORT WebGPU path can initialize this dynamic-shape graph but fail during OrtRun().'
-    });
+    const MODEL = window.VisionModels && window.VisionModels.ssd;
+    const ModelLoader = window.VisionModelLoader;
+    if(!MODEL || !ModelLoader) throw new Error('Model registry/loader failed to initialize.');
 
     const COCO = Object.freeze({1:'person',2:'bicycle',3:'car',4:'motorcycle',5:'airplane',6:'bus',7:'train',8:'truck',9:'boat',10:'traffic light',11:'fire hydrant',13:'stop sign',14:'parking meter',15:'bench',16:'bird',17:'cat',18:'dog',19:'horse',20:'sheep',21:'cow',22:'elephant',23:'bear',24:'zebra',25:'giraffe',27:'backpack',28:'umbrella',31:'handbag',32:'tie',33:'suitcase',34:'frisbee',35:'skis',36:'snowboard',37:'sports ball',38:'kite',39:'baseball bat',40:'baseball glove',41:'skateboard',42:'surfboard',43:'tennis racket',44:'bottle',46:'wine glass',47:'cup',48:'fork',49:'knife',50:'spoon',51:'bowl',52:'banana',53:'apple',54:'sandwich',55:'orange',56:'broccoli',57:'carrot',58:'hot dog',59:'pizza',60:'donut',61:'cake',62:'chair',63:'couch',64:'potted plant',65:'bed',67:'dining table',70:'toilet',72:'tv',73:'laptop',74:'mouse',75:'remote',76:'keyboard',77:'cell phone',78:'microwave',79:'oven',80:'toaster',81:'sink',82:'refrigerator',84:'book',85:'clock',86:'vase',87:'scissors',88:'teddy bear',89:'hair drier',90:'toothbrush'});
 
@@ -102,19 +97,18 @@
     });
     window.addEventListener('resize',()=>document.querySelectorAll('[data-scroll-shell]').forEach(updateScrollCue));
 
-    async function fetchModel(){
-      if(state.modelBuffer) return {buffer:state.modelBuffer, downloadMs:0, cachedInMemory:true};
-      setStatus('Downloading the pinned model checkpoint…', 'loading');
-      const start=performance.now();
-      const response=await fetch(MODEL.url, {cache:'force-cache'});
-      if(!response.ok) throw new Error(`Model download failed: HTTP ${response.status}`);
-      const buffer=await response.arrayBuffer();
-      const downloadMs=performance.now()-start;
-      state.modelBuffer=buffer;
-      setMetric('m-download', ms(downloadMs));
-      setMetric('m-bytes', bytes(buffer.byteLength));
-      return {buffer,downloadMs,cachedInMemory:false};
+    function updateMainModelProgress(info){
+      const pct=Number.isFinite(info.percent)?Math.max(0,Math.min(100,info.percent)):null;
+      const bar=$('m-progress-bar');if(bar)bar.style.width=pct===null?'18%':`${pct.toFixed(1)}%`;
+      const text=$('m-progress-text');if(text)text.textContent=pct===null?`${bytes(info.loaded)} downloaded`:`${pct.toFixed(0)}% · ${bytes(info.loaded)} / ${bytes(info.total)}`;
     }
+    async function fetchModel(){
+      if(state.modelBuffer) return {buffer:state.modelBuffer,downloadMs:0,cacheState:'memory'};
+      setStatus('Loading the pinned SSD checkpoint…','loading');
+      const result=await ModelLoader.load(MODEL,{onState:info=>setMetric('m-cache',info.state+(info.source?` · ${info.source}`:'')),onProgress:updateMainModelProgress});
+      state.modelBuffer=result.buffer;setMetric('m-download',ms(result.downloadMs));setMetric('m-bytes',bytes(result.buffer.byteLength));setMetric('m-cache',`${result.cacheState} · ${result.source}`);return result;
+    }
+    ModelLoader.status(MODEL).then(info=>setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state)).catch(()=>{});
 
     async function createSession(forceProvider=''){
       if(state.session && (!forceProvider || state.provider===forceProvider)) return state.session;

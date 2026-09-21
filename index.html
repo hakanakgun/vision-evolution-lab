@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.21-v0.3.2">
+<html lang="en" data-build="2026.09.21-v0.4.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.21-v0.3.2';
+      const CURRENT_BUILD = '2026.09.21-v0.4.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.3.2">
+  <link rel="stylesheet" href="styles.css?v=0.4.0">
 </head>
 <body>
   <main class="shell">
@@ -86,13 +86,13 @@
           <button class="milestone active runnable-launch" type="button" data-runnable-model="ssd" aria-label="Run SSD MobileNet 2017"><div class="dot"></div><div class="year">2017</div><strong>SSD + MobileNet</strong><span>tap to run</span></button>
           <div class="milestone"><div class="dot"></div><div class="year">2020</div><strong>DETR</strong><span>milestone</span></div>
           <button class="milestone runnable runnable-launch" type="button" data-runnable-model="yolox" aria-label="Run YOLOX Nano 2021"><div class="dot"></div><div class="year">2021</div><strong>YOLOX-Nano</strong><span>tap to run</span></button>
-          <div class="milestone research-only"><div class="dot"></div><div class="year">2023</div><strong>RT-DETR</strong><span>research</span></div>
+          <button class="milestone runnable transformer runnable-launch" type="button" data-runnable-model="rtdetr" aria-label="Run RT-DETR R18 2023"><div class="dot"></div><div class="year">2023</div><strong>RT-DETR R18</strong><span>tap to run</span></button>
           <div class="milestone research-only"><div class="dot"></div><div class="year">2024</div><strong>LW-DETR</strong><span>research</span></div>
           <div class="milestone research-only"><div class="dot"></div><div class="year">2024</div><strong>D-FINE</strong><span>research</span></div>
           </div>
         </div>
         <div class="scroll-cue timeline-cue" aria-hidden="true">Swipe through history →</div>
-        <div class="timeline-help">Outlined runnable milestones are tappable. YOLOX opens the executable Model Race and reuses your current image when available.</div>
+        <div class="timeline-help">Outlined runnable milestones are tappable. YOLOX and RT-DETR open Model Race and reuse your current Time Machine image when available.</div>
       </div>
 
       <div class="grid">
@@ -121,7 +121,10 @@
               <div class="metric"><span>Model transfer</span><b id="m-download">—</b></div>
               <div class="metric"><span>Session init</span><b id="m-init">—</b></div>
               <div class="metric"><span>Model bytes</span><b id="m-bytes">—</b></div>
+              <div class="metric"><span>Cache</span><b id="m-cache">checking…</b></div>
             </div>
+            <div class="model-progress"><div class="model-progress-bar" id="m-progress-bar"></div></div>
+            <div class="progress-caption" id="m-progress-text">No model transfer yet.</div>
           </div>
           <div class="metric-section">
             <div class="metric-section-head"><span>Current run</span><small id="m-run-label">not run</small></div>
@@ -208,10 +211,10 @@
           </article>
 
           <article class="card evolution-card research-card">
-            <div class="evolution-top"><span class="pill research-pill">2023 · research</span><span class="license-chip apache">Apache-2.0</span></div>
+            <div class="evolution-top"><span class="pill transformer-pill">2023 · runnable</span><span class="license-chip apache">Apache-2.0 base</span></div>
             <h3>RT-DETR R18</h3>
             <p>Real-time DETR brought end-to-end set prediction into practical detector latency regimes and removed conventional NMS from the core design.</p>
-            <div class="change-line"><b>HF model</b><span>20.2M params · COCO · Transformers</span></div>
+            <div class="change-line"><b>Browser now</b><span>Transformers.js · ONNX · 20.2M params</span></div>
             <div class="links"><a href="https://huggingface.co/PekingU/rtdetr_r18vd" target="_blank" rel="noreferrer">Hugging Face ↗</a><a href="https://github.com/lyuwenyu/RT-DETR" target="_blank" rel="noreferrer">Official repo ↗</a></div>
           </article>
 
@@ -247,6 +250,7 @@
           <input class="file-input" id="race-image-file" type="file" accept="image/*">
           <button class="btn secondary" id="race-use-current">Use Time Machine image</button>
           <button class="btn secondary" id="race-run" disabled>Run race</button>
+          <button class="btn secondary" id="race-benchmark" disabled>Benchmark race ×20</button>
           <span class="control-spacer"></span>
           <span class="tiny">Confidence: <b id="race-confidence">0.40</b></span>
         </div>
@@ -273,17 +277,56 @@
             <div class="metric"><span>Input</span><b>416×416</b></div>
             <div class="metric"><span>Model file</span><b>3.49 MB</b></div>
             <div class="metric"><span>Asset source</span><b id="race-yolo-source">—</b></div>
+            <div class="metric"><span>Cache</span><b id="race-yolo-cache">checking…</b></div>
             <div class="metric"><span>Transfer / init</span><b id="race-yolo-startup">—</b></div>
             <div class="metric"><span>Inference</span><b id="race-yolo-inf">—</b></div>
             <div class="metric"><span>End-to-end</span><b id="race-yolo-total">—</b></div>
             <div class="metric"><span>Detections</span><b id="race-yolo-count">—</b></div>
           </div>
+          <div class="model-progress"><div class="model-progress-bar" id="race-yolo-progress-bar"></div></div>
+          <div class="progress-caption" id="race-yolo-progress-text">Model not loaded.</div>
           <div class="links race-links">
             <a href="https://arxiv.org/abs/2107.08430" target="_blank" rel="noreferrer">YOLOX paper ↗</a>
             <a href="https://github.com/Megvii-BaseDetection/YOLOX" target="_blank" rel="noreferrer">Official repo ↗</a>
             <a href="MODEL_SOURCES.md#yolox-nano" target="_blank">Provenance ↗</a>
           </div>
         </article>
+
+        <article class="card race-model transformer-model">
+          <div class="side-head"><div><span class="pill transformer-pill">2023 transformer</span><h2>RT-DETR R18</h2></div><div class="tiny" id="race-rt-backend">not loaded</div></div>
+          <div class="race-stage"><canvas id="race-rt-canvas" hidden></canvas><div class="empty" id="race-rt-empty">Hugging Face ONNX Community · Transformers.js-ready conversion of Apache-2.0 PekingU RT-DETR R18.</div></div>
+          <div class="metrics">
+            <div class="metric"><span>Input</span><b>640×640 processor</b></div>
+            <div class="metric"><span>Parameters</span><b>20.2M</b></div>
+            <div class="metric"><span>Runtime asset</span><b id="race-rt-asset">fp16/q8</b></div>
+            <div class="metric"><span>Cache</span><b id="race-rt-cache">checking…</b></div>
+            <div class="metric"><span>Load</span><b id="race-rt-load">—</b></div>
+            <div class="metric"><span>Pipeline</span><b id="race-rt-inf">—</b></div>
+            <div class="metric"><span>End-to-end</span><b id="race-rt-total">—</b></div>
+            <div class="metric"><span>Detections</span><b id="race-rt-count">—</b></div>
+          </div>
+          <div class="model-progress"><div class="model-progress-bar" id="race-rt-progress-bar"></div></div>
+          <div class="progress-caption" id="race-rt-progress-text">Transformers.js model not loaded.</div>
+          <div class="links race-links">
+            <a href="https://arxiv.org/abs/2304.08069" target="_blank" rel="noreferrer">RT-DETR paper ↗</a>
+            <a href="https://huggingface.co/onnx-community/rtdetr_r18vd" target="_blank" rel="noreferrer">HF ONNX ↗</a>
+            <a href="https://huggingface.co/PekingU/rtdetr_r18vd" target="_blank" rel="noreferrer">Base model ↗</a>
+          </div>
+        </article>
+      </div>
+
+      <div class="card race-benchmark-card">
+        <div class="race-summary-head">
+          <div><div class="eyebrow">20-run warm benchmark</div><h2>Same device, three generations</h2></div>
+          <div class="tiny">Run the race once before benchmarking. RT-DETR “pipeline” includes Transformers.js preprocessing + model + postprocessing.</div>
+        </div>
+        <div class="race-benchmark-table">
+          <div class="race-benchmark-row head"><span>Model</span><b>Backend</b><b>p50</b><b>p90</b><b>p50 E2E</b><b>CV</b></div>
+          <div class="race-benchmark-row"><span>SSD-MobileNet</span><b id="rb-ssd-backend">—</b><b id="rb-ssd-p50">—</b><b id="rb-ssd-p90">—</b><b id="rb-ssd-total">—</b><b id="rb-ssd-cv">—</b></div>
+          <div class="race-benchmark-row"><span>YOLOX-Nano</span><b id="rb-yolo-backend">—</b><b id="rb-yolo-p50">—</b><b id="rb-yolo-p90">—</b><b id="rb-yolo-total">—</b><b id="rb-yolo-cv">—</b></div>
+          <div class="race-benchmark-row"><span>RT-DETR R18</span><b id="rb-rt-backend">—</b><b id="rb-rt-p50">—</b><b id="rb-rt-p90">—</b><b id="rb-rt-total">—</b><b id="rb-rt-cv">—</b></div>
+        </div>
+        <div class="note" id="race-benchmark-note">Not benchmarked yet.</div>
       </div>
 
       <div class="card race-summary">
@@ -340,17 +383,30 @@
         <div class="card preprocessing-card">
           <div class="side-head"><div class="side-title">Native preprocessing</div><div class="tiny">fairness context</div></div>
           <div class="preprocess-table">
-            <div class="preprocess-row preprocess-head"><span></span><b>SSD-MobileNet</b><b>YOLOX-Nano</b></div>
-            <div class="preprocess-row"><span>Input</span><b>dynamic ≤640</b><b>416×416</b></div>
-            <div class="preprocess-row"><span>Resize</span><b>aspect preserve</b><b>aspect preserve</b></div>
-            <div class="preprocess-row"><span>Padding</span><b>none</b><b>top-left · 114</b></div>
-            <div class="preprocess-row"><span>Layout</span><b>NHWC</b><b>NCHW</b></div>
-            <div class="preprocess-row"><span>Dtype</span><b>uint8</b><b>float32</b></div>
-            <div class="preprocess-row"><span>Channel order</span><b>RGB</b><b>BGR</b></div>
+            <div class="preprocess-row preprocess-head four"><span></span><b>SSD-MobileNet</b><b>YOLOX-Nano</b><b>RT-DETR R18</b></div>
+            <div class="preprocess-row four"><span>Input</span><b>dynamic ≤640</b><b>416×416</b><b>640×640</b></div>
+            <div class="preprocess-row four"><span>Resize</span><b>aspect preserve</b><b>aspect preserve</b><b>processor resize</b></div>
+            <div class="preprocess-row four"><span>Padding</span><b>none</b><b>top-left · 114</b><b>none</b></div>
+            <div class="preprocess-row four"><span>Layout</span><b>NHWC</b><b>NCHW</b><b>NCHW</b></div>
+            <div class="preprocess-row four"><span>Dtype</span><b>uint8</b><b>float32</b><b>float input</b></div>
+            <div class="preprocess-row four"><span>Channel order</span><b>RGB</b><b>BGR</b><b>RGB · 1/255</b></div>
           </div>
           <div class="note">Model Race intentionally uses the same source image and confidence threshold, not an artificially identical tensor. Each checkpoint receives the preprocessing expected by its official deployment path.</div>
           <div class="links inspector-links"><a href="BENCHMARK_METHODOLOGY.md" target="_blank">Benchmark methodology ↗</a><a href="MODEL_CATALOG.md" target="_blank">Model catalog ↗</a></div>
         </div>
+      </div>
+
+      <div class="card feature-map-card" style="margin-top:18px">
+        <div class="side-head">
+          <div><div class="side-title">Real YOLOX detection-head maps</div><div class="tiny">pre-NMS objectness tensors from the last YOLOX run</div></div>
+          <div class="tiny" id="feature-map-status">Run YOLOX in Model Race first.</div>
+        </div>
+        <div class="feature-map-grid">
+          <figure><canvas id="feature-s8" width="208" height="208"></canvas><figcaption>stride 8 · 52×52</figcaption></figure>
+          <figure><canvas id="feature-s16" width="208" height="208"></canvas><figcaption>stride 16 · 26×26</figcaption></figure>
+          <figure><canvas id="feature-s32" width="208" height="208"></canvas><figcaption>stride 32 · 13×13</figcaption></figure>
+        </div>
+        <div class="note">These are real values from YOLOX’s exported detection-head output before thresholding and NMS. They visualize objectness over the three detection scales. They are not synthetic saliency maps and are not hidden backbone activations; exposing deeper backbone tensors would require a separate inspectable ONNX export.</div>
       </div>
     </section>
 
@@ -387,11 +443,13 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.3.2 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.4.0 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
-  <script src="app.js?v=0.3.2"></script>
-  <script src="race.js?v=0.3.2"></script>
+  <script src="models.js?v=0.4.0"></script>
+  <script src="model-loader.js?v=0.4.0"></script>
+  <script src="app.js?v=0.4.0"></script>
+  <script src="race.js?v=0.4.0"></script>
 </body>
 </html>
