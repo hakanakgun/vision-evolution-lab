@@ -21,7 +21,7 @@ The UI reports startup and per-run costs separately.
 
 ## 2. Warm benchmark
 
-The current benchmark runs **20 sequential inferences** after the model/session already exists.
+The Time Machine benchmark runs **20 sequential warm executions** for whichever runnable model is active after its model/session or pipeline already exists.
 
 Reported values:
 
@@ -72,7 +72,7 @@ Therefore latency differences combine architecture/runtime differences with each
 
 ### Three-model race benchmark
 
-After a successful race, the optional race benchmark executes 20 warm runs per model on the same source image. SSD and YOLOX report isolated ONNX Runtime model execution in the p50/p90 columns. RT-DETR currently reports the elapsed Transformers.js object-detection pipeline call, which includes its processor/model/postprocessor path. The UI labels this distinction instead of treating the numbers as identical timing boundaries.
+After a successful race, the optional race benchmark executes 20 warm runs per model on the same source image. SSD and YOLOX report isolated ONNX Runtime model execution in the p50/p90 columns. RT-DETR reports the elapsed Transformers.js object-detection pipeline call, which includes its processor/model/postprocessor path. The same distinction applies when RT-DETR is the active Time Machine model. The UI labels this instead of treating the numbers as identical timing boundaries. Feature-map rendering is disabled during warm benchmark loops so inspection work is not added to benchmark timing.
 
 ## 5. Detection overlap is not accuracy
 

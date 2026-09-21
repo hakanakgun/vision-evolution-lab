@@ -24,11 +24,11 @@ Model checkpoints are not bundled in this repository. The browser fetches the SS
 The original Vision Evolution Lab source code is licensed under the repository's [MIT License](LICENSE).
 
 
-## Hugging Face Transformers.js 3.8.1
+## Hugging Face Transformers.js 4.3.0
 
 - Project: Hugging Face Transformers.js
-- Browser import: jsDelivr, pinned to `@huggingface/transformers@3.8.1`
-- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for RT-DETR R18.
+- Browser import: jsDelivr, pinned to `@huggingface/transformers@4.3.0`
+- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for RT-DETR R18. v4 uses the newer native WebGPU runtime/EP; WASM remains available as fallback.
 - Upstream package/project terms remain their own.
 
 ## RT-DETR R18 browser conversion

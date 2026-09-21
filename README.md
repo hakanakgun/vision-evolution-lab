@@ -2,22 +2,22 @@
 
 A static, browser-native computer vision lab built for GitHub Pages.
 
-## v0.4.1
+## v0.5.0
 
-- Vision Time Machine now includes a sourced evolution atlas that separates runnable models from research-only transformer-era candidates. Runnable timeline milestones are interactive: SSD scrolls to its runner; YOLOX opens Model Race and reuses the current Time Machine image when available.
+- Vision Time Machine now uses one active-model runner. Selecting SSD-MobileNet, YOLOX-Nano, or RT-DETR R18 keeps the user in Time Machine and switches model metadata, preprocessing, runtime/cache state, inference, and warm benchmark behavior in place.
 - Runnable SSD-MobileNetV1 INT8 object detection in the browser.
 - ONNX Runtime Web with per-model execution-provider policy and run-time WebGPU → WASM recovery. The current SSD-MobileNetV1 INT8 baseline intentionally uses WASM because its dynamic-shape graph can initialize on ORT WebGPU but fail during `OrtRun()`.
 - Local image upload. User pixels are not uploaded by this application.
 - Startup costs are separated from current-run timings. An optional 20-run warm benchmark reports p50/median, p90, min–max, coefficient of variation (CV), p50 end-to-end, and approximate inference FPS.
 - Inside the Model includes a live input inspector plus real YOLOX pre-NMS detection-head objectness maps at strides 8/16/32. These are actual model tensor values, explicitly distinguished from hidden backbone activations.
 - Live Camera mode with sequential inference and rolling latency measurements.
-- Model Race now runs three generations: SSD-MobileNetV1 INT8 (2017), YOLOX-Nano (2021), and RT-DETR R18 (2023, Transformers.js/ONNX). It also supports a 20-run three-model warm benchmark with p50, p90, p50 end-to-end, backend, and CV.
+- Model Race remains a separate three-generation comparison: SSD-MobileNetV1 INT8 (2017), YOLOX-Nano (2021), and RT-DETR R18 (2023, Transformers.js/ONNX), with a 20-run warm benchmark. RT-DETR keeps the same pinned checkpoint revision but moves from Transformers.js 3.8.1 to 4.3.0/native WebGPU EP to address the legacy `AveragePool ceil()` runtime failure; WASM q8 remains fallback.
 - Mobile tab/timeline scroll affordances make hidden horizontal content discoverable.
 - Runtime diagnostics expose browser/OS, logical CPU count, approximate device memory when available, WebGPU availability, WASM SIMD capability, configured WASM thread count, cross-origin isolation, and the current model input size.
 - Central model registry (`models.js`) owns model URLs/IDs, year, license note, preprocessing contract, decoder, backend policy, and pinned revisions.
 - Shared cache-aware model loader (`model-loader.js`) adds streamed download progress, Cache API persistence, retry/fallback, and visible cache state for raw ONNX assets.
 
-There is no application backend, database, account system, or analytics in v0.4.1. The browser makes ordinary network requests to jsDelivr for ONNX Runtime Web, Hugging Face for the pinned SSD-MobileNet model, and the official Megvii YOLOX GitHub Release for YOLOX-Nano. If that release asset cannot be fetched by the browser, YOLOX falls back to a pinned Apache-2.0 Hugging Face mirror that states it hosts Megvii's published ONNX checkpoints.
+There is no application backend, database, account system, or analytics in v0.5.0. The browser makes ordinary network requests to jsDelivr for ONNX Runtime Web, Hugging Face for the pinned SSD-MobileNet model, and the official Megvii YOLOX GitHub Release for YOLOX-Nano. If that release asset cannot be fetched by the browser, YOLOX falls back to a pinned Apache-2.0 Hugging Face mirror that states it hosts Megvii's published ONNX checkpoints.
 
 ## Runtime model
 
@@ -34,7 +34,7 @@ Priority modes:
 3. What Does the Model See? / Inside the Model
 4. Live Camera Lab
 
-Completed foundations now include the browser benchmark layer, two-model race, sourced evolution atlas, and preprocessing inspector. Next candidates are a transformer-era runnable compatibility spike, Failure Gallery, Classical CV vs AI, Efficiency Lab, Resolution Microscope, and deeper feature inspection.
+Completed foundations now include the browser benchmark layer, three-model race, sourced evolution atlas, preprocessing inspector, and a Time Machine active-model runner. Immediate validation remains real-device RT-DETR inference after the native WebGPU runtime upgrade; next candidates include Failure Gallery, Classical CV vs AI, Efficiency Lab, Resolution Microscope, and deeper feature inspection.
 
 ## Local development
 

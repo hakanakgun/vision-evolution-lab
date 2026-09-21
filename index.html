@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.21-v0.4.1">
+<html lang="en" data-build="2026.09.21-v0.5.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.21-v0.4.1';
+      const CURRENT_BUILD = '2026.09.21-v0.5.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.4.1">
+  <link rel="stylesheet" href="styles.css?v=0.5.0">
 </head>
 <body>
   <main class="shell">
@@ -92,12 +92,12 @@
           </div>
         </div>
         <div class="scroll-cue timeline-cue" aria-hidden="true">Swipe through history →</div>
-        <div class="timeline-help">Outlined runnable milestones are tappable. YOLOX and RT-DETR open Model Race and reuse your current Time Machine image when available.</div>
+        <div class="timeline-help">Outlined runnable milestones are tappable. Selecting a runnable generation keeps you in Time Machine and switches the active model runner below.</div>
       </div>
 
       <div class="grid">
         <section class="card stage-card">
-          <div class="stage-head"><div><div class="stage-title">SSD-MobileNetV1 INT8</div><div class="tiny">COCO object detection · ONNX · opset 12</div></div><div class="tiny" id="input-size">No input</div></div>
+          <div class="stage-head"><div><div class="stage-title" id="active-model-title">SSD-MobileNetV1 INT8</div><div class="tiny" id="active-model-subtitle">COCO object detection · ONNX · opset 12</div></div><div class="tiny" id="input-size">No input</div></div>
           <div class="stage" id="image-stage">
             <canvas id="image-canvas" hidden></canvas>
             <div class="empty" id="image-empty"><strong>Bring your own image</strong>Nothing is uploaded. The model and runtime download to your browser; inference runs locally.</div>
@@ -105,7 +105,7 @@
           <div class="controls">
             <label class="btn" for="image-file">Choose image</label>
             <input class="file-input" id="image-file" type="file" accept="image/*">
-            <button class="btn secondary" id="rerun" disabled>Run again</button>
+            <button class="btn secondary" id="rerun" disabled>Run SSD-MobileNetV1 INT8</button>
             <button class="btn secondary" id="benchmark" disabled>Benchmark ×20</button>
             <span class="control-spacer"></span>
             <label class="range-wrap">Confidence <input id="confidence" type="range" min="0.10" max="0.90" step="0.05" value="0.40"><b id="confidence-value">0.40</b></label>
@@ -118,8 +118,8 @@
           <div class="metric-section">
             <div class="metric-section-head"><span>Startup</span><small>once per page session</small></div>
             <div class="metrics">
-              <div class="metric"><span>Model transfer</span><b id="m-download">—</b></div>
-              <div class="metric"><span>Session init</span><b id="m-init">—</b></div>
+              <div class="metric"><span id="m-transfer-label">Model transfer</span><b id="m-download">—</b></div>
+              <div class="metric"><span id="m-init-label">Session init</span><b id="m-init">—</b></div>
               <div class="metric"><span>Model bytes</span><b id="m-bytes">—</b></div>
               <div class="metric"><span>Cache</span><b id="m-cache">checking…</b></div>
             </div>
@@ -165,14 +165,9 @@
           </div>
           <div class="research">
             <div class="research-label">Research provenance</div>
-            <h3>SSD + MobileNetV1</h3>
-            <div class="tiny">The runnable checkpoint is an INT8 ONNX Model Zoo export trained on MS COCO 2017. Reported model-card mAP: 0.2297.</div>
-            <div class="links">
-              <a href="https://arxiv.org/abs/1512.02325" target="_blank" rel="noreferrer">SSD paper ↗</a>
-              <a href="https://arxiv.org/abs/1704.04861" target="_blank" rel="noreferrer">MobileNet paper ↗</a>
-              <a href="https://huggingface.co/onnxmodelzoo/ssd_mobilenet_v1_12-int8/tree/929618539097dbeb779c13aed75dfe346d016d48" target="_blank" rel="noreferrer">Model source ↗</a>
-              <a href="MODEL_SOURCES.md" target="_blank">License/provenance ↗</a>
-            </div>
+            <h3 id="active-provenance-title">SSD-MobileNetV1 INT8</h3>
+            <div class="tiny" id="active-provenance-text">Pinned ONNX Model Zoo INT8 export trained on MS COCO 2017. Upstream model-card mAP: 0.2297.</div>
+            <div class="links" id="active-provenance-links"></div>
           </div>
         </aside>
       </div>
@@ -241,9 +236,9 @@
     <section class="panel" id="model-race" role="tabpanel">
       <div class="card race-intro">
         <div>
-          <div class="eyebrow">Executable comparison · 2017 → 2021</div>
-          <h2>SSD-MobileNet vs YOLOX-Nano</h2>
-          <p class="lede">The same source image and confidence threshold run through two detector generations. Each model keeps its native preprocessing: SSD uses a dynamic aspect-preserving input up to 640 px; YOLOX-Nano uses the official 416×416 top-left letterbox pipeline.</p>
+          <div class="eyebrow">Executable comparison · 2017 → 2023</div>
+          <h2>Three detector generations, one image</h2>
+          <p class="lede">The same source image and confidence threshold run through SSD-MobileNet, YOLOX-Nano, and RT-DETR R18. Each model keeps its native preprocessing and runtime path; timing boundaries are labeled where they differ.</p>
         </div>
         <div class="controls race-controls">
           <label class="btn" for="race-image-file">Choose race image</label>
@@ -444,13 +439,13 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.4.1 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.5.0 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
-  <script src="models.js?v=0.4.1"></script>
-  <script src="model-loader.js?v=0.4.1"></script>
-  <script src="app.js?v=0.4.1"></script>
-  <script src="race.js?v=0.4.1"></script>
+  <script src="models.js?v=0.5.0"></script>
+  <script src="model-loader.js?v=0.5.0"></script>
+  <script src="app.js?v=0.5.0"></script>
+  <script src="race.js?v=0.5.0"></script>
 </body>
 </html>

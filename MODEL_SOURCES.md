@@ -64,6 +64,7 @@ These entries are displayed as research references but are not downloaded or exe
 - Runtime policy: WebGPU + fp16 first; WASM + q8 fallback.
 - Official implementation: `lyuwenyu/RT-DETR`, Apache-2.0.
 - Vision Evolution Lab uses Transformers.js for processor/model/postprocessor compatibility instead of reimplementing RT-DETR decoding by hand.
+- Runtime in v0.5.0: Transformers.js 4.3.0. The previous 3.8.1 path reproduced ONNX Runtime Web's known RT-DETR `AveragePool ceil()` limitation in real iPhone inference. This is the same RT-DETR/WebGPU failure class documented in `microsoft/onnxruntime#21206`; later ONNX Runtime guidance in `#29070` directs browser users away from legacy JSEP to the native WebGPU EP. Transformers.js v4 adopts that native runtime while preserving the same pinned model revision and WASM q8 fallback.
 
 #### RT-DETR license/provenance note
 
