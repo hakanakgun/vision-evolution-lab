@@ -1,1 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Vision Evolution Lab: run object detection locally in your browser and explore how computer vision evolved.">
+  <meta name="theme-color" content="#f5f0e7">
+  <title>Vision Evolution Lab</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <div class="topbar">
+      <section class="brand">
+        <div class="eyebrow">Browser-native computer vision</div>
+        <h1>Vision Evolution Lab</h1>
+        <p class="lede">A living timeline of computer vision, connected to real inference on your own device. Papers explain the idea; your browser shows the cost.</p>
+      </section>
+      <div class="privacy-chip"><span class="privacy-dot"></span><span>Your image stays on this device</span></div>
+    </div>
 
+    <div id="unsupported" class="unsupported"></div>
+
+    <nav class="tabs" role="tablist" aria-label="Lab modes">
+      <button class="tab" role="tab" aria-selected="true" aria-controls="time-machine" data-tab="time-machine">Time Machine</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="model-race" data-tab="model-race">Model Race</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="inside-model" data-tab="inside-model">Inside the Model</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="live-camera" data-tab="live-camera">Live Camera</button>
+    </nav>
+
+    <section class="panel active" id="time-machine" role="tabpanel">
+      <div class="card timeline">
+        <div class="timeline-track" aria-label="Computer vision timeline">
+          <div class="milestone"><div class="dot"></div><div class="year">2001</div><strong>Viola–Jones</strong><span>historical</span></div>
+          <div class="milestone"><div class="dot"></div><div class="year">2005</div><strong>HOG + SVM</strong><span>historical</span></div>
+          <div class="milestone"><div class="dot"></div><div class="year">2016</div><strong>SSD</strong><span>milestone</span></div>
+          <div class="milestone active"><div class="dot"></div><div class="year">2017</div><strong>SSD + MobileNet</strong><span>run now</span></div>
+          <div class="milestone"><div class="dot"></div><div class="year">2020</div><strong>DETR</strong><span>next</span></div>
+          <div class="milestone"><div class="dot"></div><div class="year">2024+</div><strong>Real-time Transformers</strong><span>next</span></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <section class="card stage-card">
+          <div class="stage-head"><div><div class="stage-title">SSD-MobileNetV1 INT8</div><div class="tiny">COCO object detection · ONNX · opset 12</div></div><div class="tiny" id="input-size">No input</div></div>
+          <div class="stage" id="image-stage">
+            <canvas id="image-canvas" hidden></canvas>
+            <div class="empty" id="image-empty"><strong>Bring your own image</strong>Nothing is uploaded. The model and runtime download to your browser; inference runs locally.</div>
+          </div>
+          <div class="controls">
+            <label class="btn" for="image-file">Choose image</label>
+            <input class="file-input" id="image-file" type="file" accept="image/*">
+            <button class="btn secondary" id="rerun" disabled>Run again</button>
+            <span class="control-spacer"></span>
+            <label class="range-wrap">Confidence <input id="confidence" type="range" min="0.10" max="0.90" step="0.05" value="0.40"><b id="confidence-value">0.40</b></label>
+          </div>
+        </section>
+
+        <aside class="card">
+          <div class="side-head"><div class="side-title">On your device</div><div class="tiny" id="backend-badge">Not loaded</div></div>
+          <div id="status" class="status">Choose an image to load the model and run the first measurement.</div>
+          <div class="metrics">
+            <div class="metric"><span>Model transfer</span><b id="m-download">—</b></div>
+            <div class="metric"><span>Session init</span><b id="m-init">—</b></div>
+            <div class="metric"><span>Preprocess</span><b id="m-pre">—</b></div>
+            <div class="metric"><span>Inference</span><b id="m-inf">—</b></div>
+            <div class="metric"><span>Postprocess + draw</span><b id="m-post">—</b></div>
+            <div class="metric"><span>End-to-end</span><b id="m-total">—</b></div>
+            <div class="metric"><span>Detections</span><b id="m-count">—</b></div>
+            <div class="metric"><span>Model bytes</span><b id="m-bytes">—</b></div>
+          </div>
+          <div class="research">
+            <div class="research-label">Research provenance</div>
+            <h3>SSD + MobileNetV1</h3>
+            <div class="tiny">The runnable checkpoint is an INT8 ONNX Model Zoo export trained on MS COCO 2017. Reported model-card mAP: 0.2297.</div>
+            <div class="links">
+              <a href="https://arxiv.org/abs/1512.02325" target="_blank" rel="noreferrer">SSD paper ↗</a>
+              <a href="https://arxiv.org/abs/1704.04861" target="_blank" rel="noreferrer">MobileNet paper ↗</a>
+              <a href="https://huggingface.co/onnxmodelzoo/ssd_mobilenet_v1_12-int8/tree/929618539097dbeb779c13aed75dfe346d016d48" target="_blank" rel="noreferrer">Model source ↗</a>
+              <a href="MODEL_SOURCES.md" target="_blank">License/provenance ↗</a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="panel" id="model-race" role="tabpanel">
+      <div class="race-grid">
+        <article class="card race-slot">
+          <span class="pill">Runnable v0.1</span>
+          <h2>SSD-MobileNetV1 INT8</h2>
+          <p class="lede">The first baseline. Once a second architecture is added, both will run against the exact same browser input and the pipeline timings will be compared side by side.</p>
+          <div class="metrics" style="padding-left:0;padding-right:0;margin-top:14px">
+            <div class="metric"><span>Precision</span><b>INT8</b></div>
+            <div class="metric"><span>Task</span><b>COCO detection</b></div>
+            <div class="metric"><span>Model file</span><b>~9.5 MB</b></div>
+            <div class="metric"><span>Runtime</span><b>ORT Web</b></div>
+          </div>
+          <button class="btn secondary" data-jump="time-machine">Run baseline</button>
+        </article>
+        <article class="card placeholder"><div><span class="pill pending">Next iteration</span><h2>Second architecture</h2><p>The race UI is intentionally ready before we add another model. Candidate selection will prioritize permissive licensing, browser size, and genuinely different architecture.</p></div></article>
+      </div>
+    </section>
+
+    <section class="panel" id="inside-model" role="tabpanel">
+      <div class="card pipeline">
+        <div class="eyebrow">What the model actually receives</div>
+        <h2 style="margin:7px 0 18px;font-size:30px;letter-spacing:-.035em">From pixels to detections</h2>
+        <div class="steps">
+          <div class="step"><span class="step-num">01</span><strong>Source</strong><p>Your image or camera frame. It never leaves the browser.</p></div><div class="arrow">→</div>
+          <div class="step"><span class="step-num">02</span><strong>Resize cap</strong><p>Longest side is capped at 640 px while preserving aspect ratio.</p></div><div class="arrow">→</div>
+          <div class="step"><span class="step-num">03</span><strong>RGB tensor</strong><p>Canvas RGBA pixels become NHWC uint8 RGB tensor data.</p></div><div class="arrow">→</div>
+          <div class="step"><span class="step-num">04</span><strong>SSD + MobileNet</strong><p>MobileNet extracts features; SSD predicts classes, scores and boxes in one pass.</p></div><div class="arrow">→</div>
+          <div class="step"><span class="step-num">05</span><strong>Browser overlay</strong><p>Normalized boxes are mapped back onto the local canvas.</p></div>
+        </div>
+      </div>
+      <div class="inside-grid" style="margin-top:18px">
+        <div class="card">
+          <div class="side-head"><div class="side-title">Current input</div><div class="tiny" id="inside-size">No image yet</div></div>
+          <div class="placeholder" id="inside-summary">Run an image in Time Machine to populate the real tensor dimensions and timing.</div>
+        </div>
+        <div class="card">
+          <div class="side-head"><div class="side-title">Feature inspection</div><div class="tiny">planned</div></div>
+          <div class="placeholder">This ONNX export exposes final detection outputs, not selected intermediate feature maps. A later inspectable export will expose a small, explicit set of internal tensors rather than pretending final boxes are “what the model sees.”</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="live-camera" role="tabpanel">
+      <div class="grid">
+        <section class="card stage-card camera-wrap">
+          <div class="stage-head"><div><div class="stage-title">Live local detection</div><div class="tiny">Sequential inference · no frame queue</div></div><div class="tiny" id="live-size">Camera off</div></div>
+          <div class="stage">
+            <video id="camera-video" playsinline muted></video>
+            <canvas id="camera-canvas" hidden></canvas>
+            <div class="empty" id="camera-empty"><strong>Camera stays local</strong>Camera permission is requested only after you press Start camera. Frames are processed in this page and are not uploaded.</div>
+            <div class="live-badge" id="live-badge"><span class="live-dot"></span>LIVE</div>
+          </div>
+          <div class="controls">
+            <button class="btn" id="camera-start">Start camera</button>
+            <button class="btn secondary" id="camera-stop" disabled>Stop</button>
+            <span class="control-spacer"></span>
+            <span class="tiny">Confidence uses the Time Machine setting.</span>
+          </div>
+        </section>
+        <aside class="card">
+          <div class="side-head"><div class="side-title">Live pipeline</div><div class="tiny" id="live-backend">Not loaded</div></div>
+          <div class="metrics">
+            <div class="metric"><span>Average inference</span><b id="live-inf">—</b></div>
+            <div class="metric"><span>Average end-to-end</span><b id="live-total">—</b></div>
+            <div class="metric"><span>Approx. inference FPS</span><b id="live-fps">—</b></div>
+            <div class="metric"><span>Detections / last frame</span><b id="live-count">—</b></div>
+            <div class="metric"><span>Frames measured</span><b id="live-frames">0</b></div>
+          </div>
+          <div class="note">“Inference FPS” is derived only from measured inference time. It is deliberately separate from camera/render FPS and from end-to-end pipeline time.</div>
+        </aside>
+      </div>
+    </section>
+
+    <canvas id="input-canvas" hidden></canvas>
+    <footer class="footer"><span>v0.1 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
