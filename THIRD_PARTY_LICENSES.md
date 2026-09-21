@@ -10,6 +10,13 @@ This project currently loads the following runtime dependency from a CDN.
 - License: MIT
 - Upstream: `microsoft/onnxruntime`
 
-The model checkpoint is not bundled in this repository. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for its provenance and license note.
+Model checkpoints are not bundled in this repository. The browser currently fetches the SSD-MobileNet baseline from its pinned upstream model repository and YOLOX-Nano from the official Megvii YOLOX GitHub release. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
 
-No license is currently declared for the original source code in this repository. Adding a project-level license is a separate owner decision.
+## YOLOX-Nano upstream project
+
+- Project: Megvii YOLOX
+- Upstream: `Megvii-BaseDetection/YOLOX`
+- Repository license: Apache-2.0
+- Model delivery: official GitHub Release asset, fetched at runtime and not redistributed here.
+
+The original Vision Evolution Lab source code is licensed under the repository's [MIT License](LICENSE).

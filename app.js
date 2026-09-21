@@ -384,5 +384,17 @@
       const video=$('camera-video');video.srcObject=null;$('live-badge').classList.remove('on');$('camera-start').disabled=false;$('camera-stop').disabled=true;$('camera-canvas').hidden=true;$('camera-empty').hidden=false;$('live-size').textContent='Camera off';
     }
     $('camera-start').addEventListener('click',startCamera);$('camera-stop').addEventListener('click',stopCamera);
+
+    window.VisionLab = Object.freeze({
+      getImage:()=>state.image,
+      getConfidence:()=>Number($('confidence').value),
+      getBaselineProvider:()=>state.provider || '',
+      runBaseline:(source,canvas)=>inferSource(source,canvas,{updateMain:false}),
+      drawDetections,
+      sourceSize,
+      ms,
+      bytes
+    });
+
     window.addEventListener('pagehide',stopCamera);
   })();

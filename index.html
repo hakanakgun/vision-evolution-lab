@@ -6,7 +6,7 @@
   <meta name="description" content="Vision Evolution Lab: run object detection locally in your browser and explore how computer vision evolved.">
   <meta name="theme-color" content="#f5f0e7">
   <title>Vision Evolution Lab</title>
-  <link rel="stylesheet" href="styles.css?v=0.1.2">
+  <link rel="stylesheet" href="styles.css?v=0.2.0">
 </head>
 <body>
   <main class="shell">
@@ -39,7 +39,8 @@
           <div class="milestone"><div class="dot"></div><div class="year">2005</div><strong>HOG + SVM</strong><span>historical</span></div>
           <div class="milestone"><div class="dot"></div><div class="year">2016</div><strong>SSD</strong><span>milestone</span></div>
           <div class="milestone active"><div class="dot"></div><div class="year">2017</div><strong>SSD + MobileNet</strong><span>run now</span></div>
-          <div class="milestone"><div class="dot"></div><div class="year">2020</div><strong>DETR</strong><span>next</span></div>
+          <div class="milestone"><div class="dot"></div><div class="year">2020</div><strong>DETR</strong><span>milestone</span></div>
+          <div class="milestone runnable"><div class="dot"></div><div class="year">2021</div><strong>YOLOX-Nano</strong><span>run now</span></div>
           <div class="milestone"><div class="dot"></div><div class="year">2024+</div><strong>Real-time Transformers</strong><span>next</span></div>
           </div>
         </div>
@@ -127,21 +128,73 @@
     </section>
 
     <section class="panel" id="model-race" role="tabpanel">
-      <div class="race-grid">
-        <article class="card race-slot">
-          <span class="pill">Runnable v0.1</span>
-          <h2>SSD-MobileNetV1 INT8</h2>
-          <p class="lede">The first baseline. Once a second architecture is added, both will run against the exact same browser input and the pipeline timings will be compared side by side.</p>
-          <div class="metrics" style="padding-left:0;padding-right:0;margin-top:14px">
-            <div class="metric"><span>Precision</span><b>INT8</b></div>
-            <div class="metric"><span>Task</span><b>COCO detection</b></div>
-            <div class="metric"><span>Model file</span><b>~9.5 MB</b></div>
-            <div class="metric"><span>Runtime</span><b>ORT Web</b></div>
-          </div>
-          <button class="btn secondary" data-jump="time-machine">Run baseline</button>
-        </article>
-        <article class="card placeholder"><div><span class="pill pending">Next iteration</span><h2>Second architecture</h2><p>The race UI is intentionally ready before we add another model. Candidate selection will prioritize permissive licensing, browser size, and genuinely different architecture.</p></div></article>
+      <div class="card race-intro">
+        <div>
+          <div class="eyebrow">Executable comparison · 2017 → 2021</div>
+          <h2>SSD-MobileNet vs YOLOX-Nano</h2>
+          <p class="lede">The same source image and confidence threshold run through two detector generations. Each model keeps its native preprocessing: SSD uses a dynamic aspect-preserving input up to 640 px; YOLOX-Nano uses the official 416×416 top-left letterbox pipeline.</p>
+        </div>
+        <div class="controls race-controls">
+          <label class="btn" for="race-image-file">Choose race image</label>
+          <input class="file-input" id="race-image-file" type="file" accept="image/*">
+          <button class="btn secondary" id="race-use-current">Use Time Machine image</button>
+          <button class="btn secondary" id="race-run" disabled>Run race</button>
+          <span class="control-spacer"></span>
+          <span class="tiny">Confidence: <b id="race-confidence">0.40</b></span>
+        </div>
+        <div class="status" id="race-status">Choose an image here, or reuse the current Time Machine image.</div>
       </div>
+
+      <div class="race-grid race-results">
+        <article class="card race-model">
+          <div class="side-head"><div><span class="pill">2017 baseline</span><h2>SSD-MobileNetV1 INT8</h2></div><div class="tiny" id="race-ssd-backend">not run</div></div>
+          <div class="race-stage"><canvas id="race-ssd-canvas" hidden></canvas><div class="empty" id="race-ssd-empty">Waiting for a race image.</div></div>
+          <div class="metrics">
+            <div class="metric"><span>Input</span><b id="race-ssd-input">dynamic ≤640</b></div>
+            <div class="metric"><span>Model file</span><b>9.10 MB</b></div>
+            <div class="metric"><span>Inference</span><b id="race-ssd-inf">—</b></div>
+            <div class="metric"><span>End-to-end</span><b id="race-ssd-total">—</b></div>
+            <div class="metric"><span>Detections</span><b id="race-ssd-count">—</b></div>
+          </div>
+        </article>
+
+        <article class="card race-model">
+          <div class="side-head"><div><span class="pill generation">2021 anchor-free</span><h2>YOLOX-Nano</h2></div><div class="tiny" id="race-yolo-backend">not loaded</div></div>
+          <div class="race-stage"><canvas id="race-yolo-canvas" hidden></canvas><div class="empty" id="race-yolo-empty">Official Apache-2.0 project release · ONNX 3.49 MB.</div></div>
+          <div class="metrics">
+            <div class="metric"><span>Input</span><b>416×416</b></div>
+            <div class="metric"><span>Model file</span><b>3.49 MB</b></div>
+            <div class="metric"><span>Transfer / init</span><b id="race-yolo-startup">—</b></div>
+            <div class="metric"><span>Inference</span><b id="race-yolo-inf">—</b></div>
+            <div class="metric"><span>End-to-end</span><b id="race-yolo-total">—</b></div>
+            <div class="metric"><span>Detections</span><b id="race-yolo-count">—</b></div>
+          </div>
+          <div class="links race-links">
+            <a href="https://arxiv.org/abs/2107.08430" target="_blank" rel="noreferrer">YOLOX paper ↗</a>
+            <a href="https://github.com/Megvii-BaseDetection/YOLOX" target="_blank" rel="noreferrer">Official repo ↗</a>
+            <a href="MODEL_SOURCES.md#yolox-nano" target="_blank">Provenance ↗</a>
+          </div>
+        </article>
+      </div>
+
+      <div class="card race-summary">
+        <div class="race-summary-head">
+          <div><div class="eyebrow">Detection overlap</div><h2>What changed on this image?</h2></div>
+          <div class="tiny">IoU ≥ 0.35 · same class · not ground truth</div>
+        </div>
+        <div class="race-diff-grid">
+          <div><span>Matched by both</span><b id="race-both">—</b></div>
+          <div><span>SSD-only</span><b id="race-ssd-only">—</b></div>
+          <div><span>YOLOX-only</span><b id="race-yolo-only">—</b></div>
+        </div>
+        <div class="note">“Only” means the other model did not produce a matching box/class above the current confidence threshold. It does not imply which model is correct without ground-truth labels.</div>
+        <div class="architecture-diff">
+          <div><strong>SSD-MobileNet</strong><span>predefined anchors · lightweight CNN backbone · single-shot dense prediction</span></div>
+          <div class="arrow">→</div>
+          <div><strong>YOLOX-Nano</strong><span>anchor-free head · decoupled classification/regression · modern real-time CNN detector</span></div>
+        </div>
+      </div>
+      <canvas id="race-yolo-work" hidden></canvas>
     </section>
 
     <section class="panel" id="inside-model" role="tabpanel">
@@ -201,10 +254,11 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.1.2 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.2.0 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
-  <script src="app.js?v=0.1.2"></script>
+  <script src="app.js?v=0.2.0"></script>
+  <script src="race.js?v=0.2.0"></script>
 </body>
 </html>

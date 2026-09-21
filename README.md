@@ -2,7 +2,7 @@
 
 A static, browser-native computer vision lab built for GitHub Pages.
 
-## v0.1.2
+## v0.2.0
 
 - Vision Time Machine shell with research provenance.
 - Runnable SSD-MobileNetV1 INT8 object detection in the browser.
@@ -11,15 +11,15 @@ A static, browser-native computer vision lab built for GitHub Pages.
 - Startup costs are separated from current-run timings. An optional 20-run warm benchmark reports p50/median, p90, min–max, coefficient of variation (CV), p50 end-to-end, and approximate inference FPS.
 - Inside the Model pipeline view based on the actual preprocessing path.
 - Live Camera mode with sequential inference and rolling latency measurements.
-- Model Race UI prepared for the second architecture.
+- Model Race is now executable: SSD-MobileNetV1 INT8 (2017 generation) vs official YOLOX-Nano ONNX (2021 anchor-free generation) on the same source image and confidence threshold, with per-model native preprocessing and detection-overlap matching.
 - Mobile tab/timeline scroll affordances make hidden horizontal content discoverable.
 - Runtime diagnostics expose browser/OS, logical CPU count, approximate device memory when available, WebGPU availability, WASM SIMD capability, configured WASM thread count, cross-origin isolation, and the current model input size.
 
-There is no application backend, database, account system, or analytics in v0.1. The browser still makes ordinary network requests to jsDelivr for ONNX Runtime Web and to Hugging Face for the model file.
+There is no application backend, database, account system, or analytics in v0.2. The browser makes ordinary network requests to jsDelivr for ONNX Runtime Web, Hugging Face for the pinned SSD-MobileNet model, and the official Megvii YOLOX GitHub Release for YOLOX-Nano.
 
 ## Runtime model
 
-The first runnable baseline is `SSD-MobileNetV1-12 INT8` from ONNX Model Zoo, pinned to a specific upstream revision. The model is fetched at runtime rather than redistributed in this repository.
+The first runnable baseline is `SSD-MobileNetV1-12 INT8` from ONNX Model Zoo. The second runnable model is the official `YOLOX-Nano` ONNX release asset from the Apache-2.0 YOLOX project. Both are fetched at runtime rather than redistributed in this repository.
 
 See [MODEL_SOURCES.md](MODEL_SOURCES.md) and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 

@@ -21,3 +21,26 @@ The current Hugging Face repository metadata labels the model `apache-2.0`, whil
 For v0.1 this repository does **not** redistribute the model binary. The browser retrieves the pinned checkpoint directly from the upstream repository. Before bundling, mirroring, modifying, or commercially redistributing the checkpoint, verify the canonical license and notice requirements from the upstream maintainers.
 
 Training-dataset terms are separate from code/model licenses and should be reviewed independently before using benchmark data or training data beyond this research/demo context.
+
+
+## YOLOX-Nano
+
+- Purpose: second runnable detector for Model Race and the 2021 anchor-free real-time CNN generation.
+- Architecture family: YOLOX Nano, anchor-free YOLO detector with a decoupled detection head.
+- Paper: *YOLOX: Exceeding YOLO Series in 2021*, Ge et al., 2021.
+- Official repository: `Megvii-BaseDetection/YOLOX`.
+- Repository license: Apache-2.0.
+- Official ONNX Runtime documentation reports YOLOX-Nano at 0.91M parameters, 1.08 GFLOPs, 416×416 test size, and 25.8 COCO mAP.
+- Official release tag: `0.1.1rc0`, published by the YOLOX project.
+- Release asset: `yolox_nano.onnx`.
+- GitHub release asset ID: `42724905`.
+- Release API size: 3,659,407 bytes (3.49 MiB).
+- Model input: float32 NCHW 1×3×416×416 using the official top-left padded preprocessing path with pixel value 114.
+- Postprocessing follows the official ONNX Runtime demo: strides 8/16/32, YOLOX grid decode, objectness × class probability, and class-agnostic NMS at IoU 0.45.
+- Training/benchmark dataset reported by the official project: MS COCO.
+
+### License note
+
+The official YOLOX repository is Apache-2.0 and the ONNX file is distributed directly as an asset of the official YOLOX GitHub release. The release page does not state a separate restrictive license for the ONNX asset. Vision Evolution Lab does **not** mirror or bundle this binary; the browser requests the official release asset directly.
+
+If this project later redistributes or modifies YOLOX weights instead of referencing the official asset, re-check upstream notices and model-weight terms at that time. Dataset terms remain separate from the project/model code license.
