@@ -95,7 +95,7 @@
     state.aiModel=key;setText('classical-ai-title',model.title);setText('classical-ai-reference',model.title+' · locked for this run');
     await runtimes.releaseAll();
     try{
-      const result=await adapter.run(source,$('classical-ai-canvas'),{benchmarking:true,updateMain:false});
+      const result=await adapter.run(source,$('classical-ai-canvas'),{updateMain:false});
       state.aiResult=result;state.aiDisplay={width:$('classical-ai-canvas').width,height:$('classical-ai-canvas').height};
       const info=adapter.runtimeInfo?.()||{},backend=info.dtype?`${info.backend||adapter.backend()} · ${info.dtype}`:(info.backend||adapter.backend()||'—');
       setText('classical-ai-input',Number.isFinite(result.width)&&Number.isFinite(result.height)?result.width+'×'+result.height:'native');
