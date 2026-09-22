@@ -192,6 +192,22 @@
       src.hidden=false;preview.hidden=false;$('inside-source-empty').hidden=true;$('inside-input-empty').hidden=true;setMetric('inside-source-size',w+'×'+h);setMetric('inside-model-size',iw+'×'+ih);return{w,h,iw,ih};
     }
     function insideShape(spec,dims){if(!dims)return'No image yet';const shape=spec.shape||{},channels=shape.channels||3;return shape.layout==='NHWC'?`1 × ${dims.ih} × ${dims.iw} × ${channels}`:`1 × ${channels} × ${dims.ih} × ${dims.iw}`}
+    function renderScalarHeatmaps(maps){
+      const grid=$('feature-map-grid');grid.replaceChildren();
+      for(const map of maps){
+        if(!map||!Number.isFinite(map.grid)||!map.data)continue;
+        const figure=document.createElement('figure'),canvas=document.createElement('canvas'),caption=document.createElement('figcaption'),size=208;
+        canvas.width=size;canvas.height=size;const ctx=canvas.getContext('2d'),tiny=document.createElement('canvas');tiny.width=map.grid;tiny.height=map.grid;const tctx=tiny.getContext('2d'),img=tctx.createImageData(map.grid,map.grid);
+        let max=0;for(const value of map.data)if(Number.isFinite(value)&&value>max)max=value;const denominator=max||1;
+        for(let i=0;i<map.data.length;i++){const value=Math.max(0,Math.min(1,Number(map.data[i]||0)/denominator)),offset=i*4;img.data[offset]=Math.round(28+value*210);img.data[offset+1]=Math.round(48+value*160);img.data[offset+2]=Math.round(42+value*70);img.data[offset+3]=255}
+        tctx.putImageData(img,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(tiny,0,0,size,size);caption.textContent=map.label||((Number.isFinite(map.stride)?'stride '+map.stride+' · ':'')+map.grid+'×'+map.grid);figure.append(canvas,caption);grid.appendChild(figure);
+      }
+    }
+    function renderInspectionData(spec,data){
+      const grid=$('feature-map-grid');
+      if(spec.intermediate.renderer==='scalar-heatmaps'&&Array.isArray(data)&&data.length){renderScalarHeatmaps(data);grid.hidden=false;$('inside-intermediate-empty').hidden=true;return true}
+      grid.replaceChildren();grid.hidden=true;$('inside-intermediate-empty').hidden=false;return false;
+    }
     function showUnavailableInspection(model,source){
       $('inside-active-model').textContent=model.title;$('inside-active-contract').textContent='Following Time Machine selection · inspection surface not exposed';
       $('inside-step2-title').textContent='Model-specific preprocessing';$('inside-step2-text').textContent='No inspectable preprocessing presentation is registered for this model.';
@@ -208,9 +224,10 @@
       for(const [slot,idTitle,idText] of [['step2','inside-step2-title','inside-step2-text'],['step3','inside-step3-title','inside-step3-text'],['step4','inside-step4-title','inside-step4-text']]){const step=spec.pipeline[slot];$(idTitle).textContent=step.title;$(idText).textContent=step.text}
       setMetric('inside-resize-policy',spec.resize);setMetric('inside-tensor',spec.tensor);setMetric('inside-channels',spec.channels);setMetric('inside-normalization',spec.normalization);$('inside-input-caption').textContent=spec.preview.caption;
       const dims=prepareInsidePreview(modelKey,source);if(dims)$('inside-size').textContent=insideShape(spec,dims);else{$('inside-size').textContent='No image yet';$('inside-source-preview').hidden=true;$('inside-input-preview').hidden=true;$('inside-source-empty').hidden=false;$('inside-input-empty').hidden=false;setMetric('inside-source-size','—');setMetric('inside-model-size',spec.input)}
-      const adapter=RuntimeRegistry.get(modelKey),inspectionData=adapter?.inspectionData?.(),showsData=spec.intermediate.data==='adapter';
-      $('feature-map-grid').hidden=!showsData;$('inside-intermediate-empty').hidden=showsData;$('inside-intermediate-title').textContent=spec.intermediate.title;$('inside-intermediate-subtitle').textContent=spec.intermediate.subtitle;$('inside-intermediate-note').textContent=spec.intermediate.note;
-      $('feature-map-status').textContent=showsData?(Array.isArray(inspectionData)&&inspectionData.length?(spec.intermediate.statusReady||'Live inspection data available'):(spec.intermediate.statusEmpty||'Run the model to populate real inspection data.')):(spec.intermediate.status||'Intermediate activations not exposed');
+      const adapter=RuntimeRegistry.get(modelKey),inspectionData=adapter?.inspectionData?.(),expectsData=spec.intermediate.data==='adapter',hasRenderedData=expectsData&&renderInspectionData(spec,inspectionData);
+      if(!expectsData)renderInspectionData(spec,null);$('inside-intermediate-title').textContent=spec.intermediate.title;$('inside-intermediate-subtitle').textContent=spec.intermediate.subtitle;$('inside-intermediate-note').textContent=spec.intermediate.note;
+      $('inside-intermediate-empty').textContent=expectsData?(spec.intermediate.statusEmpty||'Run the model to populate real inspection data.'):'This model exposes its real preprocessing contract and detections, but no registered intermediate activation tensor.';
+      $('feature-map-status').textContent=expectsData?(hasRenderedData?(spec.intermediate.statusReady||'Live inspection data available'):(spec.intermediate.statusEmpty||'Run the model to populate real inspection data.')):(spec.intermediate.status||'Intermediate activations not exposed');
       if(result){const retained=Number.isFinite(result.retained)?result.retained:(result.detections?result.detections.length:0),visible=Number.isFinite(result.visible)?result.visible:0,inf=Number.isFinite(result.infMs)?' · inference '+ms(result.infMs):'',invalid=Number.isFinite(result.droppedInvalid)&&result.droppedInvalid>0?' · dropped '+result.droppedInvalid+' invalid boxes':'';$('inside-summary').textContent=model.title+': '+visible+' visible at UI confidence '+Number($('confidence').value).toFixed(2)+' · '+retained+' retained outputs'+invalid+inf+'. '+spec.resultNote}else $('inside-summary').textContent=model.title+' selected. The preview reflects its native preprocessing contract; run the model to populate runtime output details.';
     }
 
