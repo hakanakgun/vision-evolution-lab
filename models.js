@@ -45,8 +45,8 @@
           step3:Object.freeze({title:'RGB tensor',text:'Canvas RGB byte values are packed as float32 NCHW. Upstream preprocessing documentation is incomplete, so this is explicitly recorded as a validation-sensitive contract.'}),
           step4:Object.freeze({title:'YOLOv2 grid head',text:'A 13×13 grid predicts 5 anchors per cell, each with box/objectness plus 20 Pascal VOC class logits.'})
         }),
-        comparison:Object.freeze({input:'416×416',resize:'direct stretch',padding:'none',layout:'NCHW',dtype:'float32',channels:'RGB · raw pixels'}),
-        intermediate:Object.freeze({title:'Tiny YOLOv2 intermediate tensors not exported',subtitle:'The current export exposes the final 125×13×13 detection grid, not selected backbone activations.',note:'No simulated feature maps are shown; selected real intermediate outputs would require an inspectable export.',data:'none'}),
+        comparison:Object.freeze({label:'Tiny YOLOv2',input:'416×416',resize:'direct stretch',padding:'none',layout:'NCHW',dtype:'float32',channels:'RGB · raw pixels'}),
+        intermediate:Object.freeze({title:'Tiny YOLOv2 intermediate tensors not exported',subtitle:'The current export exposes the final 125×13×13 detection grid, not selected backbone activations.',note:'No simulated feature maps are shown; selected real intermediate outputs would require an inspectable export.',data:'none',status:'Intermediate activations not exposed'}),
         resultNote:'UI threshold changes redraw retained outputs without new inference.'
       })}),
       executionProviders:Object.freeze(['wasm']),
@@ -77,8 +77,8 @@
           step3:Object.freeze({title:'RGB tensor',text:'Canvas RGBA becomes uint8 NHWC RGB data.'}),
           step4:Object.freeze({title:'SSD + MobileNet',text:'MobileNet extracts features; SSD predicts classes, scores and boxes in one pass.'})
         }),
-        comparison:Object.freeze({input:'dynamic ≤640',resize:'aspect preserve',padding:'none',layout:'NHWC',dtype:'uint8',channels:'RGB'}),
-        intermediate:Object.freeze({title:'SSD intermediate tensors not exported',subtitle:'The current ONNX output exposes detections, not selected backbone activations.',note:'A separate inspectable SSD export is required before deeper activations can be shown truthfully.',data:'none'}),
+        comparison:Object.freeze({label:'SSD-MobileNet',input:'dynamic ≤640',resize:'aspect preserve',padding:'none',layout:'NHWC',dtype:'uint8',channels:'RGB'}),
+        intermediate:Object.freeze({title:'SSD intermediate tensors not exported',subtitle:'The current ONNX output exposes detections, not selected backbone activations.',note:'A separate inspectable SSD export is required before deeper activations can be shown truthfully.',data:'none',status:'Intermediate activations not exposed'}),
         resultNote:'UI threshold changes redraw retained outputs without new inference.'
       })}),
       executionProviders:Object.freeze(['wasm']),
@@ -109,8 +109,8 @@
           step3:Object.freeze({title:'BGR tensor',text:'Pixels become float32 NCHW in BGR channel order.'}),
           step4:Object.freeze({title:'YOLOX detection head',text:'Anchor-free decoupled head predicts boxes, objectness and classes across three strides.'})
         }),
-        comparison:Object.freeze({input:'416×416',resize:'aspect preserve',padding:'top-left · 114',layout:'NCHW',dtype:'float32',channels:'BGR'}),
-        intermediate:Object.freeze({title:'Real YOLOX detection-head maps',subtitle:'Pre-NMS objectness tensors from the latest YOLOX inference.',note:'These are real exported detection-head objectness values at strides 8/16/32. They are not backbone feature maps.',data:'adapter'}),
+        comparison:Object.freeze({label:'YOLOX-Nano',input:'416×416',resize:'aspect preserve',padding:'top-left · 114',layout:'NCHW',dtype:'float32',channels:'BGR'}),
+        intermediate:Object.freeze({title:'Real YOLOX detection-head maps',subtitle:'Pre-NMS objectness tensors from the latest YOLOX inference.',note:'These are real exported detection-head objectness values at strides 8/16/32. They are not backbone feature maps.',data:'adapter',statusEmpty:'Run YOLOX to populate real objectness tensors.',statusReady:'Live from latest YOLOX inference'}),
         resultNote:'UI threshold changes redraw retained outputs without new inference.'
       })}),
       executionProviders:Object.freeze(directOrtWebGPU?['webgpu','wasm']:['wasm']),
@@ -146,8 +146,8 @@
           step3:Object.freeze({title:'Processor tensor',text:'RGB pixels are rescaled by 1/255 and arranged as float NCHW input.'}),
           step4:Object.freeze({title:'RT-DETR',text:'End-to-end transformer set prediction returns scored boxes without page-side NMS.'})
         }),
-        comparison:Object.freeze({input:'640×640',resize:'processor resize',padding:'none',layout:'NCHW',dtype:'float input',channels:'RGB · 1/255'}),
-        intermediate:Object.freeze({title:'RT-DETR intermediate tensors not exposed',subtitle:'The production pipeline exposes detections but not selected encoder/decoder activations.',note:'A separate inspectable ONNX export is required for truthful RT-DETR intermediate activation visualization.',data:'none'}),
+        comparison:Object.freeze({label:'RT-DETR R18',input:'640×640',resize:'processor resize',padding:'none',layout:'NCHW',dtype:'float input',channels:'RGB · 1/255'}),
+        intermediate:Object.freeze({title:'RT-DETR intermediate tensors not exposed',subtitle:'The production pipeline exposes detections but not selected encoder/decoder activations.',note:'A separate inspectable ONNX export is required for truthful RT-DETR intermediate activation visualization.',data:'none',status:'Intermediate activations not exposed'}),
         resultNote:'No page-side NMS is added.'
       })}),
       preprocessing:Object.freeze({resize:'640×640 processor-managed',layout:'NCHW',dtype:'float32 input / quantized weights',channels:'RGB',rescale:'1/255',normalize:false,padding:'none'}),
