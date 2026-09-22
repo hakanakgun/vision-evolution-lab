@@ -12,6 +12,7 @@ Vision Evolution Lab lets you run and compare object-detection generations witho
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
 - **Live Camera** runs local browser inference through live-capable runtime adapters with rolling latency measurements; SSD-MobileNetV1 INT8 is currently the only live-enabled model.
+- **Classical CV vs AI** runs a Viola–Jones-era frontal-face cascade and HOG + linear SVM pedestrian detector in an isolated OpenCV.js worker, alongside the active AI model as task-aware context.
 - **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
 Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model.
@@ -75,6 +76,7 @@ Stable repository references:
 - [Model catalog](MODEL_CATALOG.md)
 - [Model sources and provenance](MODEL_SOURCES.md)
 - [Third-party licenses](THIRD_PARTY_LICENSES.md)
+- [Classical CV vs AI notes](docs/CLASSICAL_CV.md)
 
 ## Roadmap
 
@@ -86,7 +88,7 @@ Current priority order:
 4. Live Camera
 5. Failure Gallery
 6. Efficiency Lab
-7. Classical CV vs AI
+7. Classical CV vs AI — runnable
 8. Resolution Microscope
 9. Architecture Explorer
 
