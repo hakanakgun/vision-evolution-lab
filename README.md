@@ -2,7 +2,7 @@
 
 A static, browser-native computer vision lab built for GitHub Pages.
 
-## v0.7.1
+## v0.7.2-diag1
 
 - Vision Time Machine uses one active-model runner. Selecting Tiny YOLOv2 (2016), SSD-MobileNet (2017), YOLOX-Nano (2021), or RT-DETR R18 (2023) keeps the user in Time Machine and switches model metadata, preprocessing, runtime/cache state, inference, and warm benchmark behavior in place.
 - Runnable SSD-MobileNetV1 INT8 object detection in the browser.
@@ -11,6 +11,7 @@ A static, browser-native computer vision lab built for GitHub Pages.
 - Local image upload. User pixels are not uploaded by this application.
 - Startup costs are separated from current-run timings. An optional 20-run warm benchmark reports p50/median, p90, min–max, coefficient of variation (CV), p50 end-to-end, and approximate inference FPS.
 - Model Race benchmark memory is hardened for iOS/WebKit: raw ONNX buffers are evicted after session creation, RT-DETR uses a ≤640 px aspect-preserving staging canvas instead of a full-resolution duplicate, and the four benchmark groups release their runtime before the next model starts.
+- Temporary iOS diagnostic: `?diag=1` exposes a diagnostic 20-run race that keeps only the final RT-DETR pipeline resident, records session-only lifecycle breadcrumbs, and offers a manual `Dispose RT now` probe. Normal Model Race behavior is unchanged. Remove this instrumentation after the device test.
 - Inside the Model follows the active Time Machine model, including Tiny YOLOv2. It shows each model's native preprocessing contract and prepared-input preview; YOLOX additionally exposes real pre-NMS detection-head objectness maps at strides 8/16/32, while Tiny YOLOv2/SSD/RT-DETR explicitly state that deeper intermediate tensors are not yet exported.
 - Live Camera mode with sequential inference and rolling latency measurements.
 - Model Race is now a four-generation comparison: Tiny YOLOv2 (2016, Pascal VOC20), SSD-MobileNetV1 INT8 (2017), YOLOX-Nano (2021), and RT-DETR R18 (2023, Transformers.js/ONNX), with a 20-run warm benchmark, six pairwise overlap counts, and per-model unmatched counts. Tiny YOLOv2 legacy VOC label synonyms are canonicalized only for overlap with the COCO models; the differing label spaces remain visible and are not treated as accuracy evidence. The UI confidence threshold is applied to retained outputs so slider changes can redraw retained detections without rerunning inference; run/benchmark operations lock source, model and confidence.
