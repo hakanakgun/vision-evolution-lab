@@ -55,13 +55,15 @@ The application is static and browser-native:
 
 Current runtime versions are pinned in the repository. Release/cache behavior and runtime ownership are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## iOS / WebKit diagnostic status
+## iOS / WebKit runtime status
 
-The repeated four-model benchmark can still trigger an abrupt page recreation on physical iPhone/WebKit runs. The root cause is not yet proven and the bug is **not fixed**.
+The repeated four-model benchmark reload issue is mitigated by using the standard non-JSEP ONNX Runtime WASM bundle for Tiny YOLOv2, SSD-MobileNetV1 INT8, and YOLOX-Nano on iOS. Desktop keeps the WebGPU/JSEP-capable bundle, while RT-DETR remains on its independent Transformers.js runtime.
 
-The current build also changes the iOS runtime architecture: Tiny YOLOv2, SSD-MobileNetV1 INT8, and YOLOX-Nano use the standard non-JSEP ONNX Runtime WASM bundle on iOS, while desktop keeps the WebGPU/JSEP-capable bundle. RT-DETR remains on its independent Transformers.js runtime. The normal 1 warm-up + 20 measured-run benchmark contract is unchanged.
+On 2026-09-22, the updated iOS path completed five consecutive full four-model Benchmark ×20 runs on the user's physical iPhone/Brave session without an abrupt reload. This is strong device-level validation of the mitigation, but it does not prove the historical WebKit/JSEP root cause or universal stability across all iOS devices and versions.
 
-Investigation history, physical-device evidence, upstream WebKit/ONNX Runtime/Transformers.js research, and the next experiments are in [docs/IOS_WEBKIT_DIAGNOSTICS.md](docs/IOS_WEBKIT_DIAGNOSTICS.md).
+The normal 1 warm-up + 20 measured-run benchmark contract is unchanged. The diagnostic modes remain available for regression analysis.
+
+Investigation history and upstream WebKit/ONNX Runtime/Transformers.js evidence are in [docs/IOS_WEBKIT_DIAGNOSTICS.md](docs/IOS_WEBKIT_DIAGNOSTICS.md).
 
 ## Documentation
 
@@ -88,7 +90,7 @@ Current priority order:
 8. Resolution Microscope
 9. Architecture Explorer
 
-The iOS/WebKit benchmark reload investigation remains the current P0 before returning to Classical CV work.
+The iOS/WebKit reload mitigation has passed the current physical-device regression test. Further diagnostic work is only needed if the issue recurs; the roadmap can return to feature work.
 
 ## Local development
 

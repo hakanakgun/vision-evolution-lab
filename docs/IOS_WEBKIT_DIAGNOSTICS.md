@@ -2,7 +2,7 @@
 
 ## Status
 
-Open investigation. The memory/reload bug is **not yet physically confirmed fixed**. Starting with diag12, the normal iOS architecture no longer loads the JSEP-capable ONNX Runtime bundle for Tiny/SSD/YOLOX; those direct ORT models use the standard non-JSEP WASM distribution instead.
+Mitigation validated on the current physical-device test, while the historical root cause remains unproven. Starting with diag12, the normal iOS architecture no longer loads the JSEP-capable ONNX Runtime bundle for Tiny/SSD/YOLOX; those direct ORT models use the standard non-JSEP WASM distribution instead. On 2026-09-22, that path completed five consecutive full four-model Benchmark ×20 runs on the user's physical iPhone/Brave session without an abrupt reload.
 
 On a physical iPhone running an iOS browser, repeated sequential benchmarking of all four detector runtimes can silently recreate the page. Most observed failures do not include an orderly `pagehide` and do not produce a catchable JavaScript exception before the new page instance starts.
 
@@ -245,54 +245,20 @@ The reclamation-matrix localStorage key was advanced to v2 so pre-architecture-c
 
 This is a production-path mitigation plus a focused A/B mechanism, not a claim that WebKit process memory reclamation is solved.
 
-## Next experiments
+## Regression policy
 
-### First: preserve R4 information value
+The standard-WASM iOS mitigation passed the current acceptance test: five consecutive full four-model Benchmark ×20 runs completed without an abrupt reload on the user's physical iPhone/Brave session.
 
-If the existing diag9 R4 state can still be completed on the same deployed build, complete it before replacing that build. If it is resumed after a new deployment, record that the experiment spans two builds and is no longer byte-identical.
+No further reclamation matrix or broad isolation matrix is required while the normal path remains stable.
 
-### Then: use diag=3 for the next full-four crash
+If the reload recurs:
 
-The purpose is to narrow `rtdetr-start` into a boundary such as:
+1. reproduce once on the normal URL,
+2. retry once with `?diag=3` and export the full diagnostic JSON,
+3. record the last durable stage and selected direct ORT bundle,
+4. only then use `?ort=jsep` or `?ort=wasm` for a controlled A/B if the evidence still points to the direct ORT runtime.
 
-- Transformers.js module import
-- RT cache lookup
-- pipeline construction
-- individual model-file completion
-- staging-canvas creation
-- first pipeline invocation
-- pipeline release
-
-If failures cluster at one boundary, stop expanding the matrix and investigate that lifecycle.
-
-### Highest-value new A/B: JSEP-capable ORT bundle vs standard ORT WASM bundle
-
-Do not load both ORT bundles into the same page/process for this experiment; that would contaminate the memory question.
-
-Use separate page loads/build modes:
-
-A. current `ort.webgpu.min.js`, Tiny/SSD/YOLOX forced to WASM  
-B. standard `ort.wasm.min.js`, Tiny/SSD/YOLOX forced to WASM
-
-Start with repeated `Tiny -> SSD -> YOLOX` sequences and keep RT-DETR out of the first comparison.
-
-If A reproduces and B remains stable across repeated equivalent runs, the ORT JSEP-capable build becomes a much stronger suspect.
-
-Only after that comparison should RT-DETR be added back to determine whether Transformers.js is independently contributing to the process high-water mark.
-
-### If R4 also fails
-
-Delay alone is insufficient. Prefer isolation sequences that test one hypothesis at a time:
-
-- Tiny only repeated
-- SSD only repeated
-- YOLOX only repeated
-- RT only repeated
-- Tiny -> SSD repeated
-- SSD -> YOLOX repeated
-- YOLOX -> RT repeated
-
-Avoid brute-forcing every combination without a specific hypothesis.
+Do not treat the 5/5 result as proof of a universal iOS memory limit or as proof that JSEP was the sole historical cause. It is device-level evidence that the architecture mitigation is effective on the tested path.
 
 ## Diagnostic limits
 
