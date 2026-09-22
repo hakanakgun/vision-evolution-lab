@@ -445,14 +445,17 @@
         await adapter.prepare();
         setLiveBackend(adapter);
         const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
+        state.stream=stream;
         const video=$('camera-video');video.srcObject=stream;await video.play();
-        state.stream=stream;state.live=true;resetLiveMetrics();
+        state.live=true;resetLiveMetrics();
         $('camera-empty').hidden=true;$('camera-canvas').hidden=false;$('live-badge').classList.add('on');$('camera-stop').disabled=false;
         $('live-size').textContent=`${video.videoWidth} × ${video.videoHeight} camera`;
         renderLiveModels();
         liveLoop(adapter,state.liveModel);
       }catch(err){
-        console.error(err);$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Camera unavailable</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;$('camera-start').disabled=false;
+        console.error(err);
+        if(state.stream){state.stream.getTracks().forEach(track=>track.stop());state.stream=null}
+        const video=$('camera-video');video.srcObject=null;$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Camera unavailable</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;$('camera-start').disabled=false;
       }
     }
 
