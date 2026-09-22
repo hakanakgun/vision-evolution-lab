@@ -104,6 +104,7 @@ for(const mode of ['standard-wasm','jsep']){
     runtimes.register(key,adapter);
   }
   check(runtimes.assertRegistered({capability:'race',group:'general-object'})===true,`${mode}: race adapters failed contract validation`);
+  check(runtimes.assertRegistered({capability:'timeMachine'})===true,`${mode}: Time Machine adapters failed contract validation`);
   const ordered=runtimes.list({capability:'race',group:'general-object'});
   const orders=ordered.map(adapter=>adapter.model.capabilities.race.order);
   const prefixes=ordered.map(adapter=>adapter.model.capabilities.race.prefix);
@@ -153,6 +154,7 @@ for(const key of ['tinyyolo','yolox','rtdetr'])check(!files.app.includes(`modelK
 check(!files.app.includes("benchmarkModel==='rtdetr'"),'Time Machine benchmark boundary returned to RT-DETR key branching');
 check(files.runtime.includes("runtime adapter missing inspectionData()"),'inspection-data adapter contract is not enforced');
 check(files.race.includes('inspectionData:()=>state.lastHeadMaps'),'YOLOX real inspection adapter hook missing');
+check(files.race.includes("runtimeRegistry.assertRegistered({capability:'timeMachine'})"),'Time Machine adapter completeness is not asserted at startup');
 for(const item of timeMachineModels){
   if(item.inspection===false)continue;
   check(item.inspection&&item.inspection.preview&&item.inspection.pipeline&&item.inspection.comparison&&item.inspection.intermediate,`${item.key}: inspection presentation contract incomplete`);
