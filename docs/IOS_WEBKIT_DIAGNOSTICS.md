@@ -2,7 +2,7 @@
 
 ## Status
 
-Open investigation. The memory/reload bug is **not fixed**.
+Open investigation. The memory/reload bug is **not yet physically confirmed fixed**. Starting with diag12, the normal iOS architecture no longer loads the JSEP-capable ONNX Runtime bundle for Tiny/SSD/YOLOX; those direct ORT models use the standard non-JSEP WASM distribution instead.
 
 On a physical iPhone running an iOS browser, repeated sequential benchmarking of all four detector runtimes can silently recreate the page. Most observed failures do not include an orderly `pagehide` and do not produce a catchable JavaScript exception before the new page instance starts.
 
@@ -223,6 +223,27 @@ References:
 - https://github.com/brave/brave-core/blob/master/ios/brave-ios/Sources/UserAgent/UserAgentBuilder.swift
 
 For this project, the runtime UI should continue separating browser brand from engine evidence and should not label an iOS Brave session as Blink without direct evidence.
+
+## Applied architecture mitigation in diag12
+
+The upstream evidence changed the default runtime policy rather than adding another broad matrix.
+
+On iOS/iPadOS:
+
+- direct ORT entrypoint: `ort.wasm.min.js`
+- expected ORT WASM artifact family: standard `ort-wasm-simd-threaded.wasm`
+- Tiny YOLOv2: WASM
+- SSD-MobileNetV1 INT8: WASM
+- YOLOX-Nano: WASM
+- RT-DETR R18: unchanged independent Transformers.js runtime, normally WebGPU fp16 with WASM q8 fallback
+
+On non-iOS platforms, direct ORT keeps `ort.webgpu.min.js` so YOLOX retains WebGPU-first behavior.
+
+For controlled comparison, `?ort=jsep` and `?ort=wasm` override the bundle selection for the entire page. Do not load both bundles into the same page.
+
+The reclamation-matrix localStorage key was advanced to v2 so pre-architecture-change R1-R4 state cannot be resumed as though it were the same experiment.
+
+This is a production-path mitigation plus a focused A/B mechanism, not a claim that WebKit process memory reclamation is solved.
 
 ## Next experiments
 
