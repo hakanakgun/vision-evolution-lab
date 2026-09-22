@@ -389,7 +389,7 @@
     RuntimeRegistry.register('ssd',{
       run:(source,canvas,{updateMain=false}={})=>inferSource(source,canvas,{updateMain}),
       release:releaseBaselineRuntime,
-      backend:()=>state.provider||'wasm',
+      backend:()=>(state.provider||'wasm').toUpperCase(),
       runtimeInfo:()=>({backend:state.provider||'wasm',bytes:MODEL.bytes,sessionPresent:Boolean(state.session),rawBufferPresent:Boolean(state.modelBuffer),rawBufferBytes:state.modelBuffer?.byteLength||0,sessionRuns:baselineSessionRuns,wasmThreads:WASM_THREADS}),
       handlesMainUi:true
     });
