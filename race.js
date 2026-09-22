@@ -123,9 +123,10 @@ ${tail||'—'}`;}
     return keys;
   }
   function getDiagnosticBackendSelection(){const out={};document.querySelectorAll('[data-diag-backend]').forEach(select=>{if(select.value&&select.value!=='auto')out[select.dataset.diagBackend]=select.value});writeLocal(BB_BACKEND_KEY,out);return out}
+  async function copyBlackbox(){const el=$('race-diag-blackbox'),button=$('race-diag-copy');if(!el||!button)return;const text=el.textContent||'';let copied=false;try{if(navigator.clipboard&&typeof navigator.clipboard.writeText==='function'){await navigator.clipboard.writeText(text);copied=true}}catch(_){}if(!copied){const area=document.createElement('textarea');area.value=text;area.readOnly=true;area.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';document.body.appendChild(area);area.focus();area.select();area.setSelectionRange(0,area.value.length);try{copied=document.execCommand('copy')}catch(_){}area.remove()}const originalText=button.textContent;button.textContent=copied?'Copied':'Copy failed';setTimeout(()=>{button.textContent=originalText},1200)}
   function setupDiagnosticControls(){
     if(!BLACKBOX)return;
-    const wrap=$('race-diag-controls'),models=$('race-diag-models'),backends=$('race-diag-backends'),settle=$('race-diag-settle');
+    const wrap=$('race-diag-controls'),models=$('race-diag-models'),backends=$('race-diag-backends'),settle=$('race-diag-settle'),copyRow=$('race-diag-copy-row'),copyButton=$('race-diag-copy');
     if(!wrap||!models)return;
     const specs=getRaceSpecs(null,null,{benchmarking:true}),known=new Set(specs.map(x=>x.key)),saved=readLocal(BB_SELECTION_KEY,null),selected=Array.isArray(saved)?saved.filter(x=>known.has(x)):specs.map(x=>x.key),settleOptions=[0,250,1000,3000],savedSettle=Number(readLocal(BB_SETTLE_KEY,0)),savedBackends=readLocal(BB_BACKEND_KEY,{});
     bbSettleMs=settleOptions.includes(savedSettle)?savedSettle:0;if(settle){settle.value=String(bbSettleMs);settle.addEventListener('change',()=>{const next=Number(settle.value);bbSettleMs=settleOptions.includes(next)?next:0;writeLocal(BB_SETTLE_KEY,bbSettleMs);renderBlackbox()})}
@@ -141,7 +142,7 @@ ${tail||'—'}`;}
     const setAll=checked=>{models.querySelectorAll('[data-diag-model]').forEach(x=>x.checked=checked);bbPlan=getDiagnosticSelection();renderBlackbox()};
     $('race-diag-all').addEventListener('click',()=>setAll(true));
     $('race-diag-none').addEventListener('click',()=>setAll(false));
-    wrap.hidden=false;bbPlan=getDiagnosticSelection();bbBackendPlan=getDiagnosticBackendSelection();for(const spec of specs)if(!(spec.key in bbResident))bbResident[spec.key]=false;renderBlackbox();
+    wrap.hidden=false;if(copyRow)copyRow.hidden=false;if(copyButton)copyButton.addEventListener('click',copyBlackbox);bbPlan=getDiagnosticSelection();bbBackendPlan=getDiagnosticBackendSelection();for(const spec of specs)if(!(spec.key in bbResident))bbResident[spec.key]=false;renderBlackbox();
   }
   function setDiagnosticControlsDisabled(disabled){if(!BLACKBOX)return;document.querySelectorAll('[data-diag-model],[data-diag-backend]').forEach(x=>x.disabled=disabled);$('race-diag-all').disabled=disabled;$('race-diag-none').disabled=disabled;const settle=$('race-diag-settle');if(settle)settle.disabled=disabled}
   const visible=d=>d.filter(x=>x.score>=threshold());
