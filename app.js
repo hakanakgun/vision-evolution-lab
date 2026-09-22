@@ -91,6 +91,7 @@
       document.querySelectorAll('.tab').forEach(btn => btn.setAttribute('aria-selected', String(btn.dataset.tab === id)));
       document.querySelectorAll('.panel').forEach(panel => panel.classList.toggle('active', panel.id === id));
       if(id !== 'live-camera' && state.live) stopCamera();
+      document.dispatchEvent(new CustomEvent('vision:tabchange',{detail:{tab:id}}));
     }
     document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.tab)));
     document.querySelectorAll('[data-jump]').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.jump)));
