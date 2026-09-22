@@ -1,5 +1,30 @@
 # Third-party notices
 
+## OpenCV.js 4.12.0 browser runtime
+
+- Browser package: `@techstark/opencv-js@4.12.0-release.1`.
+- Delivery: pinned jsDelivr npm URL, loaded lazily inside `classical-cv-worker.js`.
+- Package repository: `TechStark/opencv-js`.
+- Package metadata license: Apache-2.0.
+- Package metadata/readme identify the distributed OpenCV.js binary with OpenCV 4.12.0.
+- Purpose here: frontal-face cascade execution and HOG + linear SVM pedestrian detection.
+- The runtime is not bundled in this repository.
+
+OpenCV project licensing is Apache-2.0 for current OpenCV releases. Individual legacy source/data files can retain their own notices and those notices continue to apply.
+
+### OpenCV frontal-face cascade data
+
+- File: `haarcascade_frontalface_default.xml`.
+- OpenCV release: 4.12.0.
+- Exact source commit: `49486f61fb25722cbcf586b7f4320921d46fb38e`.
+- Git blob SHA: `cbd1aa89e927d8d54b49fe666bf17244c3c46a7b`.
+- Delivery: pinned jsDelivr GitHub URL; not bundled here.
+- The file header credits Rainer Lienhart and contains an Intel License Agreement / BSD-style redistribution notice. Those file-specific terms remain applicable.
+
+### OpenCV HOG default people detector
+
+The HOG implementation and built-in `getDefaultPeopleDetector()` coefficients are used from the OpenCV.js distribution. Vision Evolution Lab does not ship a separate HOG/SVM weights file. Applicable OpenCV and legacy source notices remain upstream terms.
+
 This project currently loads the following runtime dependency from a CDN.
 
 ## ONNX Runtime Web 1.30.0

@@ -96,13 +96,36 @@ The UI reports all six pairwise match counts across Tiny YOLOv2, SSD, YOLOX and 
 
 Without ground-truth annotations this does **not** establish which model is correct.
 
-## 6. Research metrics
+## 6. Classical CV vs AI timing and comparison
+
+The Classical CV vs AI lab is intentionally **not** part of the general-object 20-run Model Race. Its runnable classical methods solve different tasks:
+
+- the OpenCV frontal-face cascade detects frontal faces;
+- HOG + linear SVM detects pedestrians;
+- the modern AI reference is the Time Machine general-object detector selected when the comparison starts.
+
+The same local source image is reused, but the classical worker receives an aspect-preserving copy capped at 640 px on the longest side for browser practicality. That resize is an implementation/runtime choice, not a historical-algorithm claim.
+
+The module reports these timing boundaries separately:
+
+- **OpenCV startup** — dedicated worker creation plus lazy OpenCV.js import/runtime initialization;
+- **Cascade asset** — first runtime fetch/install of the pinned frontal-face XML into the OpenCV virtual filesystem;
+- **Detection** — the detector call itself after its runtime/input objects are ready;
+- **AI inference** — the selected AI adapter's native inference boundary, consistent with that model's existing runtime contract.
+
+The AI reference runs first and is released before OpenCV.js initializes so the comparison does not intentionally keep both an AI model runtime and the classical WASM runtime resident at the same time.
+
+Only HOG and the AI detector's `person` outputs receive a spatial agreement count. A match requires same-class IoU >= 0.35. This is **overlap evidence, not accuracy**. The frontal-face cascade is not scored against general-object person boxes because the tasks/classes are not equivalent.
+
+Zero classical detections are valid results. Dataset-level accuracy claims require annotated ground truth and are outside this module.
+
+## 7. Research metrics
 
 Paper/model-card AP, parameter counts, FLOPs, and vendor latency are shown only with their upstream context. They are not directly substituted for measurements from the current browser.
 
 Do not compare a paper's TensorRT/T4 latency with this page's browser WASM/WebGPU latency as if they were the same benchmark.
 
-## 7. Reproducibility checklist
+## 8. Reproducibility checklist
 
 For a useful shared result, record:
 
@@ -116,6 +139,6 @@ For a useful shared result, record:
 8. p50/p90/min–max/CV from the 20-run warm benchmark;
 9. whether the tab was foreground and the device was on battery / low-power mode if relevant.
 
-## 8. What this is not
+## 9. What this is not
 
 Vision Evolution Lab is an educational and engineering comparison environment, not a replacement for COCO/ImageNet evaluation tooling. Dataset-level accuracy claims require the relevant annotated evaluation set and its official metric implementation.

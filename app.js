@@ -66,9 +66,10 @@
       const track=$('timeline-track'),entries=timeMachineEntries();if(!track)return;
       track.replaceChildren();track.style.setProperty('--timeline-count',String(Math.max(1,entries.length)));track.style.minWidth=Math.max(780,entries.length*78)+'px';
       for(const entry of entries){
-        const runnable=Boolean(entry.model),item=document.createElement(runnable?'button':'div');
-        item.className=['milestone',runnable?'runnable runnable-launch':'',entry.kind==='research'?'research-only':'',entry.className||'',runnable&&entry.model===state.activeModel?'active':''].filter(Boolean).join(' ');
+        const runnable=Boolean(entry.model),jump=Boolean(entry.jump),item=document.createElement(runnable||jump?'button':'div');
+        item.className=['milestone',runnable?'runnable runnable-launch':'',jump?'module-launch':'',entry.kind==='research'?'research-only':'',entry.className||'',runnable&&entry.model===state.activeModel?'active':''].filter(Boolean).join(' ');
         if(runnable){item.type='button';item.dataset.runnableModel=entry.model;item.setAttribute('aria-label',`Run ${entry.title} ${entry.year}`)}
+        else if(jump){item.type='button';item.dataset.jump=entry.jump;item.setAttribute('aria-label',`Open ${entry.title} in Classical CV vs AI`)}
         const dot=document.createElement('div');dot.className='dot';const year=document.createElement('div');year.className='year';year.textContent=String(entry.year);
         const strong=document.createElement('strong');strong.textContent=entry.title;const note=document.createElement('span');note.textContent=entry.note||'';
         item.append(dot,year,strong,note);track.appendChild(item);
@@ -91,6 +92,7 @@
       document.querySelectorAll('.tab').forEach(btn => btn.setAttribute('aria-selected', String(btn.dataset.tab === id)));
       document.querySelectorAll('.panel').forEach(panel => panel.classList.toggle('active', panel.id === id));
       if(id !== 'live-camera' && state.live) stopCamera();
+      document.dispatchEvent(new CustomEvent('vision:tabchange',{detail:{tab:id}}));
     }
     document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.tab)));
     document.querySelectorAll('[data-jump]').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.jump)));

@@ -1,5 +1,43 @@
 # Model sources and provenance
 
+## Classical detector sources and provenance
+
+### Viola–Jones method family / OpenCV frontal-face cascade
+
+- Purpose: runnable historical face-detection method in the Classical CV vs AI lab.
+- Historical method: Viola & Jones, *Rapid Object Detection using a Boosted Cascade of Simple Features* (2001).
+- Browser implementation: OpenCV.js `CascadeClassifier`.
+- Runtime package: `@techstark/opencv-js@4.12.0-release.1`, loaded lazily in a dedicated Web Worker.
+- Package license: Apache-2.0; package metadata identifies its browser binary as OpenCV.js 4.12.0.
+- Cascade source: OpenCV repository release 4.12.0, exact commit `49486f61fb25722cbcf586b7f4320921d46fb38e`.
+- File: `data/haarcascades/haarcascade_frontalface_default.xml`.
+- Git blob SHA: `cbd1aa89e927d8d54b49fe666bf17244c3c46a7b`.
+- The XML header describes a stump-based 24×24 AdaBoost frontal-face detector and credits Rainer Lienhart.
+- The XML contains its own Intel License Agreement / BSD-style redistribution terms.
+- Delivery: fetched at runtime from a pinned jsDelivr GitHub URL; not bundled in this repository.
+- Working image: aspect-preserving, longest side <=640 for browser practicality.
+- Page preprocessing: RGBA → grayscale → histogram equalization.
+- Detection call: scale factor 1.1, minimum neighbors 3, minimum object size 24×24.
+- Important interpretation: this is a runnable representative of the Viola–Jones cascade method family. It is **not** described as the original 2001 paper's trained weights.
+
+### HOG + linear SVM pedestrian detector
+
+- Purpose: runnable 2005-era pedestrian-detection method in the Classical CV vs AI lab.
+- Historical method: Dalal & Triggs, *Histograms of Oriented Gradients for Human Detection* (2005).
+- Browser implementation: OpenCV.js `HOGDescriptor`.
+- Detector coefficients: OpenCV's built-in `HOGDescriptor.getDefaultPeopleDetector()`.
+- Detection window: OpenCV default 64×128 people detector.
+- Browser call: multi-scale sliding-window detection with 8×8 window stride, 8×8 padding, scale 1.05, group threshold 2.
+- The OpenCV HOG implementation source explicitly identifies the Dalal–Triggs descriptor/object-detection family and carries the applicable OpenCV/legacy source notice.
+- No separate SVM model binary is redistributed by this repository; the default detector coefficients come from the OpenCV.js distribution.
+- Important interpretation: Vision Evolution Lab does not claim OpenCV's embedded default detector coefficients are the exact original paper training artifact.
+
+### Task and comparison boundary
+
+These classical methods are intentionally excluded from the general-object Model Race. The face cascade, pedestrian detector, and modern general-object AI detectors have different tasks and label spaces.
+
+The Classical CV vs AI lab only computes same-class HOG ↔ AI `person` spatial overlap at IoU >= 0.35. That overlap is comparison evidence, not ground-truth accuracy.
+
 ## Tiny YOLOv2
 
 - Purpose: earliest runnable detector generation in Vision Evolution Lab, representing 2016-era YOLOv2 grid/anchor detection.
