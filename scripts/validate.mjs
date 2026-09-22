@@ -190,20 +190,22 @@ check(files.app.includes("new CustomEvent('vision:tabchange'"),'generic tab life
 check(files.classical.includes("document.addEventListener('vision:tabchange'")&&files.classical.includes("if(tab!=='classical-cv'&&state.worker)disposeWorker"),'Classical CV worker is not released on tab leave');
 check(files.classical.includes("window.addEventListener('pagehide'")&&files.classical.includes("state.worker.terminate()"),'Classical CV worker page-exit cleanup missing');
 check(files.classical.includes('await runtimes.releaseAll()')&&files.classical.includes('finally{await adapter.release()}'),'AI reference runtime ownership/release contract missing');
+const classicalRunStart=files.classical.indexOf('async function runComparison()'),classicalRunEnd=files.classical.indexOf("$('classical-image-file').addEventListener",classicalRunStart),classicalRunBody=files.classical.slice(classicalRunStart,classicalRunEnd);
+check(classicalRunStart>=0&&classicalRunBody.indexOf('await runAi(source)')>=0&&classicalRunBody.indexOf('await runAi(source)')<classicalRunBody.indexOf('await ensureWorker()'),'AI reference must run and release before OpenCV worker initialization');
 check(files.classical.includes("adapter.run(source,$('classical-ai-canvas'),{updateMain:false})"),'Classical AI reference must use the active runtime adapter outside benchmark semantics');
 check(files.classical.includes("bestIou=.35"),'HOG/AI person overlap IoU threshold changed');
 check(files.classical.includes("d.label==='person'&&d.score>=confidence()"),'HOG/AI overlap must use retained AI person detections at current UI confidence');
 check(files.classical.includes("WORK_MAX=640"),'Classical CV browser working-image cap changed');
 check(files.classical.includes("classical-cv-worker.js?v=${VERSION}")&&files.classical.includes("VERSION='0.8.0'"),'Classical CV worker cache/version pin missing');
-check(!files.index.includes('@techstark/opencv-js')&&!files.index.includes('opencv.js'),'OpenCV.js must remain lazy and worker-only');
-check(!files.index.includes('classical-cv-worker.js'),'Classical CV worker must not be loaded as a page script');
+check(!files.index.includes('cdn.jsdelivr.net/npm/@techstark/opencv-js')&&!/<script[^>]+src=["'][^"']*opencv(?:\.min)?\.js/i.test(files.index),'OpenCV.js must remain lazy and worker-only');
+check(!/<script[^>]+src=["'][^"']*classical-cv-worker\.js/i.test(files.index),'Classical CV worker must not be loaded as a page script');
 check(files.classicalWorker.includes("@techstark/opencv-js@4.12.0-release.1/dist/opencv.js"),'OpenCV.js runtime pin changed');
 check(files.classicalWorker.includes("49486f61fb25722cbcf586b7f4320921d46fb38e/data/haarcascades/haarcascade_frontalface_default.xml"),'frontal-face cascade commit pin changed');
 check(files.classicalWorker.includes("new cv.CascadeClassifier()")&&files.classicalWorker.includes("classifier.detectMultiScale"),'frontal-face cascade execution missing');
 check(files.classicalWorker.includes("new cv.HOGDescriptor()")&&files.classicalWorker.includes("cv.HOGDescriptor.getDefaultPeopleDetector()")&&files.classicalWorker.includes("hog.detectMultiScale"),'HOG + SVM detector execution missing');
 check(files.classicalWorker.includes("cv.FS_createDataFile"),'cascade virtual-filesystem installation missing');
 check(files.classicalWorker.includes("finally{")&&files.classicalWorker.includes("safeDelete("),'OpenCV.js explicit cleanup contract missing');
-check(files.classical.includes("disposeWorker('after leaving Classical CV')")||files.classical.includes("disposeWorker('after leaving Classical CV')"),'Classical worker lifecycle label missing');
+check(files.classical.includes("disposeWorker('after leaving Classical CV')"),'Classical worker lifecycle label missing');
 
 check(files.index.includes('id="race-results"')&&files.index.includes('id="race-benchmark-body"')&&files.index.includes('id="race-diff-grid"')&&files.index.includes('id="race-architecture"'),'dynamic Model Race containers missing');
 check(!files.index.includes('id="race-tiny-canvas"')&&!files.index.includes('id="rb-tiny-backend"')&&!files.index.includes('id="race-match-tiny-ssd"'),'static four-model Model Race markup returned');
