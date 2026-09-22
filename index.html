@@ -258,6 +258,7 @@
         <div id="race-diagnostics" hidden>
           <div class="status" id="race-diag-status"></div>
           <div class="status error" id="race-diag-crash" hidden></div>
+          <div id="race-blackbox-tools" hidden>
           <div class="status" id="race-diag-controls">
             <div class="tiny"><b>Diagnostic plan</b> · diag=2 keeps the lightweight reclamation experiment; diag=3 adds crash-safe deep telemetry. Use <span class="kbd">ort=wasm</span> or <span class="kbd">ort=jsep</span> only for an intentional runtime A/B.</div>
             <div id="race-diag-models" style="margin-top:6px"></div>
@@ -267,6 +268,7 @@
           </div>
           <div id="race-diag-copy-row" class="race-diag-copy-row"><button class="btn secondary" id="race-diag-copy" type="button">Copy Black Box</button><button class="btn secondary" id="race-diag-copy-full" type="button">Copy full diagnostic JSON</button></div>
           <pre class="status race-diag-blackbox" id="race-diag-blackbox"></pre>
+          </div>
         </div>
       </div>
 
