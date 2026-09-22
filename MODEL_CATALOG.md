@@ -3,11 +3,14 @@
 Status meanings:
 
 - **Runnable** — downloaded and executed in the browser by Vision Evolution Lab.
+- **Runnable (Classical CV)** — executed in the isolated Classical CV worker; not a general-object Model Race model.
 - **Research** — referenced in the history/evolution UI, but not downloaded or executed.
 - **Candidate** — may become runnable only after browser compatibility plus checkpoint/license provenance are verified.
 
 | Year | Model | Status | Architecture shift | Upstream license/provenance | Browser note |
 | --- | --- | --- | --- | --- | --- |
+| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable (Classical CV) | boosted cascade with Haar-like features | OpenCV 4.12.0 cascade at commit `49486f61...`; XML blob `cbd1aa89...`; file header credits Rainer Lienhart and carries Intel/BSD-style terms | OpenCV.js/WASM worker; representative of the cascade family, not the original 2001 paper weights |
+| 2005 | HOG + linear SVM pedestrian detector | Runnable (Classical CV) | gradient-orientation descriptor + sliding-window linear classifier | OpenCV `HOGDescriptor.getDefaultPeopleDetector()`; OpenCV distribution/source notices | OpenCV.js/WASM worker; 64×128 default people detector; not included in general-object Model Race |
 | 2016 | SSD | Research | single-shot multi-scale dense detection | paper reference | historical milestone |
 | 2016 | Tiny YOLOv2 | Runnable | compact grid/anchor CNN detector | ONNX Model Zoo migration; pinned HF revision; Pascal VOC; upstream license metadata/body conflict documented | WASM compatibility policy; physical iPhone/WebKit runtime validation pending |
 | 2017 | SSD-MobileNetV1 INT8 | Runnable | lightweight mobile backbone + SSD | pinned ONNX Model Zoo source; see `MODEL_SOURCES.md` | WASM policy because current ORT WebGPU path fails at run time for this export |
@@ -33,6 +36,19 @@ Before a candidate becomes runnable, verify:
 The current app avoids redistributing model binaries: runnable models are fetched from pinned or official upstream sources.
 
 ## Current selection rationale
+
+## Classical CV runnable methods
+
+### Viola–Jones method family / OpenCV frontal-face cascade
+
+The runnable 2001-era entry uses OpenCV's `haarcascade_frontalface_default.xml` to make the boosted-cascade method family executable in the browser. The pinned XML is a later OpenCV-distributed trained frontal-face cascade created by Rainer Lienhart; Vision Evolution Lab does not present it as the original Viola–Jones paper's trained artifact.
+
+### HOG + linear SVM
+
+The runnable 2005-era entry uses OpenCV's `HOGDescriptor` with `getDefaultPeopleDetector()` and its default 64×128 pedestrian window. It represents the Dalal–Triggs HOG + linear-classifier family without claiming that OpenCV's embedded coefficients are the original paper training artifact.
+
+Both methods remain outside Model Race because face detection, pedestrian detection, and general-object detection are not the same evaluation task.
+
 
 ### Tiny YOLOv2
 
