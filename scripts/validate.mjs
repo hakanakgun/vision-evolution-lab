@@ -154,6 +154,9 @@ for(const key of ['tinyyolo','yolox','rtdetr'])check(!files.app.includes(`modelK
 check(!files.app.includes("benchmarkModel==='rtdetr'"),'Time Machine benchmark boundary returned to RT-DETR key branching');
 check(files.runtime.includes("runtime adapter missing inspectionData()"),'inspection-data adapter contract is not enforced');
 check(files.race.includes('inspectionData:()=>state.lastHeadMaps'),'YOLOX real inspection adapter hook missing');
+check(files.app.includes('function renderScalarHeatmaps')&&files.app.includes('function renderInspectionData'),'generic inspection renderer missing');
+check(!files.index.includes('id="feature-s8"')&&!files.index.includes('id="feature-s16"')&&!files.index.includes('id="feature-s32"'),'fixed YOLOX feature-map canvases returned');
+check(!files.race.includes('function renderHeadMaps')&&!files.race.includes('renderFeatures'),'inspection rendering leaked back into inference runtime');
 check(files.race.includes("runtimeRegistry.assertRegistered({capability:'timeMachine'})"),'Time Machine adapter completeness is not asserted at startup');
 for(const item of timeMachineModels){
   if(item.inspection===false)continue;
