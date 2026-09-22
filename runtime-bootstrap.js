@@ -22,5 +22,5 @@
 
   // Keep ORT parser-blocking so downstream scripts preserve their previous
   // startup order and lifecycle handlers are registered before initial pageshow.
-  document.write('<script src="'+ortUrl+'"><\\/script>');
+  document.write('<script src="'+ortUrl+'"></'+'script>');
 })();
