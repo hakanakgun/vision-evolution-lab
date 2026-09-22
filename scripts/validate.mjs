@@ -41,6 +41,9 @@ const raceModels=metadataWindow.VisionRuntimeRegistry.modelKeys
   .map(key=>({key,model:metadataRegistry[key],race:metadataWindow.VisionRuntimeRegistry.raceMeta(metadataRegistry[key])}))
   .filter(entry=>entry.race&&entry.race.group==='general-object')
   .sort((a,b)=>a.race.order-b.race.order);
+const timeMachineModels=(metadataRegistry.timeline||[])
+  .filter(entry=>entry.model)
+  .map(entry=>({entry,key:entry.model,model:metadataRegistry[entry.model],inspection:metadataRegistry[entry.model]?.capabilities?.inspection}));
 
 const ids=[...files.index.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
 const duplicateIds=[...new Set(ids.filter((id,index,list)=>list.indexOf(id)!==index))];
@@ -96,7 +99,9 @@ for(const mode of ['standard-wasm','jsep']){
       check(race.badge&&race.emptyText&&race.architecture,`${key}: race presentation metadata incomplete`);
       check(Array.isArray(race.metrics)&&race.metrics.length>0,`${key}: race metrics missing`);
     }
-    runtimes.register(key,{run:async()=>({}),release:async()=>{},backend:()=>''});
+    const adapter={run:async()=>({}),release:async()=>{},backend:()=>''};
+    if(cap.inspection?.intermediate?.data==='adapter')adapter.inspectionData=()=>[];
+    runtimes.register(key,adapter);
   }
   check(runtimes.assertRegistered({capability:'race',group:'general-object'})===true,`${mode}: race adapters failed contract validation`);
   const ordered=runtimes.list({capability:'race',group:'general-object'});
@@ -112,7 +117,9 @@ check(JSON.stringify(jsep.yolox.executionProviders)==='["webgpu","wasm"]','JSEP 
 
 const releaseWindow=loadModelContracts('standard-wasm'),released=[];
 for(const key of releaseWindow.VisionRuntimeRegistry.modelKeys){
-  releaseWindow.VisionRuntimeRegistry.register(key,{run:async()=>({}),release:async()=>{released.push(key)},backend:()=>''});
+  const model=releaseWindow.VisionModels[key],adapter={run:async()=>({}),release:async()=>{released.push(key)},backend:()=>''};
+  if(model.capabilities?.inspection?.intermediate?.data==='adapter')adapter.inspectionData=()=>[];
+  releaseWindow.VisionRuntimeRegistry.register(key,adapter);
 }
 const expectedReleased=releaseWindow.VisionRuntimeRegistry.list({capability:'race',group:'general-object'}).map(adapter=>adapter.key).filter(key=>key!=='ssd');
 await releaseWindow.VisionRuntimeRegistry.releaseAll({exceptKey:'ssd',capability:'race',group:'general-object'});
@@ -132,6 +139,24 @@ check(ios.config.ortMode==='standard-wasm'&&ios.writes[0]?.includes('ort.wasm.mi
 check(desktop.config.ortMode==='jsep'&&desktop.writes[0]?.includes('ort.webgpu.min.js'),'desktop bootstrap must select JSEP/WebGPU');
 check(forceJsep.config.ortMode==='jsep','?ort=jsep override failed');
 check(forceWasm.config.ortMode==='standard-wasm','?ort=wasm override failed');
+
+const expectedTimeMachineKeys=metadataWindow.VisionRuntimeRegistry.modelKeys.filter(key=>metadataWindow.VisionRuntimeRegistry.capabilityEnabled(metadataRegistry[key],'timeMachine'));
+const timelineKeys=timeMachineModels.map(item=>item.key);
+check(new Set(timelineKeys).size===timelineKeys.length,'Time Machine timeline contains duplicate runnable models');
+check(expectedTimeMachineKeys.every(key=>timelineKeys.includes(key))&&timelineKeys.every(key=>expectedTimeMachineKeys.includes(key)),'Time Machine timeline/model capability membership mismatch');
+check(metadataRegistry.defaults?.timeMachine&&expectedTimeMachineKeys.includes(metadataRegistry.defaults.timeMachine),'default Time Machine model invalid');
+check(files.index.includes('id="timeline-track"')&&files.index.includes('id="preprocess-table"'),'dynamic Time Machine/inspection containers missing');
+check(!files.index.includes('data-runnable-model=')&&!files.index.includes('class="preprocess-row'),'static Time Machine timeline or preprocessing rows returned');
+check(files.app.includes('function renderTimeline()')&&files.app.includes('function renderPreprocessingComparison()'),'Time Machine presentation is not registry-driven');
+check(files.app.includes('function inspectionFor(modelKey)')&&!files.app.includes('INSIDE_SPECS'),'Inside the Model is not capability-driven');
+for(const key of ['tinyyolo','yolox','rtdetr'])check(!files.app.includes(`modelKey==='${key}'`)&&!files.app.includes(`state.activeModel==='${key}'`),`app.js restored model-name inspection/presentation branch for ${key}`);
+check(!files.app.includes("benchmarkModel==='rtdetr'"),'Time Machine benchmark boundary returned to RT-DETR key branching');
+check(files.runtime.includes("runtime adapter missing inspectionData()"),'inspection-data adapter contract is not enforced');
+check(files.race.includes('inspectionData:()=>state.lastHeadMaps'),'YOLOX real inspection adapter hook missing');
+for(const item of timeMachineModels){
+  if(item.inspection===false)continue;
+  check(item.inspection&&item.inspection.preview&&item.inspection.pipeline&&item.inspection.comparison&&item.inspection.intermediate,`${item.key}: inspection presentation contract incomplete`);
+}
 
 check(files.index.includes('id="race-results"')&&files.index.includes('id="race-benchmark-body"')&&files.index.includes('id="race-diff-grid"')&&files.index.includes('id="race-architecture"'),'dynamic Model Race containers missing');
 check(!files.index.includes('id="race-tiny-canvas"')&&!files.index.includes('id="rb-tiny-backend"')&&!files.index.includes('id="race-match-tiny-ssd"'),'static four-model Model Race markup returned');
@@ -177,4 +202,4 @@ for(const file of markdown){
 }
 check(broken.length===0,`broken local markdown links: ${broken.join(' | ')}`);
 
-console.log(`validate: PASS · ${files.version.version} · ${raceModels.length} race model contracts · dynamic UI`);
+console.log(`validate: PASS · ${files.version.version} · ${timeMachineModels.length} Time Machine models · ${raceModels.length} race models · dynamic UI`);
