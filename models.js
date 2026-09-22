@@ -6,10 +6,10 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.7.7',
+    version:'0.7.8',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
-    defaults:Object.freeze({timeMachine:'ssd'}),
+    defaults:Object.freeze({timeMachine:'ssd',live:'ssd'}),
     timeline:Object.freeze([
       Object.freeze({year:2001,title:'Viola–Jones',note:'example · face detection',kind:'milestone'}),
       Object.freeze({year:2005,title:'HOG + SVM',note:'example · pedestrian detection',kind:'milestone'}),
@@ -59,7 +59,7 @@
     ssd:Object.freeze({
       id:'ssd-mobilenet-v1-12-int8',title:'SSD-MobileNetV1 INT8',year:2017,status:'runnable',family:'SSD + MobileNetV1',task:'object-detection',
       license:'permissive upstream; see MODEL_SOURCES.md',bytes:9542048,sha256:'2b79e6a7fb1ec6a33f332b9b10d82d9de4b7b49dcd26b5946921bb356895c954',maxSide:640,
-      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:true,race:Object.freeze({
+      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:Object.freeze({enabled:true,order:10,summary:'Sequential inference · no frame queue'}),race:Object.freeze({
         enabled:true,group:'general-object',order:20,prefix:'ssd',workCanvasId:'input-canvas',timingBoundary:'ort-session',
         badge:'2017 baseline',badgeClass:'',cardClass:'',emptyText:'Waiting for a race image.',progress:false,
         architecture:'predefined anchors · lightweight CNN backbone · single-shot dense prediction',
