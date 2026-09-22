@@ -79,18 +79,7 @@
     <section class="panel active" id="time-machine" role="tabpanel">
       <div class="card timeline scroll-shell" data-scroll-shell>
         <div class="timeline-scroll" data-scroll-area>
-          <div class="timeline-track" aria-label="Computer vision timeline">
-          <div class="milestone"><div class="dot"></div><div class="year">2001</div><strong>Viola–Jones</strong><span>example · face detection</span></div>
-          <div class="milestone"><div class="dot"></div><div class="year">2005</div><strong>HOG + SVM</strong><span>example · pedestrian detection</span></div>
-          <div class="milestone"><div class="dot"></div><div class="year">2016</div><strong>SSD</strong><span>milestone</span></div>
-          <button class="milestone runnable runnable-launch" type="button" data-runnable-model="tinyyolo" aria-label="Run Tiny YOLOv2 2016"><div class="dot"></div><div class="year">2016</div><strong>Tiny YOLOv2</strong><span>tap to run · VOC20</span></button>
-          <button class="milestone active runnable-launch" type="button" data-runnable-model="ssd" aria-label="Run SSD MobileNet 2017"><div class="dot"></div><div class="year">2017</div><strong>SSD + MobileNet</strong><span>tap to run</span></button>
-          <div class="milestone"><div class="dot"></div><div class="year">2020</div><strong>DETR</strong><span>milestone</span></div>
-          <button class="milestone runnable runnable-launch" type="button" data-runnable-model="yolox" aria-label="Run YOLOX Nano 2021"><div class="dot"></div><div class="year">2021</div><strong>YOLOX-Nano</strong><span>tap to run</span></button>
-          <button class="milestone runnable transformer runnable-launch" type="button" data-runnable-model="rtdetr" aria-label="Run RT-DETR R18 2023"><div class="dot"></div><div class="year">2023</div><strong>RT-DETR R18</strong><span>tap to run</span></button>
-          <div class="milestone research-only"><div class="dot"></div><div class="year">2024</div><strong>LW-DETR</strong><span>research</span></div>
-          <div class="milestone research-only"><div class="dot"></div><div class="year">2024</div><strong>D-FINE</strong><span>research</span></div>
-          </div>
+          <div class="timeline-track" id="timeline-track" aria-label="Computer vision timeline"></div>
         </div>
         <div class="scroll-cue timeline-cue" aria-hidden="true">Swipe through history →</div>
         <div class="timeline-help">Outlined runnable milestones are tappable. Selecting a runnable generation keeps you in Time Machine and switches the active model runner below.</div>
@@ -331,15 +320,7 @@
         </div>
         <div class="card preprocessing-card">
           <div class="side-head"><div class="side-title">Native preprocessing</div><div class="tiny">fairness context</div></div>
-          <div class="preprocess-table">
-            <div class="preprocess-row preprocess-head five"><span></span><b>Tiny YOLOv2</b><b>SSD-MobileNet</b><b>YOLOX-Nano</b><b>RT-DETR R18</b></div>
-            <div class="preprocess-row five"><span>Input</span><b>416×416</b><b>dynamic ≤640</b><b>416×416</b><b>640×640</b></div>
-            <div class="preprocess-row five"><span>Resize</span><b>direct stretch</b><b>aspect preserve</b><b>aspect preserve</b><b>processor resize</b></div>
-            <div class="preprocess-row five"><span>Padding</span><b>none</b><b>none</b><b>top-left · 114</b><b>none</b></div>
-            <div class="preprocess-row five"><span>Layout</span><b>NCHW</b><b>NHWC</b><b>NCHW</b><b>NCHW</b></div>
-            <div class="preprocess-row five"><span>Dtype</span><b>float32</b><b>uint8</b><b>float32</b><b>float input</b></div>
-            <div class="preprocess-row five"><span>Channel order</span><b>RGB · raw pixels</b><b>RGB</b><b>BGR</b><b>RGB · 1/255</b></div>
-          </div>
+          <div class="preprocess-table" id="preprocess-table"></div>
           <div class="note">Model Race intentionally uses the same source image and UI confidence threshold, not an artificially identical tensor. Each checkpoint receives its native preprocessing contract.</div>
           <div class="links inspector-links"><a href="BENCHMARK_METHODOLOGY.md" target="_blank">Benchmark methodology ↗</a><a href="MODEL_CATALOG.md" target="_blank">Model catalog ↗</a></div>
         </div>
