@@ -1,5 +1,37 @@
 # Model sources and provenance
 
+## Tiny YOLOv2
+
+- Purpose: earliest runnable detector generation in Vision Evolution Lab, representing 2016-era YOLOv2 grid/anchor detection.
+- Architecture family: Tiny YOLOv2, 9 convolutional layers and 6 max-pooling layers according to the upstream model card.
+- Paper: *YOLO9000: Better, Faster, Stronger*, Redmon & Farhadi, 2016.
+- Dataset reported upstream: Pascal VOC; 20 object classes.
+- Upstream repository: `onnxmodelzoo/tinyyolov2-8` on Hugging Face, part of the ONNX Model Zoo migration.
+- Pinned revision: `869707e16e57006f97d98af54cfdc8a1d388ae61`.
+- File: `tinyyolov2-8.onnx`.
+- File SHA-256 reported by Hugging Face/Xet: `583fb7fdc948435ceac9fa82efc7708701efe8382a859a3dd46526b155f5f2ae`.
+- Reported asset size: approximately 63.5 MB.
+- ONNX version/opset reported upstream: ONNX 1.3 / opset 8.
+- Input: float32 NCHW `1×3×416×416` RGB.
+- Output: `1×125×13×13`, representing 5 anchors × (4 box values + objectness + 20 class logits) for each 13×13 grid cell.
+- Anchors: `1.08,1.19`, `3.42,4.41`, `6.63,11.38`, `9.42,5.11`, `16.62,10.52`.
+- Conversion lineage reported upstream: Darknet → Keras → Core ML → ONNX through ONNXMLTools.
+- Browser runtime policy: ONNX Runtime Web WASM initially. This historical opset-8 export has not yet completed physical iPhone/WebKit runtime validation in this project.
+
+### Preprocessing note
+
+The upstream ONNX Model Zoo card leaves its `Preprocessing` subsection empty. The Core ML conversion source says YOLO expects input pixels in 0–1 and used `image_scale=1/255`; the migrated ONNX file instead exposes a float32 NCHW tensor interface. A contemporary independent implementation reports matching ONNX Runtime outputs while directly packing resized image bytes into NCHW floats. Vision Evolution Lab currently follows that exact-export convention: direct 416×416 resize, RGB float32 NCHW, raw 0–255 browser pixel values. Because the upstream ONNX preprocessing contract is incomplete, this remains an explicit implementation assumption until physical-browser detections validate it.
+
+### Postprocessing
+
+The page decodes the 13×13 grid with the upstream VOC anchors, sigmoid box/objectness transforms, softmax over the 20 class logits, and class-aware NMS at IoU 0.40. Detections are retained down to the UI slider minimum (0.10), then the current UI confidence is applied during drawing/comparison so threshold changes can redraw without rerunning inference.
+
+For four-model overlap only, legacy VOC label synonyms such as `aeroplane`, `motorbike`, `diningtable`, `pottedplant`, `sofa`, and `tvmonitor` are mapped to equivalent COCO-style display names. This does not make the training label spaces equivalent; Tiny YOLOv2 still cannot predict COCO-only classes.
+
+### License note
+
+The Hugging Face repository metadata currently declares `apache-2.0`, while the imported ONNX Model Zoo model-card body states `MIT`. This is internally inconsistent upstream. Both are permissive, but Vision Evolution Lab does not infer a single definitive weights license from that conflict. The binary is not redistributed by this repository; the browser fetches the exact pinned upstream asset. Re-check canonical terms before bundling, mirroring, modifying, or commercially redistributing the checkpoint. Pascal VOC dataset terms are separate from model/code terms.
+
 ## SSD-MobileNetV1-12 INT8
 
 - Purpose: first runnable object-detection baseline.

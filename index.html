@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.21-v0.6.0">
+<html lang="en" data-build="2026.09.22-v0.7.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.21-v0.6.0';
+      const CURRENT_BUILD = '2026.09.22-v0.7.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.6.0">
+  <link rel="stylesheet" href="styles.css?v=0.7.0">
 </head>
 <body>
   <main class="shell">
@@ -80,9 +80,10 @@
       <div class="card timeline scroll-shell" data-scroll-shell>
         <div class="timeline-scroll" data-scroll-area>
           <div class="timeline-track" aria-label="Computer vision timeline">
-          <div class="milestone"><div class="dot"></div><div class="year">2001</div><strong>Viola–Jones</strong><span>historical</span></div>
-          <div class="milestone"><div class="dot"></div><div class="year">2005</div><strong>HOG + SVM</strong><span>historical</span></div>
+          <div class="milestone"><div class="dot"></div><div class="year">2001</div><strong>Viola–Jones</strong><span>example · face detection</span></div>
+          <div class="milestone"><div class="dot"></div><div class="year">2005</div><strong>HOG + SVM</strong><span>example · pedestrian detection</span></div>
           <div class="milestone"><div class="dot"></div><div class="year">2016</div><strong>SSD</strong><span>milestone</span></div>
+          <button class="milestone runnable runnable-launch" type="button" data-runnable-model="tinyyolo" aria-label="Run Tiny YOLOv2 2016"><div class="dot"></div><div class="year">2016</div><strong>Tiny YOLOv2</strong><span>tap to run · VOC20</span></button>
           <button class="milestone active runnable-launch" type="button" data-runnable-model="ssd" aria-label="Run SSD MobileNet 2017"><div class="dot"></div><div class="year">2017</div><strong>SSD + MobileNet</strong><span>tap to run</span></button>
           <div class="milestone"><div class="dot"></div><div class="year">2020</div><strong>DETR</strong><span>milestone</span></div>
           <button class="milestone runnable runnable-launch" type="button" data-runnable-model="yolox" aria-label="Run YOLOX Nano 2021"><div class="dot"></div><div class="year">2021</div><strong>YOLOX-Nano</strong><span>tap to run</span></button>
@@ -237,9 +238,9 @@
     <section class="panel" id="model-race" role="tabpanel">
       <div class="card race-intro">
         <div>
-          <div class="eyebrow">Executable comparison · 2017 → 2023</div>
-          <h2>Three detector generations, one image</h2>
-          <p class="lede">The same source image and confidence threshold run through SSD-MobileNet, YOLOX-Nano, and RT-DETR R18. Each model keeps its native preprocessing and runtime path; timing boundaries are labeled where they differ.</p>
+          <div class="eyebrow">Executable comparison · 2016 → 2023</div>
+          <h2>Four detector generations, one image</h2>
+          <p class="lede">The same source image and confidence threshold run through Tiny YOLOv2, SSD-MobileNet, YOLOX-Nano, and RT-DETR R18. Each model keeps its native preprocessing, label space, and runtime path; timing boundaries are labeled where they differ.</p>
         </div>
         <div class="controls race-controls">
           <label class="btn" for="race-image-file">Choose race image</label>
@@ -254,6 +255,13 @@
       </div>
 
       <div class="race-grid race-results">
+        <article class="card race-model">
+          <div class="side-head"><div><span class="pill">2016 · VOC20</span><h2>Tiny YOLOv2</h2></div><div class="tiny" id="race-tiny-backend">not loaded</div></div>
+          <div class="race-stage"><canvas id="race-tiny-canvas" hidden></canvas><div class="empty" id="race-tiny-empty">Pinned ONNX Model Zoo export · Pascal VOC 20 classes · ~63.5 MB.</div></div>
+          <div class="metrics"><div class="metric"><span>Input</span><b>416×416</b></div><div class="metric"><span>Model file</span><b>~63.5 MB</b></div><div class="metric"><span>Dataset</span><b>Pascal VOC</b></div><div class="metric"><span>Asset source</span><b id="race-tiny-source">—</b></div><div class="metric"><span>Cache</span><b id="race-tiny-cache">checking…</b></div><div class="metric"><span>Transfer / init</span><b id="race-tiny-startup">—</b></div><div class="metric"><span>Inference</span><b id="race-tiny-inf">—</b></div><div class="metric"><span>End-to-end</span><b id="race-tiny-total">—</b></div><div class="metric"><span>Detections</span><b id="race-tiny-count">—</b></div></div>
+          <div class="model-progress"><div class="model-progress-bar" id="race-tiny-progress-bar"></div></div><div class="progress-caption" id="race-tiny-progress-text">Model not loaded.</div>
+          <div class="links race-links"><a href="https://arxiv.org/abs/1612.08242" target="_blank" rel="noreferrer">YOLO9000 paper ↗</a><a href="https://huggingface.co/onnxmodelzoo/tinyyolov2-8/tree/869707e16e57006f97d98af54cfdc8a1d388ae61" target="_blank" rel="noreferrer">Pinned ONNX ↗</a><a href="MODEL_SOURCES.md#tiny-yolov2" target="_blank">Provenance ↗</a></div>
+        </article>
         <article class="card race-model">
           <div class="side-head"><div><span class="pill">2017 baseline</span><h2>SSD-MobileNetV1 INT8</h2></div><div class="tiny" id="race-ssd-backend">not run</div></div>
           <div class="race-stage"><canvas id="race-ssd-canvas" hidden></canvas><div class="empty" id="race-ssd-empty">Waiting for a race image.</div></div>
@@ -315,11 +323,12 @@
 
       <div class="card race-benchmark-card">
         <div class="race-summary-head">
-          <div><div class="eyebrow">20-run warm benchmark</div><h2>Same device, three generations</h2></div>
+          <div><div class="eyebrow">20-run warm benchmark</div><h2>Same device, four generations</h2></div>
           <div class="tiny">Run the race once before benchmarking. RT-DETR “pipeline” includes Transformers.js preprocessing + model + postprocessing.</div>
         </div>
         <div class="race-benchmark-table">
           <div class="race-benchmark-row head"><span>Model</span><b>Backend</b><b>p50</b><b>p90</b><b>p50 E2E</b><b>CV</b></div>
+          <div class="race-benchmark-row"><span>Tiny YOLOv2</span><b id="rb-tiny-backend">—</b><b id="rb-tiny-p50">—</b><b id="rb-tiny-p90">—</b><b id="rb-tiny-total">—</b><b id="rb-tiny-cv">—</b></div>
           <div class="race-benchmark-row"><span>SSD-MobileNet</span><b id="rb-ssd-backend">—</b><b id="rb-ssd-p50">—</b><b id="rb-ssd-p90">—</b><b id="rb-ssd-total">—</b><b id="rb-ssd-cv">—</b></div>
           <div class="race-benchmark-row"><span>YOLOX-Nano</span><b id="rb-yolo-backend">—</b><b id="rb-yolo-p50">—</b><b id="rb-yolo-p90">—</b><b id="rb-yolo-total">—</b><b id="rb-yolo-cv">—</b></div>
           <div class="race-benchmark-row"><span>RT-DETR R18</span><b id="rb-rt-backend">—</b><b id="rb-rt-p50">—</b><b id="rb-rt-p90">—</b><b id="rb-rt-total">—</b><b id="rb-rt-cv">—</b></div>
@@ -329,24 +338,16 @@
 
       <div class="card race-summary">
         <div class="race-summary-head">
-          <div><div class="eyebrow">Three-model detection overlap</div><h2>What changed on this image?</h2></div>
+          <div><div class="eyebrow">Four-model detection overlap</div><h2>What changed on this image?</h2></div>
           <div class="tiny">IoU ≥ 0.35 · same class · current UI confidence · not ground truth</div>
         </div>
         <div class="race-diff-grid">
-          <div><span>SSD ↔ YOLOX matches</span><b id="race-match-ssd-yolo">—</b></div>
-          <div><span>SSD ↔ RT-DETR matches</span><b id="race-match-ssd-rt">—</b></div>
-          <div><span>YOLOX ↔ RT-DETR matches</span><b id="race-match-yolo-rt">—</b></div>
-          <div><span>SSD unmatched by both</span><b id="race-only-ssd">—</b></div>
-          <div><span>YOLOX unmatched by both</span><b id="race-only-yolo">—</b></div>
-          <div><span>RT-DETR unmatched by both</span><b id="race-only-rt">—</b></div>
+          <div><span>Tiny YOLOv2 ↔ SSD matches</span><b id="race-match-tiny-ssd">—</b></div><div><span>Tiny YOLOv2 ↔ YOLOX matches</span><b id="race-match-tiny-yolo">—</b></div><div><span>Tiny YOLOv2 ↔ RT-DETR matches</span><b id="race-match-tiny-rt">—</b></div><div><span>SSD ↔ YOLOX matches</span><b id="race-match-ssd-yolo">—</b></div><div><span>SSD ↔ RT-DETR matches</span><b id="race-match-ssd-rt">—</b></div><div><span>YOLOX ↔ RT-DETR matches</span><b id="race-match-yolo-rt">—</b></div><div><span>Tiny YOLOv2 unmatched by other three</span><b id="race-only-tiny">—</b></div><div><span>SSD unmatched by other three</span><b id="race-only-ssd">—</b></div><div><span>YOLOX unmatched by other three</span><b id="race-only-yolo">—</b></div><div><span>RT-DETR unmatched by other three</span><b id="race-only-rt">—</b></div>
         </div>
-        <div class="note">Pairwise matches require the same class and IoU ≥ 0.35. “Unmatched by both” means neither of the other two models produced a matching detection above the current UI threshold. These counts are comparison evidence, not accuracy or correctness labels.</div>
-        <div class="architecture-diff three">
-          <div><strong>SSD-MobileNet</strong><span>predefined anchors · lightweight CNN backbone · single-shot dense prediction</span></div>
-          <div><strong>YOLOX-Nano</strong><span>anchor-free head · decoupled classification/regression · modern real-time CNN detector</span></div>
-          <div><strong>RT-DETR R18</strong><span>end-to-end set prediction · transformer detector · no page-side NMS</span></div>
-        </div>
+        <div class="note">Pairwise matches require the same canonical class label and IoU ≥ 0.35. Tiny YOLOv2 predicts only Pascal VOC 20 classes; legacy VOC synonyms are mapped to equivalent COCO-style names only for comparison. COCO-only classes cannot match Tiny YOLOv2. These counts are comparison evidence, not accuracy or correctness labels.</div>
+        <div class="architecture-diff four"><div><strong>Tiny YOLOv2</strong><span>5 anchors · 13×13 grid · Pascal VOC 20-class CNN detector</span></div><div><strong>SSD-MobileNet</strong><span>predefined anchors · lightweight CNN backbone · single-shot dense prediction</span></div><div><strong>YOLOX-Nano</strong><span>anchor-free head · decoupled classification/regression · modern real-time CNN detector</span></div><div><strong>RT-DETR R18</strong><span>end-to-end set prediction · transformer detector · no page-side NMS</span></div></div>
       </div>
+      <canvas id="race-tiny-work" hidden></canvas>
       <canvas id="race-yolo-work" hidden></canvas>
       <canvas id="race-rt-work" hidden></canvas>
     </section>
@@ -385,13 +386,13 @@
         <div class="card preprocessing-card">
           <div class="side-head"><div class="side-title">Native preprocessing</div><div class="tiny">fairness context</div></div>
           <div class="preprocess-table">
-            <div class="preprocess-row preprocess-head four"><span></span><b>SSD-MobileNet</b><b>YOLOX-Nano</b><b>RT-DETR R18</b></div>
-            <div class="preprocess-row four"><span>Input</span><b>dynamic ≤640</b><b>416×416</b><b>640×640</b></div>
-            <div class="preprocess-row four"><span>Resize</span><b>aspect preserve</b><b>aspect preserve</b><b>processor resize</b></div>
-            <div class="preprocess-row four"><span>Padding</span><b>none</b><b>top-left · 114</b><b>none</b></div>
-            <div class="preprocess-row four"><span>Layout</span><b>NHWC</b><b>NCHW</b><b>NCHW</b></div>
-            <div class="preprocess-row four"><span>Dtype</span><b>uint8</b><b>float32</b><b>float input</b></div>
-            <div class="preprocess-row four"><span>Channel order</span><b>RGB</b><b>BGR</b><b>RGB · 1/255</b></div>
+            <div class="preprocess-row preprocess-head five"><span></span><b>Tiny YOLOv2</b><b>SSD-MobileNet</b><b>YOLOX-Nano</b><b>RT-DETR R18</b></div>
+            <div class="preprocess-row five"><span>Input</span><b>416×416</b><b>dynamic ≤640</b><b>416×416</b><b>640×640</b></div>
+            <div class="preprocess-row five"><span>Resize</span><b>direct stretch</b><b>aspect preserve</b><b>aspect preserve</b><b>processor resize</b></div>
+            <div class="preprocess-row five"><span>Padding</span><b>none</b><b>none</b><b>top-left · 114</b><b>none</b></div>
+            <div class="preprocess-row five"><span>Layout</span><b>NCHW</b><b>NHWC</b><b>NCHW</b><b>NCHW</b></div>
+            <div class="preprocess-row five"><span>Dtype</span><b>float32</b><b>uint8</b><b>float32</b><b>float input</b></div>
+            <div class="preprocess-row five"><span>Channel order</span><b>RGB · raw pixels</b><b>RGB</b><b>BGR</b><b>RGB · 1/255</b></div>
           </div>
           <div class="note">Model Race intentionally uses the same source image and UI confidence threshold, not an artificially identical tensor. Each checkpoint receives its native preprocessing contract.</div>
           <div class="links inspector-links"><a href="BENCHMARK_METHODOLOGY.md" target="_blank">Benchmark methodology ↗</a><a href="MODEL_CATALOG.md" target="_blank">Model catalog ↗</a></div>
@@ -445,13 +446,13 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.6.0 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.7.0 · static GitHub Pages · no backend</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
-  <script src="models.js?v=0.6.0"></script>
-  <script src="model-loader.js?v=0.6.0"></script>
-  <script src="app.js?v=0.6.0"></script>
-  <script src="race.js?v=0.6.0"></script>
+  <script src="models.js?v=0.7.0"></script>
+  <script src="model-loader.js?v=0.7.0"></script>
+  <script src="app.js?v=0.7.0"></script>
+  <script src="race.js?v=0.7.0"></script>
 </body>
 </html>

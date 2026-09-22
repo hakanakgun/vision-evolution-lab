@@ -10,7 +10,17 @@ This project currently loads the following runtime dependency from a CDN.
 - License: MIT
 - Upstream: `microsoft/onnxruntime`
 
-Model checkpoints are not bundled in this repository. The browser fetches the SSD-MobileNet baseline from its pinned upstream model repository. YOLOX-Nano uses the official Megvii GitHub Release first and a pinned Apache-2.0 Hugging Face mirror only as a browser-fetch fallback. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
+Model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched from a pinned ONNX Model Zoo migration repository on Hugging Face; its repository metadata says Apache-2.0 while the imported model-card body says MIT, so both upstream statements are recorded rather than treated as one definitive weights-license claim. The browser fetches the SSD-MobileNet baseline from its pinned upstream model repository. YOLOX-Nano uses the official Megvii GitHub Release first and a pinned Apache-2.0 Hugging Face mirror only as a browser-fetch fallback. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
+
+## Tiny YOLOv2 upstream checkpoint
+
+- Repository: `onnxmodelzoo/tinyyolov2-8` on Hugging Face.
+- Pinned revision: `869707e16e57006f97d98af54cfdc8a1d388ae61`.
+- File SHA-256: `583fb7fdc948435ceac9fa82efc7708701efe8382a859a3dd46526b155f5f2ae`.
+- Repository metadata: Apache-2.0.
+- Imported model-card body: MIT.
+- Training dataset reported upstream: Pascal VOC.
+- Delivery: fetched at runtime; not bundled in this repository.
 
 ## YOLOX-Nano upstream project
 
