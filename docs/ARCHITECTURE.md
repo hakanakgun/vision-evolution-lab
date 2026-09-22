@@ -35,7 +35,7 @@ Runtime behavior is registered through `model-runtime.js`. Every runnable adapte
 
 SSD registers its adapter in `app.js`; Tiny YOLOv2, YOLOX-Nano, and RT-DETR register theirs in `race.js`. Time Machine and the Model Race benchmark resolve runtimes through this registry instead of selecting implementations with model-name branches.
 
-The adapter boundary is intentionally narrower than a full UI rewrite. The current four-card Model Race result layout remains static for now. A later UI refactor can render cards from the same `race` capability metadata without changing model lifecycle ownership.
+Model Race presentation is also capability-driven. Each `race` capability declares deterministic order, DOM prefix, work-canvas ownership, timing boundary, card/metric presentation, and architecture summary. `race.js` generates result cards, benchmark rows, pairwise-overlap cells, unmatched counters, architecture cards, and hidden work canvases from that metadata. Adding another model to the `general-object` comparison group no longer requires adding another static result card or pairwise overlap cell to `index.html`.
 
 ## Runtime entrypoints
 
@@ -70,6 +70,8 @@ RT-DETR timing is intentionally broader than the direct ORT model timings: the m
 ## Runtime ownership
 
 Normal Model Race is sequential:
+
+Normal Model Race and the benchmark both use sequential runtime ownership. Before a race starts, registered race runtimes are released. Each normal race adapter is released after its result has been retained for drawing/comparison; benchmark runs likewise release between models. The shared `model-runtime.js` registry owns group release semantics. This prevents model count from turning into resident-runtime count.
 
 1. initialize one model runtime,
 2. execute one unmeasured warm-up,
@@ -153,5 +155,5 @@ See [IOS_WEBKIT_DIAGNOSTICS.md](IOS_WEBKIT_DIAGNOSTICS.md).
 
 Run `node scripts/validate.mjs` before opening a pull request. The same command runs in the `validate` GitHub Actions workflow.
 
-The validation currently checks JavaScript syntax, inline scripts, duplicate/missing static DOM IDs, version/build/cache references, script order, runnable model capability contracts, adapter registration requirements, deterministic Model Race ordering, iOS/desktop ORT bootstrap policy, 20-run benchmark invariants, confidence-retention guardrails, and local Markdown links.
+The validation currently checks JavaScript syntax, inline scripts, static and generated DOM IDs, version/build/cache references, script order, runnable model capability/presentation contracts, unique race order/prefixes, adapter registration and group-release ownership, dynamic Model Race scaffolding, diagnostic isolation, iOS/desktop ORT bootstrap policy, 20-run benchmark invariants, confidence-retention guardrails, and local Markdown links.
 

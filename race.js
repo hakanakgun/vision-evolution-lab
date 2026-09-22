@@ -5,7 +5,7 @@
   const $=id=>document.getElementById(id),TINY=registry.tinyyolo,YOLO=registry.yolox,RT=registry.rtdetr,COCO80=registry.labels.coco80,VOC20=registry.labels.voc20,VOC_CANON=registry.labels.vocCanonical;
   const DIAG_MODE=new URLSearchParams(location.search).get('diag')||'',DEEP=DIAG_MODE==='3',DIAG=DIAG_MODE==='1'||DIAG_MODE==='2'||DEEP,BLACKBOX=DIAG_MODE==='2'||DEEP,DIAG_KEY='vel:race-diag-v1',BB_KEY='vel:race-diag-blackbox-v1',BB_DURABLE_KEY='vel:race-diag-durable-v1',BB_JOURNAL_KEY='vel:race-diag-journal-v1',BB_SELECTION_KEY='vel:race-diag-selection-v1',BB_SETTLE_KEY='vel:race-diag-settle-v1',BB_BACKEND_KEY='vel:race-diag-backends-v1',BB_ATTEMPT_KEY='vel:race-diag-attempt-v1',BB_MATRIX_KEY='vel:race-diag-reclaim-matrix-v2',BB_CRITICAL_KEY='vel:race-diag-critical-v1',BB_SEQ_KEY='vel:race-diag-seq-v1',BB_CRASH_KEY='vel:race-diag-crash-v1';
   let bbStage='page-ready',bbPrevious=null,bbEvents=[],bbPlan=[],bbBackendPlan={},bbAttempt=Number(readLocal(BB_ATTEMPT_KEY,0))||0,bbMatrix=readLocal(BB_MATRIX_KEY,null),bbCritical=readLocal(BB_CRITICAL_KEY,null),bbCrash=readLocal(BB_CRASH_KEY,null),bbEventSeq=Number(readLocal(BB_SEQ_KEY,0))||0,bbBenchmarkDoneWall=0,bbLastBeat=performance.now(),bbMaxGap=0,bbLastLifecycle='page-init',bbOrderlyExit=false,bbSettleMs=0,bbCurrentModel='',bbRequestedBackend='',bbLastAlloc={},matrixRunning=false,matrixStopRequested=false;
-  const bbResident={},MATRIX_CASES=[{id:'R1',label:'resident · 0 ms',keepResident:true,delayMs:0},{id:'R2',label:'dispose · 0 ms',keepResident:false,delayMs:0},{id:'R3',label:'dispose · 3000 ms',keepResident:false,delayMs:3000},{id:'R4',label:'dispose · 10000 ms',keepResident:false,delayMs:10000}],MATRIX_ATTEMPTS=10;
+  const bbResident={},DIAGNOSTIC_BASELINE_KEYS=Object.freeze(['tinyyolo','ssd','yolox','rtdetr']),MATRIX_CASES=[{id:'R1',label:'resident · 0 ms',keepResident:true,delayMs:0},{id:'R2',label:'dispose · 0 ms',keepResident:false,delayMs:0},{id:'R3',label:'dispose · 3000 ms',keepResident:false,delayMs:3000},{id:'R4',label:'dispose · 10000 ms',keepResident:false,delayMs:10000}],MATRIX_ATTEMPTS=10;
   function readLocal(key,fallback=null){try{const v=JSON.parse(localStorage.getItem(key)||'null');return v??fallback}catch(_){return fallback}}
   function writeLocal(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(_){return false}}
   function readDiag(){if(!DIAG)return null;try{return JSON.parse(sessionStorage.getItem(DIAG_KEY)||'null')}catch(_){return null}}
@@ -68,8 +68,8 @@ ${tail||'—'}`;}
   function boundedError(value){const err=value instanceof Error?value:null;return{name:String(err?.name||value?.name||'Error').slice(0,120),message:String(err?.message||value?.message||value||'unknown').slice(0,600),stack:String(err?.stack||value?.stack||'').slice(0,1800),currentStage:bbStage}}
   function markDiagExit(event){if(!DIAG)return;bbOrderlyExit=true;bbLastLifecycle='pagehide';bbJournal('pagehide',{persisted:Boolean(event?.persisted),visibility:document.visibilityState,readyState:document.readyState});try{const prev=readDiag()||{};sessionStorage.setItem(DIAG_KEY,JSON.stringify({...prev,orderlyExit:true,exitAt:new Date().toISOString(),persisted:Boolean(event?.persisted)}))}catch(_){}if(BLACKBOX){const snapshot=bbSnapshot();writeLocal(BB_KEY,snapshot);writeLocal(BB_JOURNAL_KEY,bbEvents);if(!DEEP)writeLocal(BB_DURABLE_KEY,snapshot)}}
   window.addEventListener('pagehide',markDiagExit);
-  const state={image:null,running:false,benchmarking:false,tinyBuffer:null,tinySession:null,tinyProvider:'',tinyDownloadMs:NaN,tinyInitMs:NaN,tinyCacheState:'',tinySource:'',tinySessionRuns:0,yoloBuffer:null,yoloSession:null,yoloProvider:'',yoloDownloadMs:NaN,yoloInitMs:NaN,yoloCacheState:'',yoloSource:'',yoloSessionRuns:0,rtPipe:null,rtBackend:'',rtDtype:'',rtLoadMs:NaN,rtCacheState:'',rtModule:null,rtPipeRuns:0,rtProgressKey:'',lastHeadMaps:null,lastRun:{tiny:null,ssd:null,yolo:null,rt:null}};
-  if(DIAG){const previous=readDiag(),diagButton=$('race-benchmark-diag'),disposeButton=$('race-dispose-diag');if(diagButton)diagButton.hidden=false;if(disposeButton)disposeButton.hidden=false;if(previous)showDiag(`Diagnostic · previous stage: ${previous.stage||'unknown'} · orderly pagehide: ${previous.orderlyExit?'yes':'no'}`);else showDiag('Diagnostic mode ready · no previous breadcrumb.');try{sessionStorage.setItem(DIAG_KEY,JSON.stringify({stage:'page-ready',at:new Date().toISOString(),orderlyExit:false}))}catch(_){}}
+  const state={image:null,running:false,benchmarking:false,tinyBuffer:null,tinySession:null,tinyProvider:'',tinyDownloadMs:NaN,tinyInitMs:NaN,tinyCacheState:'',tinySource:'',tinySessionRuns:0,yoloBuffer:null,yoloSession:null,yoloProvider:'',yoloDownloadMs:NaN,yoloInitMs:NaN,yoloCacheState:'',yoloSource:'',yoloSessionRuns:0,rtPipe:null,rtBackend:'',rtDtype:'',rtLoadMs:NaN,rtCacheState:'',rtModule:null,rtPipeRuns:0,rtProgressKey:'',lastHeadMaps:null,lastRun:{}};
+  if(DIAG){const previous=readDiag(),diagnostics=$('race-diagnostics'),diagButton=$('race-benchmark-diag'),disposeButton=$('race-dispose-diag');if(diagnostics)diagnostics.hidden=false;if(diagButton)diagButton.hidden=false;if(disposeButton)disposeButton.hidden=false;if(previous)showDiag(`Diagnostic · previous stage: ${previous.stage||'unknown'} · orderly pagehide: ${previous.orderlyExit?'yes':'no'}`);else showDiag('Diagnostic mode ready · no previous breadcrumb.');try{sessionStorage.setItem(DIAG_KEY,JSON.stringify({stage:'page-ready',at:new Date().toISOString(),orderlyExit:false}))}catch(_){}}
   if(BLACKBOX){const periodic=readLocal(BB_KEY),durable=readLocal(BB_DURABLE_KEY),critical=readLocal(BB_CRITICAL_KEY);bbCritical=critical||bbCritical;bbPrevious=durable?{...(periodic||{}),...durable}:periodic;if(DEEP&&critical)bbPrevious={...(bbPrevious||{}),stage:critical.stage||bbPrevious?.stage,attempt:critical.attempt??bbPrevious?.attempt,matrix:bbPrevious?.matrix||bbMatrix,critical};bbEvents=readLocal(BB_JOURNAL_KEY,[]).slice(-(DEEP?200:40));bbCrash=bbCrash||bbMatrixCrash(bbMatrix);bbJournal('page-init',{navigation:bbNavType(),readyState:document.readyState,visibility:document.visibilityState});renderBlackbox();window.addEventListener('pageshow',event=>{bbLastLifecycle='pageshow';bbJournal('pageshow',{persisted:Boolean(event.persisted),readyState:document.readyState,visibility:document.visibilityState});renderBlackbox()});window.addEventListener('beforeunload',()=>{bbLastLifecycle='beforeunload';bbJournal('beforeunload',{readyState:document.readyState,visibility:document.visibilityState});writeLocal(BB_KEY,bbSnapshot())});document.addEventListener('visibilitychange',()=>{bbLastLifecycle='visibility:'+document.visibilityState;bbJournal(bbLastLifecycle,{readyState:document.readyState,visibility:document.visibilityState});writeLocal(BB_KEY,bbSnapshot());renderBlackbox()});document.addEventListener('freeze',()=>{bbLastLifecycle='freeze';bbJournal('freeze',{readyState:document.readyState,visibility:document.visibilityState});writeLocal(BB_KEY,bbSnapshot())});document.addEventListener('resume',()=>{bbLastLifecycle='resume';bbJournal('resume',{readyState:document.readyState,visibility:document.visibilityState});writeLocal(BB_KEY,bbSnapshot());renderBlackbox()});if(DEEP){window.addEventListener('error',event=>writeDiag('window-error',{model:bbCurrentModel,error:boundedError(event.error||{name:'ErrorEvent',message:event.message})}));window.addEventListener('unhandledrejection',event=>writeDiag('unhandledrejection',{model:bbCurrentModel,error:boundedError(event.reason)}));if(api.setDiagnosticHook)api.setDiagnosticHook((event,meta)=>deepStage(event,{model:'ssd',phase:event,...(meta||{})}))}setInterval(()=>{const now=performance.now(),gap=Math.max(0,now-bbLastBeat-1000);bbLastBeat=now;if(gap>bbMaxGap)bbMaxGap=gap;if(gap>=1500)bbJournal('event-loop-gap',{ms:Math.round(gap)});writeLocal(BB_KEY,bbSnapshot());if(DEEP&&bbEventSeq%8===0)writeLocal(BB_JOURNAL_KEY,bbEvents);renderBlackbox()},1000)}
   const report=(model,event)=>api.reportRuntimeEvent?.(model,event);
   const ms=api.ms,threshold=()=>api.getConfidence(),retainThreshold=()=>api.getRetentionThreshold?api.getRetentionThreshold():0.1,syncConfidence=()=>{$('race-confidence').textContent=threshold().toFixed(2)};syncConfidence();$('confidence').addEventListener('input',()=>{syncConfidence();redrawRaceResults();});
@@ -186,10 +186,59 @@ ${tail||'—'}`;}
   function getRaceSpecs(source,canvas,{benchmarking=false}={}){
     return runtimeRegistry.list({capability:'race',group:'general-object'}).map(adapter=>{
       const race=runtimeRegistry.raceMeta(adapter.model);
-      return{key:adapter.key,prefix:race.prefix,label:adapter.model.title,workCanvasId:race.workCanvasId,timingBoundary:race.timingBoundary,backend:adapter.backend,diagnosticBackends:adapter.diagnosticBackends(),run:options=>adapter.run(source,canvas,{benchmarking,...(options||{})}),release:adapter.release};
+      return{key:adapter.key,prefix:race.prefix,label:adapter.model.title,model:adapter.model,race,workCanvasId:race.workCanvasId,timingBoundary:race.timingBoundary,backend:adapter.backend,diagnosticBackends:adapter.diagnosticBackends(),run:(options={},targetCanvas=canvas)=>adapter.run(source,targetCanvas,{benchmarking,...(options||{})}),release:adapter.release};
     });
   }
-  async function releaseRaceRuntimes(exceptKey=''){for(const spec of getRaceSpecs(null,null,{benchmarking:true})){if(spec.key===exceptKey)continue;if(spec.release)await spec.release();if(BLACKBOX)bbResident[spec.key]=false}}
+  function appendText(parent,tag,text,className=''){const el=document.createElement(tag);if(className)el.className=className;el.textContent=text;parent.appendChild(el);return el}
+  function renderRaceScaffold(){
+    const specs=getRaceSpecs(null,null,{benchmarking:true}),results=$('race-results'),bench=$('race-benchmark-body'),diff=$('race-diff-grid'),architecture=$('race-architecture'),work=$('race-work-canvases');
+    if(!results||!bench||!diff||!architecture||!work)throw new Error('Model Race scaffold containers are missing.');
+    results.replaceChildren();bench.replaceChildren();diff.replaceChildren();architecture.replaceChildren();
+    const years=specs.map(spec=>Number(spec.model.year)).filter(Number.isFinite),from=years.length?Math.min(...years):'',to=years.length?Math.max(...years):'';
+    $('race-intro-eyebrow').textContent=from&&to?`Executable comparison · ${from} → ${to}`:'Executable comparison';
+    $('race-intro-title').textContent=`${specs.length} detector generation${specs.length===1?'':'s'}, one image`;
+    $('race-benchmark-title').textContent=`Same device, ${specs.length} generation${specs.length===1?'':'s'}`;
+    $('race-overlap-eyebrow').textContent=`${specs.length}-model detection overlap`;
+    for(const spec of specs){
+      const card=document.createElement('article');card.className=`card race-model ${spec.race.cardClass||''}`.trim();card.dataset.raceModel=spec.key;
+      const head=document.createElement('div');head.className='side-head';const left=document.createElement('div');
+      appendText(left,'span',spec.race.badge||String(spec.model.year||''),`pill ${spec.race.badgeClass||''}`.trim());appendText(left,'h2',spec.label);
+      const backend=appendText(head,'div','not loaded','tiny');backend.id=`race-${spec.prefix}-backend`;head.prepend(left);card.appendChild(head);
+      const stage=document.createElement('div');stage.className='race-stage';const canvas=document.createElement('canvas');canvas.id=`race-${spec.prefix}-canvas`;canvas.hidden=true;
+      const empty=appendText(stage,'div',spec.race.emptyText||'Waiting for a race image.','empty');empty.id=`race-${spec.prefix}-empty`;stage.prepend(canvas);card.appendChild(stage);
+      const metrics=document.createElement('div');metrics.className='metrics';
+      for(const metric of spec.race.metrics||[]){
+        const row=document.createElement('div');row.className='metric';appendText(row,'span',metric.label);
+        const value=appendText(row,'b',metric.value??metric.initial??'—');if(metric.slot){value.id=`race-${spec.prefix}-${metric.slot}`;value.dataset.raceInitial=metric.initial??'—';}
+        metrics.appendChild(row);
+      }
+      card.appendChild(metrics);
+      if(spec.race.progress){
+        const progress=document.createElement('div');progress.className='model-progress';const bar=document.createElement('div');bar.className='model-progress-bar';bar.id=`race-${spec.prefix}-progress-bar`;progress.appendChild(bar);card.appendChild(progress);
+        const caption=appendText(card,'div',spec.race.progressText||'Model not loaded.','progress-caption');caption.id=`race-${spec.prefix}-progress-text`;
+      }
+      if(Array.isArray(spec.model.ui?.links)&&spec.model.ui.links.length){
+        const links=document.createElement('div');links.className='links race-links';
+        for(const link of spec.model.ui.links){const a=document.createElement('a');a.href=link.url;a.textContent=link.label;if(/^https?:/i.test(link.url)){a.target='_blank';a.rel='noreferrer'}links.appendChild(a)}
+        card.appendChild(links);
+      }
+      results.appendChild(card);
+
+      const row=document.createElement('div');row.className='race-benchmark-row';appendText(row,'span',spec.label);
+      for(const slot of['backend','p50','p90','total','cv']){const cell=appendText(row,'b','—');cell.id=`rb-${spec.prefix}-${slot}`;}
+      bench.appendChild(row);
+
+      const arch=document.createElement('div');appendText(arch,'strong',spec.label);appendText(arch,'span',spec.race.architecture||spec.model.family||'');architecture.appendChild(arch);
+
+      if(spec.workCanvasId&&!$(spec.workCanvasId)){const hiddenCanvas=document.createElement('canvas');hiddenCanvas.id=spec.workCanvasId;hiddenCanvas.hidden=true;work.appendChild(hiddenCanvas)}
+    }
+    for(let i=0;i<specs.length;i++)for(let j=i+1;j<specs.length;j++){
+      const a=specs[i],b=specs[j],cell=document.createElement('div');appendText(cell,'span',`${a.label} ↔ ${b.label} matches`);const value=appendText(cell,'b','—');value.id=`race-match-${a.prefix}-${b.prefix}`;diff.appendChild(cell);
+    }
+    for(const spec of specs){const cell=document.createElement('div');appendText(cell,'span',`${spec.label} unmatched by other models`);const value=appendText(cell,'b','—');value.id=`race-only-${spec.prefix}`;diff.appendChild(cell)}
+  }
+  renderRaceScaffold();
+  async function releaseRaceRuntimes(exceptKey=''){const released=await runtimeRegistry.releaseAll({exceptKey,capability:'race',group:'general-object'});if(BLACKBOX)for(const key of released)bbResident[key]=false}
   function getDiagnosticSelection(){
     const specs=getRaceSpecs(null,null,{benchmarking:true});
     if(!BLACKBOX)return specs.map(x=>x.key);
@@ -205,14 +254,14 @@ ${tail||'—'}`;}
   async function copyFullDiagnostic(){const button=$('race-diag-copy-full');if(!button)return;await copyText(JSON.stringify(fullDiagnosticPayload(),null,2),button)}
   function saveMatrix(next){bbMatrix={...next,ortMode:registry.runtime.directOrtMode||BOOT.ortMode||'unknown'};writeLocal(BB_MATRIX_KEY,bbMatrix);updateMatrixControls();renderBlackbox()}
   function updateMatrixControls(){if(!BLACKBOX)return;const run=$('race-diag-matrix'),stop=$('race-diag-matrix-stop'),status=$('race-diag-matrix-status');if(!run||!stop||!status)return;const resumable=bbMatrix&&bbMatrix.active&&['ready','interrupted','stopped','error','waiting'].includes(bbMatrix.phase);run.textContent=resumable?'Resume reclamation matrix':'Run reclamation matrix R1–R4 ×10';run.disabled=!state.image||state.benchmarking||matrixRunning;stop.disabled=!matrixRunning;status.textContent='Matrix: '+bbMatrixText(bbMatrix)+' · '+bbMatrixResultsText(bbMatrix)}
-  function applyMatrixCase(def){document.querySelectorAll('[data-diag-model]').forEach(x=>x.checked=true);const settle=$('race-diag-settle');bbSettleMs=0;if(settle)settle.value='0';writeLocal(BB_SETTLE_KEY,0);for(const [key,mode] of Object.entries({yolox:'wasm',rtdetr:'wasm'})){const select=document.querySelector(`[data-diag-backend="${key}"]`);if(!select||![...select.options].some(x=>x.value===mode))throw new Error(`Matrix ${def.id}: ${key} ${mode} backend is unavailable.`);select.value=mode}bbPlan=getDiagnosticSelection();bbBackendPlan=getDiagnosticBackendSelection();renderBlackbox()}
+  function applyMatrixCase(def){document.querySelectorAll('[data-diag-model]').forEach(x=>x.checked=DIAGNOSTIC_BASELINE_KEYS.includes(x.dataset.diagModel));const settle=$('race-diag-settle');bbSettleMs=0;if(settle)settle.value='0';writeLocal(BB_SETTLE_KEY,0);for(const [key,mode] of Object.entries({yolox:'wasm',rtdetr:'wasm'})){const select=document.querySelector(`[data-diag-backend="${key}"]`);if(!select||![...select.options].some(x=>x.value===mode))throw new Error(`Matrix ${def.id}: ${key} ${mode} backend is unavailable.`);select.value=mode}bbPlan=getDiagnosticSelection();bbBackendPlan=getDiagnosticBackendSelection();renderBlackbox()}
   function stopBackendMatrix(){if(!matrixRunning)return;matrixStopRequested=true;if(bbMatrix)saveMatrix({...bbMatrix,phase:'stopping'});setStatus('Reclamation matrix will stop after the current ×20 attempt.','loading')}
   function recoverInterruptedMatrix(){if(!bbMatrix||!bbMatrix.active||!['running','stopping','waiting'].includes(bbMatrix.phase))return;if(bbMatrix.phase==='waiting'){saveMatrix({...bbMatrix,phase:'interrupted',interruptedAt:new Date().toISOString()});return}const abrupt=bbPrevious&&!bbPrevious.orderlyExit,def=MATRIX_CASES[bbMatrix.caseIndex]||MATRIX_CASES.find(x=>x.id===bbMatrix.currentCase);if(!abrupt||!def){saveMatrix({...bbMatrix,phase:'interrupted',interruptedAt:new Date().toISOString()});return}const caseAttempt=bbMatrix.currentAttempt||((bbMatrix.completedInCase||0)+1),criticalMatches=DEEP&&bbCritical&&Number(bbCritical.attempt)===Number(bbPrevious.attempt)&&bbCritical.matrixCase===def.id&&Number(bbCritical.matrixAttempt)===Number(caseAttempt),crash={caseId:def.id,attempt:caseAttempt,stage:(criticalMatches?bbCritical.stage:'')||bbPrevious.stage||'unknown',at:new Date().toISOString()},results={...(bbMatrix.results||{}),[def.id]:{status:'abrupt-reload',attempt:crash.attempt,stage:crash.stage,at:crash.at}},nextCaseIndex=(bbMatrix.caseIndex||0)+1,done=nextCaseIndex>=MATRIX_CASES.length;bbCrash=crash;writeLocal(BB_CRASH_KEY,crash);saveMatrix({...bbMatrix,results,lastCrash:crash,active:!done,phase:done?'complete':'interrupted',caseIndex:nextCaseIndex,completedInCase:0,currentAttempt:0,waitUntil:0,lastReloadAt:crash.at})}
   async function runBackendMatrix(){if(!BLACKBOX||!state.image||state.benchmarking||matrixRunning)return;matrixRunning=true;matrixStopRequested=false;let current=bbMatrix;if(!current||!current.active||current.phase==='complete'){bbCrash=null;writeLocal(BB_CRASH_KEY,null);current={active:true,phase:'ready',caseIndex:0,completedInCase:0,currentAttempt:0,attemptsPerCase:MATRIX_ATTEMPTS,results:{},startedAt:new Date().toISOString()}}else current={...current,active:true,phase:'ready'};saveMatrix(current);try{while(bbMatrix&&bbMatrix.active&&bbMatrix.caseIndex<MATRIX_CASES.length){if(matrixStopRequested)break;const def=MATRIX_CASES[bbMatrix.caseIndex];applyMatrixCase(def);const remaining=Math.max(0,Number(bbMatrix.waitUntil||0)-Date.now());if(remaining>0){saveMatrix({...bbMatrix,phase:'waiting'});setStatus(`Matrix ${def.id} · waiting ${Math.ceil(remaining/1000)} s before next attempt…`,'loading');await sleepMs(remaining);if(matrixStopRequested)break;saveMatrix({...bbMatrix,phase:'ready',waitUntil:0})}const attempt=(bbMatrix.completedInCase||0)+1;saveMatrix({...bbMatrix,phase:'running',currentCase:def.id,currentAttempt:attempt,lastStartedAt:new Date().toISOString()});setStatus(`Matrix ${def.id} · attempt ${attempt}/${bbMatrix.attemptsPerCase} · ${def.label}`,'loading');const ok=await benchmarkRace(true,{keepFinalResident:def.keepResident});if(!ok){saveMatrix({...bbMatrix,phase:'error',active:true,lastError:'benchmark-error'});break}const caseDone=attempt>=bbMatrix.attemptsPerCase,results={...(bbMatrix.results||{})};if(caseDone)results[def.id]={status:'complete',attempts:attempt,at:new Date().toISOString()};const nextCaseIndex=caseDone?bbMatrix.caseIndex+1:bbMatrix.caseIndex,done=nextCaseIndex>=MATRIX_CASES.length,delayMs=!caseDone?def.delayMs:0,waitUntil=delayMs?Date.now()+delayMs:0;saveMatrix({...bbMatrix,results,active:!done,phase:done?'complete':delayMs?'waiting':'ready',caseIndex:nextCaseIndex,completedInCase:caseDone?0:attempt,currentAttempt:0,waitUntil,lastCompletedAt:new Date().toISOString(),lastError:''});if(done){setStatus('Reclamation matrix finished; see per-case results.');break}if(matrixStopRequested){saveMatrix({...bbMatrix,active:true,phase:'stopped'});break}if(delayMs){setStatus(`Matrix ${def.id} · waiting ${delayMs/1000} s for reclamation…`,'loading');await sleepMs(delayMs);if(matrixStopRequested)break;saveMatrix({...bbMatrix,phase:'ready',waitUntil:0})}await sleepFrame()}}finally{if(matrixStopRequested&&bbMatrix&&bbMatrix.active&&bbMatrix.phase!=='stopped')saveMatrix({...bbMatrix,phase:'stopped'});matrixRunning=false;matrixStopRequested=false;updateMatrixControls()}}
   function setupDiagnosticControls(){
     if(!BLACKBOX)return;
-    const wrap=$('race-diag-controls'),models=$('race-diag-models'),backends=$('race-diag-backends'),settle=$('race-diag-settle'),copyRow=$('race-diag-copy-row'),copyButton=$('race-diag-copy'),copyFullButton=$('race-diag-copy-full'),matrixButton=$('race-diag-matrix'),matrixStop=$('race-diag-matrix-stop');
-    if(!wrap||!models)return;
+    const diagnostics=$('race-diagnostics'),tools=$('race-blackbox-tools'),wrap=$('race-diag-controls'),models=$('race-diag-models'),backends=$('race-diag-backends'),settle=$('race-diag-settle'),copyRow=$('race-diag-copy-row'),copyButton=$('race-diag-copy'),copyFullButton=$('race-diag-copy-full'),matrixButton=$('race-diag-matrix'),matrixStop=$('race-diag-matrix-stop');
+    if(!diagnostics||!tools||!wrap||!models)return;
     const specs=getRaceSpecs(null,null,{benchmarking:true}),known=new Set(specs.map(x=>x.key)),saved=readLocal(BB_SELECTION_KEY,null),selected=Array.isArray(saved)?saved.filter(x=>known.has(x)):specs.map(x=>x.key),settleOptions=[0,250,1000,3000],savedSettle=Number(readLocal(BB_SETTLE_KEY,0)),savedBackends=readLocal(BB_BACKEND_KEY,{});
     bbSettleMs=settleOptions.includes(savedSettle)?savedSettle:0;if(settle){settle.value=String(bbSettleMs);settle.addEventListener('change',()=>{const next=Number(settle.value);bbSettleMs=settleOptions.includes(next)?next:0;writeLocal(BB_SETTLE_KEY,bbSettleMs);renderBlackbox()})}
     models.replaceChildren();
@@ -227,24 +276,80 @@ ${tail||'—'}`;}
     const setAll=checked=>{models.querySelectorAll('[data-diag-model]').forEach(x=>x.checked=checked);bbPlan=getDiagnosticSelection();renderBlackbox()};
     $('race-diag-all').addEventListener('click',()=>setAll(true));
     $('race-diag-none').addEventListener('click',()=>setAll(false));
-    recoverInterruptedMatrix();bbCrash=bbCrash||bbMatrixCrash(bbMatrix);wrap.hidden=false;if(copyRow)copyRow.hidden=false;if(copyButton)copyButton.addEventListener('click',copyBlackbox);if(copyFullButton)copyFullButton.addEventListener('click',copyFullDiagnostic);if(matrixButton)matrixButton.addEventListener('click',runBackendMatrix);if(matrixStop)matrixStop.addEventListener('click',stopBackendMatrix);bbPlan=getDiagnosticSelection();bbBackendPlan=getDiagnosticBackendSelection();for(const spec of specs)if(!(spec.key in bbResident))bbResident[spec.key]=false;updateMatrixControls();renderBlackbox();
+    recoverInterruptedMatrix();bbCrash=bbCrash||bbMatrixCrash(bbMatrix);diagnostics.hidden=false;tools.hidden=false;if(copyButton)copyButton.addEventListener('click',copyBlackbox);if(copyFullButton)copyFullButton.addEventListener('click',copyFullDiagnostic);if(matrixButton)matrixButton.addEventListener('click',runBackendMatrix);if(matrixStop)matrixStop.addEventListener('click',stopBackendMatrix);bbPlan=getDiagnosticSelection();bbBackendPlan=getDiagnosticBackendSelection();for(const spec of specs)if(!(spec.key in bbResident))bbResident[spec.key]=false;updateMatrixControls();renderBlackbox();
   }
   function setDiagnosticControlsDisabled(disabled){if(!BLACKBOX)return;document.querySelectorAll('[data-diag-model],[data-diag-backend]').forEach(x=>x.disabled=disabled);$('race-diag-all').disabled=disabled;$('race-diag-none').disabled=disabled;const settle=$('race-diag-settle');if(settle)settle.disabled=disabled;updateMatrixControls()}
   const visible=d=>d.filter(x=>x.score>=threshold());
   function compare(a,b){const aa=visible(a),bb=visible(b),used=new Set();let both=0;for(const old of aa){let best=-1,bi=0;for(let i=0;i<bb.length;i++){if(used.has(i)||bb[i].label!==old.label)continue;const v=iou(old.box,bb[i].box);if(v>=.35&&v>bi){best=i;bi=v}}if(best>=0){used.add(best);both++}}return{both,aOnly:aa.length-both,bOnly:bb.length-both}}
   function hasMatch(det,list){return list.some(other=>other.label===det.label&&iou(det.box,other.box)>=.35)}
-  function updateOverlap(){const t=state.lastRun.tiny?.detections,s=state.lastRun.ssd?.detections,y=state.lastRun.yolo?.detections,r=state.lastRun.rt?.detections;if(!t||!s||!y||!r)return;const tv=visible(t),sv=visible(s),yv=visible(y),rv=visible(r);$('race-match-tiny-ssd').textContent=String(compare(t,s).both);$('race-match-tiny-yolo').textContent=String(compare(t,y).both);$('race-match-tiny-rt').textContent=String(compare(t,r).both);$('race-match-ssd-yolo').textContent=String(compare(s,y).both);$('race-match-ssd-rt').textContent=String(compare(s,r).both);$('race-match-yolo-rt').textContent=String(compare(y,r).both);$('race-only-tiny').textContent=String(tv.filter(d=>!hasMatch(d,sv)&&!hasMatch(d,yv)&&!hasMatch(d,rv)).length);$('race-only-ssd').textContent=String(sv.filter(d=>!hasMatch(d,tv)&&!hasMatch(d,yv)&&!hasMatch(d,rv)).length);$('race-only-yolo').textContent=String(yv.filter(d=>!hasMatch(d,tv)&&!hasMatch(d,sv)&&!hasMatch(d,rv)).length);$('race-only-rt').textContent=String(rv.filter(d=>!hasMatch(d,tv)&&!hasMatch(d,sv)&&!hasMatch(d,yv)).length);}
-  function redrawRaceResults(){if(!state.image||state.running||state.benchmarking)return;let redrawn=false;for(const pair of [['tiny','tiny'],['ssd','ssd'],['yolo','yolo'],['rt','rt']]){const key=pair[0],slot=pair[1],run=state.lastRun[key];if(!run)continue;const canvas=$('race-'+slot+'-canvas');prepareDisplay(state.image,canvas);run.visible=api.drawDetections(canvas,run.detections);$('race-'+slot+'-count').textContent=String(run.visible);redrawn=true}if(redrawn){updateOverlap();setStatus('Confidence '+threshold().toFixed(2)+' applied to retained race outputs without new inference.')}}
-  function useImage(img,label){state.image=img;state.lastRun={tiny:null,ssd:null,yolo:null,rt:null};$('race-run').disabled=false;$('race-benchmark').disabled=true;if(DIAG){$('race-benchmark-diag').disabled=false;$('race-dispose-diag').disabled=true;}for(const k of['tiny','ssd','yolo','rt']){$('race-'+k+'-empty').hidden=false;$('race-'+k+'-canvas').hidden=true}for(const id of['race-tiny-inf','race-tiny-total','race-tiny-count','race-ssd-inf','race-ssd-total','race-ssd-count','race-yolo-inf','race-yolo-total','race-yolo-count','race-rt-inf','race-rt-total','race-rt-count','race-rt-retained','race-rt-invalid','race-match-tiny-ssd','race-match-tiny-yolo','race-match-tiny-rt','race-match-ssd-yolo','race-match-ssd-rt','race-match-yolo-rt','race-only-tiny','race-only-ssd','race-only-yolo','race-only-rt','rb-tiny-backend','rb-tiny-p50','rb-tiny-p90','rb-tiny-total','rb-tiny-cv','rb-ssd-backend','rb-ssd-p50','rb-ssd-p90','rb-ssd-total','rb-ssd-cv','rb-yolo-backend','rb-yolo-p50','rb-yolo-p90','rb-yolo-total','rb-yolo-cv','rb-rt-backend','rb-rt-p50','rb-rt-p90','rb-rt-total','rb-rt-cv'])$(id).textContent='—';$('race-ssd-input').textContent='dynamic ≤640';$('race-benchmark-note').textContent='Not benchmarked yet.';setStatus(label+' ready. Run four generations with confidence '+threshold().toFixed(2)+'.');updateMatrixControls()}
+  function currentRaceSpecs(){return getRaceSpecs(null,null,{benchmarking:false})}
+  function updateOverlap(){
+    const specs=currentRaceSpecs();
+    if(!specs.length||!specs.every(spec=>Array.isArray(state.lastRun[spec.key]?.detections)))return;
+    for(let i=0;i<specs.length;i++)for(let j=i+1;j<specs.length;j++){
+      const a=specs[i],b=specs[j],cell=$(`race-match-${a.prefix}-${b.prefix}`);
+      if(cell)cell.textContent=String(compare(state.lastRun[a.key].detections,state.lastRun[b.key].detections).both);
+    }
+    for(const spec of specs){
+      const own=visible(state.lastRun[spec.key].detections),others=specs.filter(other=>other.key!==spec.key).map(other=>visible(state.lastRun[other.key].detections));
+      const unmatched=own.filter(det=>others.every(list=>!hasMatch(det,list))).length,cell=$(`race-only-${spec.prefix}`);
+      if(cell)cell.textContent=String(unmatched);
+    }
+  }
+  function updateRaceCard(spec,result){
+    const empty=$(`race-${spec.prefix}-empty`),canvas=$(`race-${spec.prefix}-canvas`),backend=$(`race-${spec.prefix}-backend`);
+    if(empty)empty.hidden=true;if(canvas)canvas.hidden=false;if(backend)backend.textContent=spec.backend()||'—';
+    const set=(slot,value)=>{const el=$(`race-${spec.prefix}-${slot}`);if(el)el.textContent=value};
+    if(Number.isFinite(result.width)&&Number.isFinite(result.height))set('input',result.width+'×'+result.height);
+    set('inf',ms(result.infMs));set('total',ms(result.totalMs));set('count',String(result.visible));
+    if(Number.isFinite(result.retained))set('retained',Number.isFinite(result.retentionThreshold)?result.retained+' @ ≥'+result.retentionThreshold.toFixed(2):String(result.retained));
+    if(Number.isFinite(result.droppedInvalid))set('invalid',String(result.droppedInvalid));
+  }
+  function redrawRaceResults(){
+    if(!state.image||state.running||state.benchmarking)return;
+    let redrawn=false;
+    for(const spec of currentRaceSpecs()){
+      const run=state.lastRun[spec.key];if(!run)continue;
+      const canvas=$(`race-${spec.prefix}-canvas`);if(!canvas)continue;
+      prepareDisplay(state.image,canvas);run.visible=api.drawDetections(canvas,run.detections);const count=$(`race-${spec.prefix}-count`);if(count)count.textContent=String(run.visible);redrawn=true;
+    }
+    if(redrawn){updateOverlap();setStatus('Confidence '+threshold().toFixed(2)+' applied to retained race outputs without new inference.')}
+  }
+  function resetRaceUi(){
+    for(const spec of currentRaceSpecs()){
+      const empty=$(`race-${spec.prefix}-empty`),canvas=$(`race-${spec.prefix}-canvas`),backend=$(`race-${spec.prefix}-backend`);
+      if(empty)empty.hidden=false;if(canvas)canvas.hidden=true;if(backend)backend.textContent='not loaded';
+      document.querySelectorAll(`#race-results [id^="race-${spec.prefix}-"][data-race-initial]`).forEach(el=>{el.textContent=el.dataset.raceInitial||'—'});
+      const bar=$(`race-${spec.prefix}-progress-bar`),caption=$(`race-${spec.prefix}-progress-text`);if(bar)bar.style.width='0%';if(caption)caption.textContent=spec.race.progressText||'Model not loaded.';
+    }
+    document.querySelectorAll('#race-benchmark-body b,#race-diff-grid b').forEach(el=>{el.textContent='—'});
+    $('race-benchmark-note').textContent='Not benchmarked yet.';
+  }
+  function useImage(img,label){
+    const specs=currentRaceSpecs();state.image=img;state.lastRun={};$('race-run').disabled=false;$('race-benchmark').disabled=true;
+    if(DIAG){$('race-benchmark-diag').disabled=false;$('race-dispose-diag').disabled=true}
+    resetRaceUi();setStatus(label+' ready. Run '+specs.length+' detector generation'+(specs.length===1?'':'s')+' with confidence '+threshold().toFixed(2)+'.');updateMatrixControls();
+  }
   $('race-image-file').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')){setStatus('Please choose an image file.','error');return}const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);useImage(img,file.name||'Race image')};img.onerror=()=>{URL.revokeObjectURL(url);setStatus('The selected race image could not be decoded.','error')};img.src=url});
   $('race-use-current').addEventListener('click',()=>{const img=api.getImage();if(!img){setStatus('No Time Machine image is loaded yet.','error');return}useImage(img,'Time Machine image')});
-  async function runRace(){if(!state.image||state.running)return;state.running=true;const image=state.image;$('race-image-file').disabled=true;$('confidence').disabled=true;$('race-run').disabled=true;$('race-benchmark').disabled=true;$('race-use-current').disabled=true;syncConfidence();try{
-    setStatus('Running Tiny YOLOv2 (2016)… first load is ~63.5 MB.','loading');const tiny=await runTiny(image,$('race-tiny-canvas'));state.lastRun.tiny=tiny;$('race-tiny-empty').hidden=true;$('race-tiny-canvas').hidden=false;$('race-tiny-inf').textContent=ms(tiny.infMs);$('race-tiny-total').textContent=ms(tiny.totalMs);$('race-tiny-count').textContent=String(tiny.visible);
-    setStatus('Running SSD-MobileNet baseline…','loading');const ssd=await api.runBaseline(image,$('race-ssd-canvas'));state.lastRun.ssd=ssd;$('race-ssd-empty').hidden=true;$('race-ssd-canvas').hidden=false;$('race-ssd-backend').textContent=(api.getBaselineProvider()||'WASM').toUpperCase();$('race-ssd-input').textContent=ssd.width+'×'+ssd.height;$('race-ssd-inf').textContent=ms(ssd.infMs);$('race-ssd-total').textContent=ms(ssd.totalMs);$('race-ssd-count').textContent=String(ssd.visible);
-    setStatus('Running YOLOX-Nano…','loading');const yolo=await runYolo(image,$('race-yolo-canvas'));state.lastRun.yolo=yolo;$('race-yolo-empty').hidden=true;$('race-yolo-canvas').hidden=false;$('race-yolo-inf').textContent=ms(yolo.infMs);$('race-yolo-total').textContent=ms(yolo.totalMs);$('race-yolo-count').textContent=String(yolo.visible);
-    setStatus('Running RT-DETR R18… first load may download 20–40 MB.','loading');const rt=await runRT(image,$('race-rt-canvas'));state.lastRun.rt=rt;$('race-rt-empty').hidden=true;$('race-rt-canvas').hidden=false;$('race-rt-inf').textContent=ms(rt.infMs);$('race-rt-total').textContent=ms(rt.totalMs);$('race-rt-count').textContent=String(rt.visible);$('race-rt-retained').textContent=rt.retained+' @ ≥'+rt.retentionThreshold.toFixed(2);$('race-rt-invalid').textContent=String(rt.droppedInvalid);
-    updateOverlap();setStatus('Race complete: Tiny YOLOv2 '+tiny.visible+', SSD '+ssd.visible+', YOLOX '+yolo.visible+', RT-DETR '+rt.visible+'. Pairwise overlap is shown below.');$('race-benchmark').disabled=false;if(DIAG)$('race-benchmark-diag').disabled=false;
-  }catch(err){console.error(err);setStatus(err&&err.message?err.message:String(err),'error')}finally{state.running=false;$('race-image-file').disabled=false;$('confidence').disabled=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false}}
+  async function runRace(){
+    if(!state.image||state.running)return;
+    state.running=true;const image=state.image,specs=getRaceSpecs(image,null,{benchmarking:false});
+    $('race-image-file').disabled=true;$('confidence').disabled=true;$('race-run').disabled=true;$('race-benchmark').disabled=true;$('race-use-current').disabled=true;syncConfidence();
+    try{
+      await releaseRaceRuntimes();
+      for(const spec of specs){
+        setStatus('Running '+spec.label+'…','loading');
+        const canvas=$(`race-${spec.prefix}-canvas`);if(!canvas)throw new Error(`Missing race canvas for ${spec.label}.`);
+        try{const result=await spec.run({},canvas);state.lastRun[spec.key]=result;updateRaceCard(spec,result)}
+        finally{await spec.release();if(BLACKBOX)bbResident[spec.key]=false}
+      }
+      updateOverlap();
+      const summary=specs.map(spec=>spec.label+' '+(state.lastRun[spec.key]?.visible??0)).join(', ');
+      setStatus('Race complete: '+summary+'. Pairwise overlap is shown below.');$('race-benchmark').disabled=false;if(DIAG)$('race-benchmark-diag').disabled=false;
+    }catch(err){console.error(err);setStatus(err&&err.message?err.message:String(err),'error')}
+    finally{state.running=false;$('race-image-file').disabled=false;$('confidence').disabled=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false}
+  }
   $('race-run').addEventListener('click',runRace);
   async function runModel(model,source,canvas,{benchmarking=false}={}){const adapter=runtimeRegistry.get(model);if(!adapter)throw new Error(`Unknown runnable model: ${model}`);return adapter.run(source,canvas,{benchmarking})}
   function getRuntimeInfo(model){return runtimeRegistry.get(model)?.runtimeInfo?.()||{}}
@@ -292,8 +397,9 @@ ${tail||'—'}`;}
         }
       }
       const kept=specs[specs.length-1];
-      $('race-benchmark-note').textContent=diagnostic?(keepFinalResident?`Diagnostic complete: ${kept.label} intentionally remains resident. Wait 30 seconds; use “Dispose resident” only for a separate disposal probe.`:`Diagnostic complete: ${kept.label} will be disposed before the attempt returns.`):'20 sequential warm runs per model complete. Source image and UI confidence were locked. Only one model runtime was kept resident at a time; startup remains excluded. RT-DETR p50/p90 measures its Transformers.js object-detection pipeline call; Tiny YOLOv2/SSD/YOLOX isolate ORT model execution.';
-      setStatus(diagnostic?`Diagnostic ×20 complete · plan: ${specs.map(x=>x.label).join(' → ')} · ${keepFinalResident?kept.label+' resident':'final runtime disposed'}.`:'Four-generation warm benchmark complete.');
+      const boundaries=specs.map(spec=>spec.label+': '+spec.timingBoundary).join(' · ');
+      $('race-benchmark-note').textContent=diagnostic?(keepFinalResident?`Diagnostic complete: ${kept.label} intentionally remains resident. Wait 30 seconds; use “Dispose resident” only for a separate disposal probe.`:`Diagnostic complete: ${kept.label} will be disposed before the attempt returns.`):`20 sequential warm runs per model complete. Source image and UI confidence were locked. Only one model runtime was kept resident at a time; startup remains excluded. Timing boundaries: ${boundaries}.`;
+      setStatus(diagnostic?`Diagnostic ×20 complete · plan: ${specs.map(x=>x.label).join(' → ')} · ${keepFinalResident?kept.label+' resident':'final runtime disposed'}.`:`${specs.length}-generation warm benchmark complete.`);
       if(diagnostic){writeDiag('diagnostic-results-rendered',{plan:[...bbPlan],keptResident:keepKey||null});$('race-dispose-diag').disabled=!keepFinalResident}benchmarkSucceeded=true
     }catch(err){
       console.error(err);if(diagnostic)writeDiag('diagnostic-error',{message:err&&err.message?err.message:String(err),plan:[...bbPlan]});

@@ -33,7 +33,7 @@ Before opening a pull request:
 
 ## Model contributions
 
-A runnable model must declare its capabilities in `models.js`, register a runtime adapter through `model-runtime.js`, and include enough provenance to audit it. Update `MODEL_SOURCES.md` and `MODEL_CATALOG.md` with:
+A runnable model must declare its capabilities in `models.js`, register a runtime adapter through `model-runtime.js`, and include enough provenance to audit it. Models opting into Model Race must also provide unique race order/prefix metadata, presentation metrics, architecture text, and a work-canvas ID; the UI and pairwise-overlap cells are generated from that contract. Update `MODEL_SOURCES.md` and `MODEL_CATALOG.md` with:
 
 - model/family and publication year;
 - original paper or primary research source;

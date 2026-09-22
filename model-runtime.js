@@ -44,6 +44,20 @@
       if(!race.workCanvasId)errors.push('race.workCanvasId missing');
       if(!race.timingBoundary)errors.push('race.timingBoundary missing');
       if(!Number.isFinite(race.order))errors.push('race.order missing');
+      if(!race.badge)errors.push('race.badge missing');
+      if(!race.emptyText)errors.push('race.emptyText missing');
+      if(!race.architecture)errors.push('race.architecture missing');
+      if(!Array.isArray(race.metrics)||!race.metrics.length)errors.push('race.metrics missing');
+      else{
+        const slots=new Set();
+        for(const metric of race.metrics){
+          if(!metric||!metric.label)errors.push('race metric label missing');
+          if(metric&&metric.slot){
+            if(slots.has(metric.slot))errors.push(`duplicate race metric slot: ${metric.slot}`);
+            slots.add(metric.slot);
+          }else if(metric&&metric.value==null)errors.push('race metric needs slot or value');
+        }
+      }
     }
     return errors;
   }
@@ -93,10 +107,28 @@
     return expectedKeys(options).map(key=>adapters.get(key)).filter(Boolean);
   }
 
+  async function releaseAll({exceptKey='',capability='',group=''}={}){
+    const released=[];
+    for(const adapter of list({capability,group})){
+      if(adapter.key===exceptKey)continue;
+      await adapter.release();
+      released.push(adapter.key);
+    }
+    return Object.freeze(released);
+  }
+
   function validate(options={}){
     const expected=expectedKeys(options),registered=expected.filter(key=>adapters.has(key)),missing=expected.filter(key=>!adapters.has(key));
     const errors=[];
     for(const key of expected)for(const error of validateModelContract(key))errors.push(`${key}: ${error}`);
+    if(options.capability==='race'||options.group){
+      const seenOrder=new Map(),seenPrefix=new Map();
+      for(const key of expected){
+        const race=raceMeta(registry[key]);if(!race)continue;
+        if(seenOrder.has(race.order))errors.push(`${key}: race.order duplicates ${seenOrder.get(race.order)}`);else seenOrder.set(race.order,key);
+        if(seenPrefix.has(race.prefix))errors.push(`${key}: race.prefix duplicates ${seenPrefix.get(race.prefix)}`);else seenPrefix.set(race.prefix,key);
+      }
+    }
     return Object.freeze({expected:Object.freeze(expected),registered:Object.freeze(registered),missing:Object.freeze(missing),errors:Object.freeze(errors)});
   }
 
@@ -112,6 +144,7 @@
     register,
     get,
     list,
+    releaseAll,
     validate,
     assertRegistered,
     capabilityEnabled,

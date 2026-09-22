@@ -9,10 +9,10 @@ Live: https://hakanakgun.github.io/vision-evolution-lab/
 Vision Evolution Lab lets you run and compare object-detection generations without an application backend.
 
 - **Vision Time Machine** switches the active runnable generation in place.
-- **Model Race** benchmarks four generations sequentially on the same image.
+- **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
 - **Live Camera** runs local browser inference with rolling latency measurements.
-- **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively, with additional diagnostic-only modes for the ongoing iOS/WebKit memory investigation.
+- **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
 Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model.
 
@@ -100,7 +100,7 @@ No build step is required. Before serving or opening a pull request, run:
 
 Then serve the repository directory with a local HTTP server. Camera access generally requires HTTPS or localhost.
 
-Runnable models now declare capability metadata and register through a shared runtime-adapter contract. This keeps Time Machine and Model Race lifecycle ownership extensible as more model generations are added.
+Runnable models declare capability metadata and register through a shared runtime-adapter contract. Model Race presentation and pairwise-overlap structure are generated from those capabilities, while sequential adapter release keeps runtime residency bounded as more model generations are added.
 
 ## Contributing
 
