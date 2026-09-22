@@ -20,10 +20,10 @@ The current runtime is intentionally client-side so users can compare computer-v
 
 Runnable model metadata lives in `models.js`. Each runnable model declares capabilities independently from its runtime implementation:
 
-- `timeMachine` — selectable in Time Machine;
-- `benchmark` — supports the warm benchmark contract;
-- `live` — currently enabled only where Live Camera has a real implementation;
-- `inspection` — describes only the inspection stages actually exposed by the model;
+- `timeMachine` — boolean opt-in for Time Machine;
+- `benchmark` — boolean opt-in for the warm benchmark contract;
+- `live` — boolean opt-in, currently true only where Live Camera has a real implementation;
+- `inspection` — a truthful inspection descriptor, or `false` when no inspection surface is exposed;
 - `race` — comparison group, deterministic order, UI prefix/work-canvas ownership, and timing boundary.
 
 Runtime behavior is registered through `model-runtime.js`. Every runnable adapter exposes the same minimum lifecycle:
