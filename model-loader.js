@@ -11,7 +11,7 @@
     const merged=new Uint8Array(loaded);let offset=0;for(const chunk of chunks){merged.set(chunk,offset);offset+=chunk.byteLength}
     onProgress?.({label,loaded,total:total||loaded,percent:100});return merged.buffer;
   }
-  async function putCache(url,buffer,type){const cache=await openCache();if(!cache)return false;try{await cache.put(url,new Response(buffer.slice(0),{headers:{'content-type':type||'application/octet-stream','content-length':String(buffer.byteLength)}}));return true}catch(err){console.warn('Model cache write failed',err);return false}}
+  async function putCache(url,buffer,type){const cache=await openCache();if(!cache)return false;try{await cache.put(url,new Response(buffer,{headers:{'content-type':type||'application/octet-stream','content-length':String(buffer.byteLength)}}));return true}catch(err){console.warn('Model cache write failed',err);return false}}
   async function load(model,{onState,onProgress}={}){
     if(memory.has(model.id)){const hit=memory.get(model.id);onState?.({state:'memory',source:hit.source});onProgress?.({label:hit.source,loaded:hit.buffer.byteLength,total:hit.buffer.byteLength,percent:100});return {...hit,cacheState:'memory',downloadMs:0}}
     const cache=await openCache();
@@ -27,5 +27,6 @@
     throw new Error(`Model download failed. ${errors.join(' | ')}`);
   }
   async function status(model){if(memory.has(model.id))return{state:'memory',source:memory.get(model.id).source};const cache=await openCache();if(cache)for(const source of model.sources||[]){try{if(await cache.match(source.url))return{state:'browser cache',source:source.label}}catch(_){}}return{state:'not cached',source:''}}
-  window.VisionModelLoader=Object.freeze({load,status,formatBytes,cacheName:CACHE_NAME});
+  function evictMemory(modelOrId){const id=typeof modelOrId==='string'?modelOrId:modelOrId&&modelOrId.id;return id?memory.delete(id):false}
+  window.VisionModelLoader=Object.freeze({load,status,evictMemory,formatBytes,cacheName:CACHE_NAME});
 })();

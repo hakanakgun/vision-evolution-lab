@@ -89,6 +89,8 @@
       state.modelBuffer=result.buffer;setMetric('m-download',ms(result.downloadMs));setMetric('m-bytes',bytes(result.buffer.byteLength));setMetric('m-cache',`${result.cacheState} · ${result.source}`);return result;
     }
     ModelLoader.status(MODEL).then(info=>setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state)).catch(()=>{});
+    function releaseBaselineRawBuffer(){state.modelBuffer=null;ModelLoader.evictMemory(MODEL);}
+    async function releaseBaselineRuntime(){const session=state.session;state.session=null;releaseBaselineRawBuffer();if(session&&typeof session.release==='function')try{await session.release()}catch(err){console.warn('Baseline session release failed',err)}}
 
     async function createSession(forceProvider=''){
       if(state.session && (!forceProvider || state.provider===forceProvider)){if(state.activeModel==='ssd'){$('backend-badge').textContent=state.provider.toUpperCase();setMetric('m-init','reused');setMetric('m-cache','memory');}return state.session;}
@@ -107,6 +109,7 @@
           if(previous && previous!==session && typeof previous.release==='function'){
             try{ await previous.release(); }catch(releaseError){ console.warn('Session release failed', releaseError); }
           }
+          releaseBaselineRawBuffer();
           setMetric('m-init', ms(initMs));
           $('backend-badge').textContent=provider.toUpperCase();
           $('live-backend').textContent=provider.toUpperCase();
@@ -115,6 +118,7 @@
           return session;
         }catch(err){ lastError=err; console.warn(`Provider ${provider} failed`, err); }
       }
+      releaseBaselineRawBuffer();
       throw lastError || new Error('No compatible execution provider was available.');
     }
 
@@ -361,6 +365,7 @@
       getImage:()=>state.image,
       getConfidence:()=>Number($('confidence').value),
       getBaselineProvider:()=>state.provider || '',
+      releaseBaselineRuntime,
       runBaseline:(source,canvas)=>inferSource(source,canvas,{updateMain:false}),
       drawDetections,
       sourceSize,
