@@ -49,7 +49,7 @@
       for(const step of ['step2','step3','step4'])if(!inspection.pipeline?.[step]?.title||!inspection.pipeline?.[step]?.text)errors.push(`inspection.pipeline.${step} incomplete`);
       for(const field of ['label','input','resize','padding','layout','dtype','channels'])if(!inspection.comparison?.[field])errors.push(`inspection.comparison.${field} missing`);
       if(!inspection.intermediate?.title||!inspection.intermediate?.subtitle||!inspection.intermediate?.note||!inspection.intermediate?.data)errors.push('inspection.intermediate incomplete');
-      else if(inspection.intermediate.data==='adapter'&&(!inspection.intermediate.statusEmpty||!inspection.intermediate.statusReady))errors.push('inspection adapter statuses missing');
+      else if(inspection.intermediate.data==='adapter'&&(!inspection.intermediate.renderer||!inspection.intermediate.statusEmpty||!inspection.intermediate.statusReady))errors.push('inspection adapter renderer/statuses missing');
       else if(inspection.intermediate.data!=='adapter'&&!inspection.intermediate.status)errors.push('inspection unavailable status missing');
       if(!inspection.resultNote)errors.push('inspection.resultNote missing');
     }
