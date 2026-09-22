@@ -110,7 +110,7 @@
           step4:Object.freeze({title:'YOLOX detection head',text:'Anchor-free decoupled head predicts boxes, objectness and classes across three strides.'})
         }),
         comparison:Object.freeze({label:'YOLOX-Nano',input:'416×416',resize:'aspect preserve',padding:'top-left · 114',layout:'NCHW',dtype:'float32',channels:'BGR'}),
-        intermediate:Object.freeze({title:'Real YOLOX detection-head maps',subtitle:'Pre-NMS objectness tensors from the latest YOLOX inference.',note:'These are real exported detection-head objectness values at strides 8/16/32. They are not backbone feature maps.',data:'adapter',statusEmpty:'Run YOLOX to populate real objectness tensors.',statusReady:'Live from latest YOLOX inference'}),
+        intermediate:Object.freeze({title:'Real YOLOX detection-head maps',subtitle:'Pre-NMS objectness tensors from the latest YOLOX inference.',note:'These are real exported detection-head objectness values at strides 8/16/32. They are not backbone feature maps.',data:'adapter',renderer:'scalar-heatmaps',statusEmpty:'Run YOLOX to populate real objectness tensors.',statusReady:'Live from latest YOLOX inference'}),
         resultNote:'UI threshold changes redraw retained outputs without new inference.'
       })}),
       executionProviders:Object.freeze(directOrtWebGPU?['webgpu','wasm']:['wasm']),
