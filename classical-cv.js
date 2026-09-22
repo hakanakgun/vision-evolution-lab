@@ -78,7 +78,7 @@
   }
 
   function setSource(source,label){
-    state.image=source;state.aiResult=null;state.aiModel='';$('classical-run').disabled=false;
+    state.image=source;state.aiResult=null;state.aiModel='';state.aiDisplay=null;state.lastHog=[];$('classical-run').disabled=false;
     for(const id of ['classical-face-canvas','classical-hog-canvas','classical-ai-canvas']){const canvas=$(id);canvas.hidden=true}
     for(const id of ['classical-face-empty','classical-hog-empty','classical-ai-empty'])$(id).hidden=false;
     for(const id of ['classical-face-input','classical-face-init','classical-face-asset','classical-face-inf','classical-face-count','classical-hog-input','classical-hog-init','classical-hog-inf','classical-hog-count','classical-ai-input','classical-ai-backend','classical-ai-inf','classical-ai-count'])setText(id,'—');
@@ -96,7 +96,7 @@
     await runtimes.releaseAll();
     try{
       const result=await adapter.run(source,$('classical-ai-canvas'),{benchmarking:true,updateMain:false});
-      state.aiResult=result;
+      state.aiResult=result;state.aiDisplay={width:$('classical-ai-canvas').width,height:$('classical-ai-canvas').height};
       const info=adapter.runtimeInfo?.()||{},backend=info.dtype?`${info.backend||adapter.backend()} · ${info.dtype}`:(info.backend||adapter.backend()||'—');
       setText('classical-ai-input',Number.isFinite(result.width)&&Number.isFinite(result.height)?result.width+'×'+result.height:'native');
       setText('classical-ai-backend',String(backend).toUpperCase());setText('classical-ai-inf',ms(result.infMs));setText('classical-ai-count',String(result.visible));
@@ -107,7 +107,7 @@
 
   function redrawAi(){
     if(!state.image||!state.aiResult)return;
-    const canvas=$('classical-ai-canvas'),width=state.aiResult.width||sourceSize(state.image).w,height=state.aiResult.height||sourceSize(state.image).h;
+    const canvas=$('classical-ai-canvas'),width=state.aiDisplay?.width||canvas.width||sourceSize(state.image).w,height=state.aiDisplay?.height||canvas.height||sourceSize(state.image).h;
     drawBase(canvas,state.image,width,height);state.aiResult.visible=api.drawDetections(canvas,state.aiResult.detections);setText('classical-ai-count',String(state.aiResult.visible));
     const work=workingImage(state.image),overlap=overlapPeople(state.lastHog||[],state.aiResult.detections,work.width,work.height);setText('classical-person-overlap',`${overlap.matches} match · HOG ${overlap.hog} · AI person ${overlap.ai}`);
   }
