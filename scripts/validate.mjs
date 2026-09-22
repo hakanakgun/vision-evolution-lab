@@ -141,8 +141,10 @@ check(!files.race.includes('state.lastRun.tiny')&&!files.race.includes('state.la
 check(files.race.includes('await releaseRaceRuntimes();')&&files.race.includes('finally{await spec.release();'),'normal Model Race is not sequentially releasing adapters');
 
 check(files.index.includes('id="race-diagnostics" hidden'),'diagnostic UI parent must be hidden by default');
+check(files.index.includes('id="race-blackbox-tools" hidden'),'black-box tools must be hidden independently of diagnostic status');
 check(files.styles.includes('[hidden]{display:none!important}'),'cross-browser hidden guard missing');
-check(files.race.includes("diagnostics.hidden=false"),'black-box mode does not explicitly reveal the diagnostic parent');
+check(files.race.includes("if(diagnostics)diagnostics.hidden=false"),'diagnostic mode does not reveal its status parent');
+check(files.race.includes("tools.hidden=false"),'black-box mode does not explicitly reveal black-box tools');
 check(files.race.includes("DIAGNOSTIC_BASELINE_KEYS=Object.freeze(['tinyyolo','ssd','yolox','rtdetr'])"),'historical reclamation matrix scope is not pinned');
 check(!files.index.includes('race-diag-copy-row" hidden style="')&&!files.index.includes('race-diag-copy-row" style="'),'diagnostic copy row must not override hidden layout inline');
 
