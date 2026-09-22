@@ -9,6 +9,19 @@
     version:'0.7.6',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
+    defaults:Object.freeze({timeMachine:'ssd'}),
+    timeline:Object.freeze([
+      Object.freeze({year:2001,title:'Viola–Jones',note:'example · face detection',kind:'milestone'}),
+      Object.freeze({year:2005,title:'HOG + SVM',note:'example · pedestrian detection',kind:'milestone'}),
+      Object.freeze({year:2016,title:'SSD',note:'milestone',kind:'milestone'}),
+      Object.freeze({year:2016,model:'tinyyolo',title:'Tiny YOLOv2',note:'tap to run · VOC20',kind:'runnable'}),
+      Object.freeze({year:2017,model:'ssd',title:'SSD + MobileNet',note:'tap to run',kind:'runnable'}),
+      Object.freeze({year:2020,title:'DETR',note:'milestone',kind:'milestone'}),
+      Object.freeze({year:2021,model:'yolox',title:'YOLOX-Nano',note:'tap to run',kind:'runnable'}),
+      Object.freeze({year:2023,model:'rtdetr',title:'RT-DETR R18',note:'tap to run',kind:'runnable',className:'transformer'}),
+      Object.freeze({year:2024,title:'LW-DETR',note:'research',kind:'research'}),
+      Object.freeze({year:2024,title:'D-FINE',note:'research',kind:'research'})
+    ]),
     tinyyolo:Object.freeze({
       id:'tiny-yolov2-voc-opset8',title:'Tiny YOLOv2',year:2016,status:'runnable',family:'Tiny YOLOv2',task:'object-detection',
       license:'upstream metadata Apache-2.0; model-card body MIT; see MODEL_SOURCES.md',bytes:66584576,sha256:'583fb7fdc948435ceac9fa82efc7708701efe8382a859a3dd46526b155f5f2ae',input:416,nms:0.40,
@@ -22,7 +35,20 @@
           Object.freeze({label:'Asset source',slot:'source',initial:'—'}),Object.freeze({label:'Cache',slot:'cache',initial:'checking…'}),Object.freeze({label:'Transfer / init',slot:'startup',initial:'—'}),
           Object.freeze({label:'Inference',slot:'inf',initial:'—'}),Object.freeze({label:'End-to-end',slot:'total',initial:'—'}),Object.freeze({label:'Detections',slot:'count',initial:'—'})
         ])
-      }),inspection:Object.freeze({mode:'final-grid',stages:Object.freeze(['preprocessing','final-grid'])})}),
+      }),inspection:Object.freeze({
+        mode:'final-grid',stages:Object.freeze(['preprocessing','final-grid']),
+        input:'416×416',resize:'direct stretch to 416×416',tensor:'float32 · NCHW',channels:'RGB',normalization:'raw 0–255 float input',
+        preview:Object.freeze({mode:'stretch',width:416,height:416,caption:'Tiny YOLOv2 416×416 direct-resize preview'}),
+        shape:Object.freeze({layout:'NCHW',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'Direct resize',text:'The source is resized directly to 416×416, matching the exact-export runtime convention rather than letterboxed.'}),
+          step3:Object.freeze({title:'RGB tensor',text:'Canvas RGB byte values are packed as float32 NCHW. Upstream preprocessing documentation is incomplete, so this is explicitly recorded as a validation-sensitive contract.'}),
+          step4:Object.freeze({title:'YOLOv2 grid head',text:'A 13×13 grid predicts 5 anchors per cell, each with box/objectness plus 20 Pascal VOC class logits.'})
+        }),
+        comparison:Object.freeze({input:'416×416',resize:'direct stretch',padding:'none',layout:'NCHW',dtype:'float32',channels:'RGB · raw pixels'}),
+        intermediate:Object.freeze({title:'Tiny YOLOv2 intermediate tensors not exported',subtitle:'The current export exposes the final 125×13×13 detection grid, not selected backbone activations.',note:'No simulated feature maps are shown; selected real intermediate outputs would require an inspectable export.',data:'none'}),
+        resultNote:'UI threshold changes redraw retained outputs without new inference.'
+      })}),
       executionProviders:Object.freeze(['wasm']),
       providerNote:'WASM is the initial compatibility policy for this historical opset-8 export; physical iPhone/WebKit runtime validation is pending.',
       preprocessing:Object.freeze({resize:'direct resize to 416×416',layout:'NCHW',dtype:'float32',channels:'RGB',normalization:'raw 0–255 float input; upstream preprocessing field is blank',padding:'none'}),
@@ -41,7 +67,20 @@
           Object.freeze({label:'Input',slot:'input',initial:'dynamic ≤640'}),Object.freeze({label:'Model file',value:'9.10 MB'}),
           Object.freeze({label:'Inference',slot:'inf',initial:'—'}),Object.freeze({label:'End-to-end',slot:'total',initial:'—'}),Object.freeze({label:'Detections',slot:'count',initial:'—'})
         ])
-      }),inspection:Object.freeze({mode:'preprocessing-only',stages:Object.freeze(['preprocessing'])})}),
+      }),inspection:Object.freeze({
+        mode:'preprocessing-only',stages:Object.freeze(['preprocessing']),
+        input:'dynamic ≤640',resize:'aspect preserve ≤640',tensor:'uint8 · NHWC',channels:'RGB',normalization:'none',
+        preview:Object.freeze({mode:'aspect-max',maxSide:640,caption:'SSD prepared-input preview'}),
+        shape:Object.freeze({layout:'NHWC',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'Aspect resize',text:'Longest side is capped at 640 px while preserving aspect ratio.'}),
+          step3:Object.freeze({title:'RGB tensor',text:'Canvas RGBA becomes uint8 NHWC RGB data.'}),
+          step4:Object.freeze({title:'SSD + MobileNet',text:'MobileNet extracts features; SSD predicts classes, scores and boxes in one pass.'})
+        }),
+        comparison:Object.freeze({input:'dynamic ≤640',resize:'aspect preserve',padding:'none',layout:'NHWC',dtype:'uint8',channels:'RGB'}),
+        intermediate:Object.freeze({title:'SSD intermediate tensors not exported',subtitle:'The current ONNX output exposes detections, not selected backbone activations.',note:'A separate inspectable SSD export is required before deeper activations can be shown truthfully.',data:'none'}),
+        resultNote:'UI threshold changes redraw retained outputs without new inference.'
+      })}),
       executionProviders:Object.freeze(['wasm']),
       providerNote:'WASM is intentional for this INT8 baseline: the current ORT WebGPU path can initialize this dynamic-shape graph but fail during OrtRun().',
       preprocessing:Object.freeze({resize:'aspect-preserving longest side ≤640',layout:'NHWC',dtype:'uint8',channels:'RGB',padding:'none'}),
@@ -60,7 +99,20 @@
           Object.freeze({label:'Cache',slot:'cache',initial:'checking…'}),Object.freeze({label:'Transfer / init',slot:'startup',initial:'—'}),Object.freeze({label:'Inference',slot:'inf',initial:'—'}),
           Object.freeze({label:'End-to-end',slot:'total',initial:'—'}),Object.freeze({label:'Detections',slot:'count',initial:'—'})
         ])
-      }),inspection:Object.freeze({mode:'head-objectness',stages:Object.freeze(['preprocessing','stride-8-objectness','stride-16-objectness','stride-32-objectness'])})}),
+      }),inspection:Object.freeze({
+        mode:'head-objectness',stages:Object.freeze(['preprocessing','stride-8-objectness','stride-16-objectness','stride-32-objectness']),
+        input:'416×416',resize:'aspect preserve · top-left letterbox',tensor:'float32 · NCHW',channels:'BGR',normalization:'none · 0–255',
+        preview:Object.freeze({mode:'letterbox-top-left',width:416,height:416,fill:114,caption:'YOLOX 416×416 letterbox preview'}),
+        shape:Object.freeze({layout:'NCHW',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'Letterbox resize',text:'Aspect-preserving resize into 416×416 with top-left placement and fill value 114.'}),
+          step3:Object.freeze({title:'BGR tensor',text:'Pixels become float32 NCHW in BGR channel order.'}),
+          step4:Object.freeze({title:'YOLOX detection head',text:'Anchor-free decoupled head predicts boxes, objectness and classes across three strides.'})
+        }),
+        comparison:Object.freeze({input:'416×416',resize:'aspect preserve',padding:'top-left · 114',layout:'NCHW',dtype:'float32',channels:'BGR'}),
+        intermediate:Object.freeze({title:'Real YOLOX detection-head maps',subtitle:'Pre-NMS objectness tensors from the latest YOLOX inference.',note:'These are real exported detection-head objectness values at strides 8/16/32. They are not backbone feature maps.',data:'adapter'}),
+        resultNote:'UI threshold changes redraw retained outputs without new inference.'
+      })}),
       executionProviders:Object.freeze(directOrtWebGPU?['webgpu','wasm']:['wasm']),
       providerNote:directOrtWebGPU?'Direct ORT uses the JSEP-capable WebGPU bundle on this page, with WASM fallback.':'Direct ORT uses the standard non-JSEP WASM bundle on this page; WebGPU is intentionally disabled for YOLOX in this runtime mode.',
       preprocessing:Object.freeze({resize:'aspect-preserving',layout:'NCHW',dtype:'float32',channels:'BGR',padding:'top-left fill 114'}),
@@ -84,11 +136,24 @@
           Object.freeze({label:'End-to-end',slot:'total',initial:'—'}),Object.freeze({label:'Detections',slot:'count',initial:'—'}),Object.freeze({label:'Retained outputs',slot:'retained',initial:'—'}),
           Object.freeze({label:'Invalid boxes dropped',slot:'invalid',initial:'—'})
         ])
-      }),inspection:Object.freeze({mode:'processor-contract-only',stages:Object.freeze(['preprocessing'])})}),
+      }),inspection:Object.freeze({
+        mode:'processor-contract-only',stages:Object.freeze(['preprocessing']),
+        input:'640×640',resize:'processor resize · no pad',tensor:'float32 · NCHW',channels:'RGB',normalization:'rescale 1/255',
+        preview:Object.freeze({mode:'stretch',width:640,height:640,caption:'Processor-equivalent 640×640 preview'}),
+        shape:Object.freeze({layout:'NCHW',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'Processor resize',text:'Transformers.js resizes the source to 640×640 without page-side padding.'}),
+          step3:Object.freeze({title:'Processor tensor',text:'RGB pixels are rescaled by 1/255 and arranged as float NCHW input.'}),
+          step4:Object.freeze({title:'RT-DETR',text:'End-to-end transformer set prediction returns scored boxes without page-side NMS.'})
+        }),
+        comparison:Object.freeze({input:'640×640',resize:'processor resize',padding:'none',layout:'NCHW',dtype:'float input',channels:'RGB · 1/255'}),
+        intermediate:Object.freeze({title:'RT-DETR intermediate tensors not exposed',subtitle:'The production pipeline exposes detections but not selected encoder/decoder activations.',note:'A separate inspectable ONNX export is required for truthful RT-DETR intermediate activation visualization.',data:'none'}),
+        resultNote:'No page-side NMS is added.'
+      })}),
       preprocessing:Object.freeze({resize:'640×640 processor-managed',layout:'NCHW',dtype:'float32 input / quantized weights',channels:'RGB',rescale:'1/255',normalize:false,padding:'none'}),
       runtime:Object.freeze({webgpu:Object.freeze({device:'webgpu',dtype:'fp16',modelBytes:41400000}),wasm:Object.freeze({device:'wasm',dtype:'q8',modelBytes:21713196})}),
       decoder:'Transformers.js RT-DETR postprocessor',
-      ui:Object.freeze({subtitle:'COCO object detection · Transformers.js · DETR',provenance:'PekingU RT-DETR R18 base model with the pinned Hugging Face ONNX Community conversion. The browser keeps the exact conversion revision and uses Transformers.js v4 native WebGPU runtime with WASM q8 fallback.',links:Object.freeze([Object.freeze({label:'Base model ↗',url:'https://huggingface.co/PekingU/rtdetr_r18vd'}),Object.freeze({label:'Pinned conversion ↗',url:'https://huggingface.co/onnx-community/rtdetr_r18vd/tree/ec641af14c7cc8f93cd641a1458f498abbbbb533'}),Object.freeze({label:'Official repo ↗',url:'https://github.com/lyuwenyu/RT-DETR'}),Object.freeze({label:'License/provenance ↗',url:'MODEL_SOURCES.md#rt-detr-r18'})])}),
+      ui:Object.freeze({runtime:Object.freeze({initLabel:'Pipeline load',bytesText:'~21.7 MB q8 / 41.4 MB fp16',cacheInitial:'checked at load',managedTransferWhenMissing:true,inferenceBoundaryNote:'RT-DETR inference is the Transformers.js pipeline call, including processor/model/postprocessor work.',benchmarkBoundary:'p50, p90, min–max and CV from 20 warm Transformers.js pipeline calls; pipeline/model load excluded.'}),subtitle:'COCO object detection · Transformers.js · DETR',provenance:'PekingU RT-DETR R18 base model with the pinned Hugging Face ONNX Community conversion. The browser keeps the exact conversion revision and uses Transformers.js v4 native WebGPU runtime with WASM q8 fallback.',links:Object.freeze([Object.freeze({label:'Base model ↗',url:'https://huggingface.co/PekingU/rtdetr_r18vd'}),Object.freeze({label:'Pinned conversion ↗',url:'https://huggingface.co/onnx-community/rtdetr_r18vd/tree/ec641af14c7cc8f93cd641a1458f498abbbbb533'}),Object.freeze({label:'Official repo ↗',url:'https://github.com/lyuwenyu/RT-DETR'}),Object.freeze({label:'License/provenance ↗',url:'MODEL_SOURCES.md#rt-detr-r18'})])}),
       source:'https://huggingface.co/onnx-community/rtdetr_r18vd'
     })
   });
