@@ -34,6 +34,8 @@
     async function updateActiveCacheState(){const key=state.activeModel,model=activeModel();if(key==='rtdetr')return;try{const info=await ModelLoader.status(model);if(state.activeModel===key)setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state);}catch(_){}}
     function selectActiveModel(key,{scroll=true}={}){if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}if(!['tinyyolo','ssd','yolox','rtdetr'].includes(key)||!REGISTRY[key])return;state.activeModel=key;document.querySelectorAll('[data-runnable-model]').forEach(btn=>btn.classList.toggle('active',btn.dataset.runnableModel===key));resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();if(state.image){drawSourceOnly();setStatus(`${activeModel().title} selected. Run the current image when ready.`);}else setStatus(`${activeModel().title} selected. Choose an image to run this generation.`);if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});}
     function reportRuntimeEvent(model,event){if(model!==state.activeModel||!event)return;if(event.type==='progress')updateMainModelProgress(event.info||{});if(event.type==='cache')setMetric('m-cache',event.text||'checking…');if(event.type==='runtime'){if(event.backend)$('backend-badge').textContent=event.dtype?`${String(event.backend).toUpperCase()} · ${event.dtype}`:String(event.backend).toUpperCase();if(Number.isFinite(event.downloadMs))setMetric('m-download',ms(event.downloadMs));if(Number.isFinite(event.initMs))setMetric('m-init',ms(event.initMs));if(event.bytes)setMetric('m-bytes',bytes(event.bytes));if(event.source)setMetric('m-cache',event.cacheState?`${event.cacheState} · ${event.source}`:event.source);}}
+    let diagnosticHook=null,baselineSessionRuns=0;
+    function traceDiagnostic(event,meta={}){if(typeof diagnosticHook!=='function')return;try{diagnosticHook(event,meta)}catch(_){}}
 
     function supportsWasmSimd(){
       try{
@@ -83,29 +85,30 @@
       const text=$('m-progress-text');if(text)text.textContent=pct===null?`${bytes(info.loaded)} downloaded`:`${pct.toFixed(0)}% · ${bytes(info.loaded)} / ${bytes(info.total)}`;
     }
     async function fetchModel(){
-      if(state.modelBuffer){if(state.activeModel==='ssd'){setMetric('m-download',ms(0));setMetric('m-bytes',bytes(state.modelBuffer.byteLength));setMetric('m-cache','memory');}return {buffer:state.modelBuffer,downloadMs:0,cacheState:'memory'};}
+      if(state.modelBuffer){if(state.activeModel==='ssd'){setMetric('m-download',ms(0));setMetric('m-bytes',bytes(state.modelBuffer.byteLength));setMetric('m-cache','memory');}traceDiagnostic('ssd-raw-buffer-reuse',{bytes:state.modelBuffer.byteLength});return {buffer:state.modelBuffer,downloadMs:0,cacheState:'memory'};}
       setStatus('Loading the pinned SSD checkpoint…','loading');
-      const result=await ModelLoader.load(MODEL,{onState:info=>setMetric('m-cache',info.state+(info.source?` · ${info.source}`:'')),onProgress:updateMainModelProgress});
-      state.modelBuffer=result.buffer;setMetric('m-download',ms(result.downloadMs));setMetric('m-bytes',bytes(result.buffer.byteLength));setMetric('m-cache',`${result.cacheState} · ${result.source}`);return result;
+      const result=await ModelLoader.load(MODEL,{onState:info=>setMetric('m-cache',info.state+(info.source?` · ${info.source}`:'')),onProgress:updateMainModelProgress,onTrace:diagnosticHook?(event,meta)=>traceDiagnostic('ssd-loader-'+event,meta):undefined});
+      state.modelBuffer=result.buffer;traceDiagnostic('ssd-arraybuffer-obtained',{bytes:result.buffer.byteLength,cacheState:result.cacheState});setMetric('m-download',ms(result.downloadMs));setMetric('m-bytes',bytes(result.buffer.byteLength));setMetric('m-cache',`${result.cacheState} · ${result.source}`);return result;
     }
     ModelLoader.status(MODEL).then(info=>setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state)).catch(()=>{});
-    function releaseBaselineRawBuffer(){state.modelBuffer=null;ModelLoader.evictMemory(MODEL);}
-    async function releaseBaselineRuntime(){const session=state.session;state.session=null;releaseBaselineRawBuffer();if(session&&typeof session.release==='function')try{await session.release()}catch(err){console.warn('Baseline session release failed',err)}}
+    function releaseBaselineRawBuffer(){const had=Boolean(state.modelBuffer),bufferBytes=state.modelBuffer?.byteLength||0;state.modelBuffer=null;ModelLoader.evictMemory(MODEL);if(had)traceDiagnostic('ssd-raw-buffer-reference-release',{bytes:bufferBytes,referencePresent:false})}
+    async function releaseBaselineRuntime(){const session=state.session,methodPresent=Boolean(session&&typeof session.release==='function'),provider=state.provider||'';state.session=null;baselineSessionRuns=0;releaseBaselineRawBuffer();if(!session)return;const start=performance.now();traceDiagnostic('ssd-release-start',{provider,methodPresent,jsReferenceNull:true});try{if(methodPresent)await session.release();traceDiagnostic('ssd-release-complete',{provider,methodPresent,jsReferenceNull:true,durationMs:performance.now()-start})}catch(err){traceDiagnostic('ssd-release-error',{provider,methodPresent,name:err?.name||'Error',message:String(err?.message||err).slice(0,300),durationMs:performance.now()-start});console.warn('Baseline session release failed',err)}}
 
     async function createSession(forceProvider=''){
-      if(state.session && (!forceProvider || state.provider===forceProvider)){if(state.activeModel==='ssd'){$('backend-badge').textContent=state.provider.toUpperCase();setMetric('m-init','reused');setMetric('m-cache','memory');}return state.session;}
-      const {buffer}=await fetchModel();
+      if(state.session && (!forceProvider || state.provider===forceProvider)){if(state.activeModel==='ssd'){$('backend-badge').textContent=state.provider.toUpperCase();setMetric('m-init','reused');setMetric('m-cache','memory');}if(baselineSessionRuns===0)traceDiagnostic('ssd-session-reuse',{provider:state.provider||'',freshInit:false});return state.session;}
+      traceDiagnostic('ssd-runtime-init-start',{requestedProvider:forceProvider||'configured'});
+      const {buffer}=await fetchModel();traceDiagnostic('ssd-session-buffer-ready',{bytes:buffer.byteLength});
       const configured=MODEL.executionProviders || (navigator.gpu ? ['webgpu','wasm'] : ['wasm']);
       const candidates=forceProvider ? [forceProvider] : configured.filter(provider => provider !== 'webgpu' || navigator.gpu);
       let lastError;
       for(const provider of candidates){
         try{
-          setStatus(`Initializing ${provider.toUpperCase()} session…`, 'loading');
+          setStatus(`Initializing ${provider.toUpperCase()} session…`, 'loading');traceDiagnostic('ssd-session-create-start',{provider,bytes:buffer.byteLength});
           const start=performance.now();
           const session=await ort.InferenceSession.create(buffer, {executionProviders:[provider], graphOptimizationLevel:'all'});
           const initMs=performance.now()-start;
           const previous=state.session;
-          state.session=session; state.provider=provider;
+          state.session=session; state.provider=provider;baselineSessionRuns=0;traceDiagnostic('ssd-session-create-complete',{provider,durationMs:initMs,freshInit:true});
           if(previous && previous!==session && typeof previous.release==='function'){
             try{ await previous.release(); }catch(releaseError){ console.warn('Session release failed', releaseError); }
           }
@@ -116,7 +119,7 @@
           const note=MODEL.providerNote && provider==='wasm' ? ` ${MODEL.providerNote}` : ' First inference can include backend compilation overhead.';
           setStatus(`Model ready on ${provider.toUpperCase()}.${note}`);
           return session;
-        }catch(err){ lastError=err; console.warn(`Provider ${provider} failed`, err); }
+        }catch(err){ lastError=err;traceDiagnostic('ssd-session-create-error',{provider,name:err?.name||'Error',message:String(err?.message||err).slice(0,300)}); console.warn(`Provider ${provider} failed`, err); }
       }
       releaseBaselineRawBuffer();
       throw lastError || new Error('No compatible execution provider was available.');
@@ -216,20 +219,23 @@
     }
 
     async function inferSource(source,targetCanvas,{updateMain=true}={}){
-      const session=await createSession();
+      const session=await createSession(),firstForSession=baselineSessionRuns===0;
       const totalStart=performance.now();
-      const preStart=performance.now();
+      const preStart=performance.now();if(firstForSession)traceDiagnostic('ssd-first-preprocess-start',{provider:state.provider||''});
       const {rgb,width,height}=prepareSource(source,targetCanvas);
       const tensor=new ort.Tensor('uint8',rgb,[1,height,width,3]);
       const preMs=performance.now()-preStart;
-      const infStart=performance.now();
+      if(firstForSession)traceDiagnostic('ssd-first-tensor-ready',{provider:state.provider||'',shape:[1,height,width,3],dtype:'uint8',estimatedTensorBytes:rgb.byteLength,estimated:true,canvas:{width,height,estimatedRgbaBytes:width*height*4,estimated:true},preprocessMs:preMs});
+      const infStart=performance.now();if(firstForSession)traceDiagnostic('ssd-first-inference-start',{provider:state.provider||''});
       const runResult=await runWithProviderFallback(session,tensor);
       const results=runResult.results;
-      const infMs=performance.now()-infStart;
+      const infMs=performance.now()-infStart;if(firstForSession)traceDiagnostic('ssd-first-inference-complete',{provider:state.provider||'',durationMs:infMs});
+      baselineSessionRuns++;
       const postStart=performance.now();
       const detections=decode(results);
       const visible=drawDetections(targetCanvas,detections);
       const postMs=performance.now()-postStart;
+      if(firstForSession)traceDiagnostic('ssd-first-postprocess-complete',{provider:state.provider||'',retained:detections.length,visible});
       const totalMs=performance.now()-totalStart;
       const summaryResult={preMs:preMs,infMs:infMs,postMs:postMs,totalMs:totalMs,visible:visible,detections:detections,width:width,height:height,retained:detections.length,retentionThreshold:Number($('confidence').min)||0.1};
       if(updateMain){
@@ -374,6 +380,8 @@
       getActiveModel:()=>state.activeModel,
       selectActiveModel,
       reportRuntimeEvent,
+      setDiagnosticHook:hook=>{diagnosticHook=typeof hook==='function'?hook:null;},
+      getBaselineDiagnosticState:()=>({sessionPresent:Boolean(state.session),provider:state.provider||'',rawBufferPresent:Boolean(state.modelBuffer),rawBufferBytes:state.modelBuffer?.byteLength||0,sessionRuns:baselineSessionRuns,wasmThreads:WASM_THREADS}),
       getRetentionThreshold:()=>Number($('confidence').min)||0.1
     });
 
