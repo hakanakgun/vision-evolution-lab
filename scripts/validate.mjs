@@ -17,10 +17,12 @@ const files={
   loader:read('model-loader.js'),
   app:read('app.js'),
   race:read('race.js'),
+  classical:read('classical-cv.js'),
+  classicalWorker:read('classical-cv-worker.js'),
   version:JSON.parse(read('version.json'))
 };
 
-for(const [name,code] of Object.entries({bootstrap:files.bootstrap,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,race:files.race})){
+for(const [name,code] of Object.entries({bootstrap:files.bootstrap,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,race:files.race,classical:files.classical,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
 for(const [index,code] of [...files.index.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match=>match[1]).entries()){
@@ -63,7 +65,8 @@ for(let i=0;i<raceModels.length;i++)for(let j=i+1;j<raceModels.length;j++)genera
 
 const literalRefs=[...new Set([
   ...files.app.matchAll(/\$\('([^']+)'\)/g),
-  ...files.race.matchAll(/\$\('([^']+)'\)/g)
+  ...files.race.matchAll(/\$\('([^']+)'\)/g),
+  ...files.classical.matchAll(/\$\('([^']+)'\)/g)
 ].map(match=>match[1]))];
 const missingIds=literalRefs.filter(id=>!idSet.has(id)&&!generatedIds.has(id));
 check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
@@ -71,10 +74,10 @@ check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
 const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
 check(files.index.includes(`const CURRENT_BUILD = '${build}'`),'CURRENT_BUILD does not match version.json');
-for(const asset of ['styles.css','runtime-bootstrap.js','models.js','model-runtime.js','model-loader.js','app.js','race.js']){
+for(const asset of ['styles.css','runtime-bootstrap.js','models.js','model-runtime.js','model-loader.js','app.js','race.js','classical-cv.js']){
   check(files.index.includes(`${asset}?v=${version}`),`cache-busted asset missing or stale: ${asset}`);
 }
-const scriptOrder=['runtime-bootstrap.js','models.js','model-runtime.js','model-loader.js','app.js','race.js'];
+const scriptOrder=['runtime-bootstrap.js','models.js','model-runtime.js','model-loader.js','app.js','race.js','classical-cv.js'];
 let previous=-1;
 for(const script of scriptOrder){
   const current=files.index.indexOf(script);
@@ -176,6 +179,32 @@ for(const item of timeMachineModels){
   check(item.inspection&&item.inspection.preview&&item.inspection.pipeline&&item.inspection.comparison&&item.inspection.intermediate,`${item.key}: inspection presentation contract incomplete`);
 }
 
+const classicalTimeline=(metadataRegistry.timeline||[]).filter(entry=>entry.jump==='classical-cv');
+check(classicalTimeline.length===2&&classicalTimeline.some(entry=>entry.year===2001&&entry.title==='Viola–Jones')&&classicalTimeline.some(entry=>entry.year===2005&&entry.title==='HOG + SVM'),'classical timeline links missing or changed');
+check(classicalTimeline.every(entry=>!entry.model),'classical methods must not become Time Machine model keys');
+check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===4,'classical methods must not enter the general runtime/model registry');
+check(timeMachineModels.length===4,'classical methods must not enter the Time Machine model set');
+check(files.index.includes('data-tab="classical-cv"')&&files.index.includes('id="classical-cv"'),'Classical CV tab/panel missing');
+for(const id of ['classical-image-file','classical-use-current','classical-run','classical-release','classical-status','classical-face-canvas','classical-hog-canvas','classical-ai-canvas','classical-person-overlap','classical-runtime-state'])check(files.index.includes(`id="${id}"`),`Classical CV DOM contract missing: ${id}`);
+check(files.app.includes("new CustomEvent('vision:tabchange'"),'generic tab lifecycle event missing');
+check(files.classical.includes("document.addEventListener('vision:tabchange'")&&files.classical.includes("if(tab!=='classical-cv'&&state.worker)disposeWorker"),'Classical CV worker is not released on tab leave');
+check(files.classical.includes("window.addEventListener('pagehide'")&&files.classical.includes("state.worker.terminate()"),'Classical CV worker page-exit cleanup missing');
+check(files.classical.includes('await runtimes.releaseAll()')&&files.classical.includes('finally{await adapter.release()}'),'AI reference runtime ownership/release contract missing');
+check(files.classical.includes("adapter.run(source,$('classical-ai-canvas'),{updateMain:false})"),'Classical AI reference must use the active runtime adapter outside benchmark semantics');
+check(files.classical.includes("bestIou=.35"),'HOG/AI person overlap IoU threshold changed');
+check(files.classical.includes("d.label==='person'&&d.score>=confidence()"),'HOG/AI overlap must use retained AI person detections at current UI confidence');
+check(files.classical.includes("WORK_MAX=640"),'Classical CV browser working-image cap changed');
+check(files.classical.includes("classical-cv-worker.js?v=${VERSION}")&&files.classical.includes("VERSION='0.8.0'"),'Classical CV worker cache/version pin missing');
+check(!files.index.includes('@techstark/opencv-js')&&!files.index.includes('opencv.js'),'OpenCV.js must remain lazy and worker-only');
+check(!files.index.includes('classical-cv-worker.js'),'Classical CV worker must not be loaded as a page script');
+check(files.classicalWorker.includes("@techstark/opencv-js@4.12.0-release.1/dist/opencv.js"),'OpenCV.js runtime pin changed');
+check(files.classicalWorker.includes("49486f61fb25722cbcf586b7f4320921d46fb38e/data/haarcascades/haarcascade_frontalface_default.xml"),'frontal-face cascade commit pin changed');
+check(files.classicalWorker.includes("new cv.CascadeClassifier()")&&files.classicalWorker.includes("classifier.detectMultiScale"),'frontal-face cascade execution missing');
+check(files.classicalWorker.includes("new cv.HOGDescriptor()")&&files.classicalWorker.includes("cv.HOGDescriptor.getDefaultPeopleDetector()")&&files.classicalWorker.includes("hog.detectMultiScale"),'HOG + SVM detector execution missing');
+check(files.classicalWorker.includes("cv.FS_createDataFile"),'cascade virtual-filesystem installation missing');
+check(files.classicalWorker.includes("finally{")&&files.classicalWorker.includes("safeDelete("),'OpenCV.js explicit cleanup contract missing');
+check(files.classical.includes("disposeWorker('after leaving Classical CV')")||files.classical.includes("disposeWorker('after leaving Classical CV')"),'Classical worker lifecycle label missing');
+
 check(files.index.includes('id="race-results"')&&files.index.includes('id="race-benchmark-body"')&&files.index.includes('id="race-diff-grid"')&&files.index.includes('id="race-architecture"'),'dynamic Model Race containers missing');
 check(!files.index.includes('id="race-tiny-canvas"')&&!files.index.includes('id="rb-tiny-backend"')&&!files.index.includes('id="race-match-tiny-ssd"'),'static four-model Model Race markup returned');
 check(files.race.includes('function renderRaceScaffold()')&&files.race.includes("runtimeRegistry.list({capability:'race',group:'general-object'})"),'Model Race scaffold is not registry-driven');
@@ -220,4 +249,4 @@ for(const file of markdown){
 }
 check(broken.length===0,`broken local markdown links: ${broken.join(' | ')}`);
 
-console.log(`validate: PASS · ${files.version.version} · ${timeMachineModels.length} Time Machine models · ${liveKeys.length} live models · ${raceModels.length} race models · dynamic UI`);
+console.log(`validate: PASS · ${files.version.version} · ${timeMachineModels.length} Time Machine models · ${liveKeys.length} live models · ${raceModels.length} race models · Classical CV worker · dynamic UI`);
