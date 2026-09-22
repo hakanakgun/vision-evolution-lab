@@ -1,6 +1,6 @@
 {
-  "version": "0.7.2-diag9",
-  "build": "2026.09.22-v0.7.2-diag9",
+  "version": "0.7.3-diag10",
+  "build": "2026.09.22-v0.7.3-diag10",
   "published": "2026-09-22",
   "cacheStrategy": "version-manifest-no-store"
 }
