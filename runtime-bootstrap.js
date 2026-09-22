@@ -1,6 +1,5 @@
 (()=>{
   const ORT_VERSION='1.30.0';
-  const APP_VERSION='0.7.4-diag12';
   const params=new URLSearchParams(location.search);
   const ua=navigator.userAgent||'';
   const isIOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -21,33 +20,7 @@
     reason
   });
 
-  function loadScript(src){
-    return new Promise((resolve,reject)=>{
-      const script=document.createElement('script');
-      script.src=src;
-      script.async=false;
-      script.onload=()=>resolve(src);
-      script.onerror=()=>reject(new Error(`Failed to load script: ${src}`));
-      document.head.appendChild(script);
-    });
-  }
-
-  async function boot(){
-    await loadScript(ortUrl);
-    for(const src of [
-      `models.js?v=${APP_VERSION}`,
-      `model-loader.js?v=${APP_VERSION}`,
-      `app.js?v=${APP_VERSION}`,
-      `race.js?v=${APP_VERSION}`
-    ]) await loadScript(src);
-  }
-
-  boot().catch(error=>{
-    console.error('Runtime bootstrap failed',error);
-    const el=document.getElementById('unsupported');
-    if(el){
-      el.textContent='Browser runtime failed to initialize. Reload the page or try a current Safari, Chrome, Edge, Firefox, or Brave build.';
-      el.classList.add('show');
-    }
-  });
+  // Keep ORT parser-blocking so downstream scripts preserve their previous
+  // startup order and lifecycle handlers are registered before initial pageshow.
+  document.write('<script src="'+ortUrl+'"><\\/script>');
 })();
