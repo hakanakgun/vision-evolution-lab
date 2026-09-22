@@ -18,15 +18,23 @@ The current runtime is intentionally client-side so users can compare computer-v
 
 ### ONNX Runtime Web
 
-The page currently loads:
+Direct ORT models no longer use one bundle on every platform.
 
-`onnxruntime-web@1.30.0/dist/ort.webgpu.min.js`
+`runtime-bootstrap.js` selects exactly one ONNX Runtime Web 1.30.0 classic bundle before `models.js`, `app.js`, and `race.js` execute:
 
-The application then pins `ort.env.wasm.wasmPaths` to the same 1.30.0 distribution directory.
+- iOS / iPadOS default: `ort.wasm.min.js` — standard non-JSEP WASM distribution.
+- Other platforms default: `ort.webgpu.min.js` — JSEP/WebGPU-capable distribution so YOLOX can retain its WebGPU-first path.
+- Diagnostic override: `?ort=wasm` forces the standard WASM bundle.
+- Diagnostic override: `?ort=jsep` forces the JSEP/WebGPU-capable bundle.
 
-When the page is not cross-origin isolated, `ort.env.wasm.numThreads` is forced to 1. With cross-origin isolation, the app may use up to four threads based on `navigator.hardwareConcurrency`.
+The bootstrap uses a parser-ordered script insertion. It intentionally avoids loading both ORT distributions into one page/process because that would add another WASM/native runtime and contaminate the memory question.
 
-Tiny YOLOv2 and SSD-MobileNetV1 INT8 are intentionally WASM. YOLOX-Nano supports WebGPU/WASM selection in diagnostics. A provider label such as `wasm` describes the requested ONNX Runtime execution provider; it does not by itself prove which ONNX Runtime distribution artifact or native allocator path was active underneath it.
+Tiny YOLOv2 and SSD-MobileNetV1 INT8 always request the WASM execution provider. YOLOX requests WebGPU first only when the selected direct-ORT bundle is JSEP-capable; under the standard WASM bundle its provider list is WASM-only.
+
+The application pins `ort.env.wasm.wasmPaths` to the matching 1.30.0 distribution directory. When the page is not cross-origin isolated, `ort.env.wasm.numThreads` is forced to 1. With cross-origin isolation, the app may use up to four threads based on `navigator.hardwareConcurrency`.
+
+This policy is an iOS memory-safety mitigation based on upstream ONNX Runtime evidence that Safari/WebKit can exhibit persistent CPU/memory growth in JSEP mode even when the requested execution provider is WASM. It is not evidence that the reload bug is fixed.
+
 
 ### Transformers.js
 
