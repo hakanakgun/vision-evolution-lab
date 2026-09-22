@@ -11,7 +11,7 @@ Vision Evolution Lab lets you run and compare object-detection generations witho
 - **Vision Time Machine** switches the active runnable generation in place.
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
-- **Live Camera** runs local browser inference with rolling latency measurements.
+- **Live Camera** runs local browser inference through live-capable runtime adapters with rolling latency measurements; SSD-MobileNetV1 INT8 is currently the only live-enabled model.
 - **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
 Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model.
@@ -100,7 +100,7 @@ No build step is required. Before serving or opening a pull request, run:
 
 Then serve the repository directory with a local HTTP server. Camera access generally requires HTTPS or localhost.
 
-Runnable models declare capability metadata and register through a shared runtime-adapter contract. Time Machine timeline entries, Inside the Model presentation, native-preprocessing comparison, Model Race cards, benchmark rows, and pairwise-overlap structure are generated from those contracts. Sequential adapter release keeps runtime residency bounded as more model generations are added.
+Runnable models declare capability metadata and register through a shared runtime-adapter contract. Time Machine timeline entries, Inside the Model presentation, native-preprocessing comparison, Live Camera model eligibility, Model Race cards, benchmark rows, and pairwise-overlap structure are generated from those contracts. Sequential adapter release keeps runtime residency bounded as more model generations are added.
 
 ## Contributing
 
