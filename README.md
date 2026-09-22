@@ -22,7 +22,7 @@ Selecting a model in Time Machine stays in Time Machine. Inside the Model follow
 | --- | --- | --- | --- |
 | 2016 | Tiny YOLOv2 | Pascal VOC 20 | ONNX Runtime Web / WASM |
 | 2017 | SSD-MobileNetV1 INT8 | COCO | ONNX Runtime Web / intentional WASM |
-| 2021 | YOLOX-Nano | COCO | ONNX Runtime Web / WebGPU or WASM |
+| 2021 | YOLOX-Nano | COCO | ONNX Runtime Web / standard WASM on iOS; WebGPU-first on desktop |
 | 2023 | RT-DETR R18 | COCO | Transformers.js / WebGPU fp16 or WASM q8 |
 
 Exact model revisions, licenses, provenance, preprocessing, and fallback rules are maintained in [MODEL_SOURCES.md](MODEL_SOURCES.md), [MODEL_CATALOG.md](MODEL_CATALOG.md), and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
@@ -59,7 +59,7 @@ Current runtime versions are pinned in the repository. Release/cache behavior an
 
 The repeated four-model benchmark can still trigger an abrupt page recreation on physical iPhone/WebKit runs. The root cause is not yet proven and the bug is **not fixed**.
 
-The current diagnostic build adds bounded crash-safe telemetry without changing the normal 1 warm-up + 20 measured-run benchmark contract.
+The current build also changes the iOS runtime architecture: Tiny YOLOv2, SSD-MobileNetV1 INT8, and YOLOX-Nano use the standard non-JSEP ONNX Runtime WASM bundle on iOS, while desktop keeps the WebGPU/JSEP-capable bundle. RT-DETR remains on its independent Transformers.js runtime. The normal 1 warm-up + 20 measured-run benchmark contract is unchanged.
 
 Investigation history, physical-device evidence, upstream WebKit/ONNX Runtime/Transformers.js research, and the next experiments are in [docs/IOS_WEBKIT_DIAGNOSTICS.md](docs/IOS_WEBKIT_DIAGNOSTICS.md).
 
