@@ -91,7 +91,7 @@ for(const mode of ['standard-wasm','jsep']){
     const model=registry[key],cap=model.capabilities;
     check(cap&&typeof cap.timeMachine==='boolean',`${key}: timeMachine capability must be boolean`);
     check(typeof cap.benchmark==='boolean',`${key}: benchmark capability missing`);
-    check(typeof cap.live==='boolean',`${key}: live capability missing`);
+    check(cap.live===false||(cap.live&&typeof cap.live==='object'&&Number.isFinite(cap.live.order)&&cap.live.summary),`${key}: live capability must be false or declare ordered metadata`);
     check(cap.inspection===false||(cap.inspection&&typeof cap.inspection.mode==='string'),`${key}: inspection capability must be false or declare a mode`);
     if(runtimes.capabilityEnabled(model,'race')){
       const race=runtimes.raceMeta(model);
@@ -105,6 +105,10 @@ for(const mode of ['standard-wasm','jsep']){
   }
   check(runtimes.assertRegistered({capability:'race',group:'general-object'})===true,`${mode}: race adapters failed contract validation`);
   check(runtimes.assertRegistered({capability:'timeMachine'})===true,`${mode}: Time Machine adapters failed contract validation`);
+  check(runtimes.assertRegistered({capability:'live'})===true,`${mode}: Live Camera adapters failed contract validation`);
+  const liveAdapters=runtimes.list({capability:'live'});
+  const liveOrders=liveAdapters.map(adapter=>runtimes.liveMeta(adapter.model)?.order);
+  check(liveOrders.every((value,index)=>index===0||liveOrders[index-1]<value),`${mode}: live order is not strictly increasing`);
   const ordered=runtimes.list({capability:'race',group:'general-object'});
   const orders=ordered.map(adapter=>adapter.model.capabilities.race.order);
   const prefixes=ordered.map(adapter=>adapter.model.capabilities.race.prefix);
@@ -158,6 +162,15 @@ check(files.app.includes('function renderScalarHeatmaps')&&files.app.includes('f
 check(!files.index.includes('id="feature-s8"')&&!files.index.includes('id="feature-s16"')&&!files.index.includes('id="feature-s32"'),'fixed YOLOX feature-map canvases returned');
 check(!files.race.includes('function renderHeadMaps')&&!files.race.includes('renderFeatures'),'inspection rendering leaked back into inference runtime');
 check(files.race.includes("runtimeRegistry.assertRegistered({capability:'timeMachine'})"),'Time Machine adapter completeness is not asserted at startup');
+check(files.race.includes("runtimeRegistry.assertRegistered({capability:'live'})"),'Live Camera adapter completeness is not asserted after runtime registration');
+const liveKeys=metadataWindow.VisionRuntimeRegistry.modelKeys.filter(key=>metadataWindow.VisionRuntimeRegistry.capabilityEnabled(metadataRegistry[key],'live'));
+check(JSON.stringify(liveKeys)==='["ssd"]','current Live Camera scope must remain SSD-only');
+check(metadataRegistry.defaults?.live==='ssd','default Live Camera model must remain SSD');
+check(files.index.includes('id="live-model-name"')&&files.index.includes('id="live-model-controls"'),'Live Camera metadata/selector containers missing');
+check(files.app.includes("RuntimeRegistry.list({capability:'live'})")&&files.app.includes('adapter.run(video,canvas,{updateMain:false,live:true})'),'Live Camera is not runtime-adapter driven');
+check(files.app.includes('prepare:()=>createSession()'),'SSD live adapter does not preserve pre-camera runtime preparation');
+check(!files.app.includes('inferSource(video,canvas,{updateMain:false})'),'Live Camera still directly calls SSD inference');
+check(files.app.includes('refreshLiveModels:renderLiveModels')&&files.race.includes('api.refreshLiveModels?.()'),'Live Camera registry refresh contract missing');
 for(const item of timeMachineModels){
   if(item.inspection===false)continue;
   check(item.inspection&&item.inspection.preview&&item.inspection.pipeline&&item.inspection.comparison&&item.inspection.intermediate,`${item.key}: inspection presentation contract incomplete`);
@@ -207,4 +220,4 @@ for(const file of markdown){
 }
 check(broken.length===0,`broken local markdown links: ${broken.join(' | ')}`);
 
-console.log(`validate: PASS · ${files.version.version} · ${timeMachineModels.length} Time Machine models · ${raceModels.length} race models · dynamic UI`);
+console.log(`validate: PASS · ${files.version.version} · ${timeMachineModels.length} Time Machine models · ${liveKeys.length} live models · ${raceModels.length} race models · dynamic UI`);
