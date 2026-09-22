@@ -170,6 +170,7 @@ ${tail||'—'}`;}
       release:releaseYoloRuntime,
       backend:()=>state.yoloProvider.toUpperCase(),
       runtimeInfo:()=>({backend:state.yoloProvider,downloadMs:state.yoloDownloadMs,initMs:state.yoloInitMs,bytes:YOLO.bytes,cacheState:state.yoloCacheState,source:state.yoloSource}),
+      inspectionData:()=>state.lastHeadMaps,
       diagnosticBackends:()=>registry.runtime.directOrtMode==='jsep'?[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM · JSEP bundle'}]:[{value:'auto',label:'Auto · standard WASM'},{value:'wasm',label:'WASM · standard bundle'}]
     });
     if(!runtimeRegistry.get('rtdetr'))runtimeRegistry.register('rtdetr',{
