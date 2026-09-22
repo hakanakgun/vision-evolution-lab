@@ -23,8 +23,8 @@ Camera access normally requires HTTPS or localhost.
 
 Before opening a pull request:
 
-- Run `node --check app.js`.
-- Confirm the page has no duplicate HTML IDs.
+- Run `node scripts/validate.mjs`. It covers JavaScript syntax, DOM IDs, cache/version references, model capability/adapter contracts, runtime bootstrap policy, benchmark invariants, and local documentation links.
+- If model runtime behavior changed, confirm the affected adapter still owns and releases its runtime without adding model-name branching to the generic benchmark path.
 - Test image upload and at least one inference.
 - If benchmark code changed, follow [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md), run the 20-run warm benchmark, and verify p50/p90/min-max/CV are populated.
 - Test the affected layout at desktop width and a narrow mobile width.
@@ -33,7 +33,7 @@ Before opening a pull request:
 
 ## Model contributions
 
-A runnable model must include enough provenance to audit it. Update `MODEL_SOURCES.md` and `MODEL_CATALOG.md` with:
+A runnable model must declare its capabilities in `models.js`, register a runtime adapter through `model-runtime.js`, and include enough provenance to audit it. Update `MODEL_SOURCES.md` and `MODEL_CATALOG.md` with:
 
 - model/family and publication year;
 - original paper or primary research source;
