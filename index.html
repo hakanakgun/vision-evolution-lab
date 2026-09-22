@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.22-v0.7.3-diag11">
+<html lang="en" data-build="2026.09.22-v0.7.4-diag12">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.22-v0.7.3-diag11';
+      const CURRENT_BUILD = '2026.09.22-v0.7.4-diag12';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.7.3-diag11">
+  <link rel="stylesheet" href="styles.css?v=0.7.4-diag12">
 </head>
 <body>
   <main class="shell">
@@ -158,12 +158,13 @@
               <div class="metric"><span>Logical CPU</span><b id="d-cpu">—</b></div>
               <div class="metric"><span>Device memory</span><b id="d-memory">—</b></div>
               <div class="metric"><span>WebGPU</span><b id="d-webgpu">—</b></div>
+              <div class="metric"><span>Direct ORT bundle</span><b id="d-ort">—</b></div>
               <div class="metric"><span>WASM SIMD</span><b id="d-simd">—</b></div>
               <div class="metric"><span>WASM threads</span><b id="d-threads">—</b></div>
               <div class="metric"><span>Cross-origin isolated</span><b id="d-isolated">—</b></div>
               <div class="metric"><span>Model input</span><b id="d-input">—</b></div>
             </div>
-            <div class="benchmark-note">On iOS, all browsers use WebKit and some third-party browsers expose a Safari-compatible user agent. Browser brand/version is therefore shown conservatively when the browser does not expose a reliable identifier. GitHub Pages normally runs without cross-origin isolation, so multi-threaded WASM may be unavailable.</div>
+            <div class="benchmark-note">On iOS, browser brand and engine are reported separately. Direct ONNX Runtime models default to the standard non-JSEP WASM bundle on iOS to avoid the WebKit/JSEP memory-growth failure class under investigation; desktop keeps the JSEP/WebGPU bundle. Diagnostic overrides: <span class="kbd">?ort=wasm</span> or <span class="kbd">?ort=jsep</span>. GitHub Pages normally runs without cross-origin isolation, so multi-threaded WASM may be unavailable.</div>
           </div>
           <div class="research">
             <div class="research-label">Research provenance</div>
@@ -257,7 +258,7 @@
         <div class="status" id="race-diag-status" hidden></div>
         <div class="status error" id="race-diag-crash" hidden></div>
         <div class="status" id="race-diag-controls" hidden>
-          <div class="tiny"><b>Diagnostic plan</b> · diag=2 keeps the reclamation experiment lightweight; diag=3 adds bounded crash-safe deep lifecycle, cache, allocation-proxy, and initialization breadcrumbs. The matrix itself keeps the same four-model ×20 mechanics.</div>
+          <div class="tiny"><b>Diagnostic plan</b> · diag=2 keeps the lightweight reclamation experiment; diag=3 adds crash-safe deep telemetry. The matrix uses a fresh v2 state after the direct-ORT architecture change. Use <span class="kbd">ort=wasm</span> or <span class="kbd">ort=jsep</span> only when intentionally comparing the standard and JSEP-capable ORT bundles.</div>
           <div id="race-diag-models" style="margin-top:6px"></div>
           <div id="race-diag-backends" class="tiny" style="margin-top:4px"></div>
           <div style="margin-top:6px"><button class="btn secondary" id="race-diag-all" type="button">Select all</button> <button class="btn secondary" id="race-diag-none" type="button">Clear</button> <label class="tiny" for="race-diag-settle" style="margin-left:8px">Inter-model settle <select id="race-diag-settle"><option value="0">0 ms</option><option value="250">250 ms</option><option value="1000">1000 ms</option><option value="3000">3000 ms</option></select></label></div>
@@ -459,13 +460,9 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.7.3-diag11 · temporary model-agnostic iOS diagnostic · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.7.4-diag12 · temporary model-agnostic iOS diagnostic · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
-  <script src="models.js?v=0.7.3-diag11"></script>
-  <script src="model-loader.js?v=0.7.3-diag11"></script>
-  <script src="app.js?v=0.7.3-diag11"></script>
-  <script src="race.js?v=0.7.3-diag11"></script>
+  <script src="runtime-bootstrap.js?v=0.7.4-diag12"></script>
 </body>
 </html>
