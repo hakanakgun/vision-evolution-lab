@@ -62,21 +62,24 @@ It does **not** force the same tensor preprocessing.
 
 That is deliberate. Each model receives the preprocessing expected by its upstream deployment path:
 
+Tiny YOLOv2's upstream model card leaves its preprocessing subsection blank. The original Core ML conversion lineage documents 0–1 image scaling, while the migrated ONNX export exposes a float32 NCHW tensor interface and contemporary exact-export implementations pack resized image bytes into that interface. Vision Evolution Lab therefore treats its current raw-float browser packing as validation-sensitive and does not call it field-verified until the target browser produces sensible detections.
+
 | Model | Input | Layout | Dtype | Padding / resize |
 | --- | --- | --- | --- | --- |
+| Tiny YOLOv2 | 416×416 | NCHW | float32 | direct resize/stretch; no padding |
 | SSD-MobileNetV1 INT8 | aspect-preserving, longest side ≤640 | NHWC | uint8 | no page-side padding |
 | YOLOX-Nano | 416×416 | NCHW | float32 | aspect-preserving top-left letterbox, fill 114 |
 | RT-DETR R18 | 640×640 | processor-managed NCHW | rescaled float input | resize to 640×640, no pad; Transformers.js processor/postprocessor |
 
 Therefore latency differences combine architecture/runtime differences with each model's native input contract. The UI exposes those contracts instead of presenting the race as a controlled academic benchmark.
 
-### Three-model race benchmark
+### Four-model race benchmark
 
-After a successful race, the optional race benchmark executes 20 warm runs per model on the same source image with the UI confidence threshold locked. SSD and YOLOX report isolated ONNX Runtime model execution in the p50/p90 columns. RT-DETR reports the elapsed Transformers.js object-detection pipeline call, which includes its processor/model/postprocessor path. The same distinction applies when RT-DETR is the active Time Machine model. The UI labels this instead of treating the numbers as identical timing boundaries. Feature-map rendering is disabled during warm benchmark loops so inspection work is not added to benchmark timing.
+After a successful race, the optional race benchmark executes 20 warm runs per model on the same source image with the UI confidence threshold locked. Tiny YOLOv2, SSD and YOLOX report isolated ONNX Runtime model execution in the p50/p90 columns. RT-DETR reports the elapsed Transformers.js object-detection pipeline call, which includes its processor/model/postprocessor path. The same distinction applies when RT-DETR is the active Time Machine model. The UI labels this instead of treating the numbers as identical timing boundaries. Feature-map rendering is disabled during warm benchmark loops so inspection work is not added to benchmark timing.
 
 ### Confidence retention
 
-The slider minimum is also the internal retention floor. YOLOX decoding and the RT-DETR Transformers.js pipeline retain detections down to that floor, while the current UI threshold is applied during draw/comparison. This allows threshold changes within the slider range to re-filter existing outputs without a new inference. SSD already exposes its decoded detections before the UI draw threshold. The retention floor is not an accuracy claim and does not change the benchmark's user-visible confidence contract.
+The slider minimum is also the internal retention floor. Tiny YOLOv2 decoding, YOLOX decoding and the RT-DETR Transformers.js pipeline retain detections down to that floor, while the current UI threshold is applied during draw/comparison. This allows threshold changes within the slider range to re-filter existing outputs without a new inference. SSD already exposes its decoded detections before the UI draw threshold. The retention floor is not an accuracy claim and does not change the benchmark's user-visible confidence contract.
 
 ## 5. Detection overlap is not accuracy
 
@@ -85,7 +88,7 @@ The Model Race overlap summary matches boxes when:
 - class label is the same; and
 - intersection-over-union (IoU) is at least 0.35.
 
-The UI reports all three pairwise match counts (SSD↔YOLOX, SSD↔RT-DETR, YOLOX↔RT-DETR) plus, for each model, detections unmatched by either of the other two models at the current threshold.
+The UI reports all six pairwise match counts across Tiny YOLOv2, SSD, YOLOX and RT-DETR plus, for each model, detections unmatched by all other three models at the current threshold. Tiny YOLOv2 is a Pascal VOC 20-class detector while the other runnable models use COCO labels; only legacy VOC naming synonyms are canonicalized to equivalent COCO-style names for overlap. COCO-only classes cannot match Tiny YOLOv2.
 
 Without ground-truth annotations this does **not** establish which model is correct.
 

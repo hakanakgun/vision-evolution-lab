@@ -1,10 +1,23 @@
 (() => {
   'use strict';
   const coco80=Object.freeze(['person','bicycle','car','motorcycle','airplane','bus','train','truck','boat','traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe','backpack','umbrella','handbag','tie','suitcase','frisbee','skis','snowboard','sports ball','kite','baseball bat','baseball glove','skateboard','surfboard','tennis racket','bottle','wine glass','cup','fork','knife','spoon','bowl','banana','apple','sandwich','orange','broccoli','carrot','hot dog','pizza','donut','cake','chair','couch','potted plant','bed','dining table','toilet','tv','laptop','mouse','remote','keyboard','cell phone','microwave','oven','toaster','sink','refrigerator','book','clock','vase','scissors','teddy bear','hair drier','toothbrush']);
+  const voc20=Object.freeze(['aeroplane','bicycle','bird','boat','bottle','bus','car','cat','chair','cow','diningtable','dog','horse','motorbike','person','pottedplant','sheep','sofa','train','tvmonitor']);
+  const vocCanonical=Object.freeze(['airplane','bicycle','bird','boat','bottle','bus','car','cat','chair','cow','dining table','dog','horse','motorcycle','person','potted plant','sheep','couch','train','tv']);
   window.VisionModels=Object.freeze({
-    version:'0.6.0',
+    version:'0.7.0',
     runtime:Object.freeze({ort:'1.30.0',transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
-    labels:Object.freeze({coco80}),
+    labels:Object.freeze({coco80,voc20,vocCanonical}),
+    tinyyolo:Object.freeze({
+      id:'tiny-yolov2-voc-opset8',title:'Tiny YOLOv2',year:2016,status:'runnable',family:'Tiny YOLOv2',task:'object-detection',
+      license:'upstream metadata Apache-2.0; model-card body MIT; see MODEL_SOURCES.md',bytes:66584576,sha256:'583fb7fdc948435ceac9fa82efc7708701efe8382a859a3dd46526b155f5f2ae',input:416,nms:0.40,
+      revision:'869707e16e57006f97d98af54cfdc8a1d388ae61',anchors:Object.freeze([1.08,1.19,3.42,4.41,6.63,11.38,9.42,5.11,16.62,10.52]),
+      executionProviders:Object.freeze(['wasm']),
+      providerNote:'WASM is the initial compatibility policy for this historical opset-8 export; physical iPhone/WebKit runtime validation is pending.',
+      preprocessing:Object.freeze({resize:'direct resize to 416×416',layout:'NCHW',dtype:'float32',channels:'RGB',normalization:'raw 0–255 float input; upstream preprocessing field is blank',padding:'none'}),
+      decoder:'YOLOv2 13×13 grid · 5 anchors · VOC20 softmax + class-aware NMS',
+      ui:Object.freeze({subtitle:'Pascal VOC 20-class detection · ONNX · opset 8',provenance:'Pinned ONNX Model Zoo Tiny YOLOv2 export, migrated to Hugging Face. The checkpoint descends from a Core ML conversion of the original Darknet/Keras network; model-card license presentation is internally inconsistent and documented separately.',links:Object.freeze([Object.freeze({label:'YOLO9000 paper ↗',url:'https://arxiv.org/abs/1612.08242'}),Object.freeze({label:'Pinned model ↗',url:'https://huggingface.co/onnxmodelzoo/tinyyolov2-8/tree/869707e16e57006f97d98af54cfdc8a1d388ae61'}),Object.freeze({label:'License/provenance ↗',url:'MODEL_SOURCES.md#tiny-yolov2'})])}),
+      sources:Object.freeze([Object.freeze({label:'HF ONNX Model Zoo pinned',url:'https://huggingface.co/onnxmodelzoo/tinyyolov2-8/resolve/869707e16e57006f97d98af54cfdc8a1d388ae61/tinyyolov2-8.onnx?download=true',provenance:'onnxmodelzoo/tinyyolov2-8 @ 869707e16e57006f97d98af54cfdc8a1d388ae61'})])
+    }),
     ssd:Object.freeze({
       id:'ssd-mobilenet-v1-12-int8',title:'SSD-MobileNetV1 INT8',year:2017,status:'runnable',family:'SSD + MobileNetV1',task:'object-detection',
       license:'permissive upstream; see MODEL_SOURCES.md',bytes:9542048,sha256:'2b79e6a7fb1ec6a33f332b9b10d82d9de4b7b49dcd26b5946921bb356895c954',maxSide:640,

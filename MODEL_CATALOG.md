@@ -9,6 +9,7 @@ Status meanings:
 | Year | Model | Status | Architecture shift | Upstream license/provenance | Browser note |
 | --- | --- | --- | --- | --- | --- |
 | 2016 | SSD | Research | single-shot multi-scale dense detection | paper reference | historical milestone |
+| 2016 | Tiny YOLOv2 | Runnable | compact grid/anchor CNN detector | ONNX Model Zoo migration; pinned HF revision; Pascal VOC; upstream license metadata/body conflict documented | WASM compatibility policy; physical iPhone/WebKit runtime validation pending |
 | 2017 | SSD-MobileNetV1 INT8 | Runnable | lightweight mobile backbone + SSD | pinned ONNX Model Zoo source; see `MODEL_SOURCES.md` | WASM policy because current ORT WebGPU path fails at run time for this export |
 | 2020 | DETR | Research | transformer set prediction | paper reference | historical milestone |
 | 2021 | YOLOX-Nano | Runnable | anchor-free decoupled YOLO head | official Megvii project/release, Apache-2.0 | WebGPU-first with WASM fallback |
@@ -32,6 +33,10 @@ Before a candidate becomes runnable, verify:
 The current app avoids redistributing model binaries: runnable models are fetched from pinned or official upstream sources.
 
 ## Current selection rationale
+
+### Tiny YOLOv2
+
+Added as the first pre-2017 runnable generation. It gives the timeline a real 2016 detector with a materially different 13×13 grid/anchor output and Pascal VOC 20-class label space. The exact ONNX Model Zoo export is pinned rather than mirrored locally. Because the upstream Hugging Face metadata says Apache-2.0 while the model-card body says MIT, the repository records both statements instead of collapsing them into a single checkpoint-license claim. The browser integration starts with WASM for compatibility; physical iPhone/WebKit inference and benchmark evidence remain pending.
 
 ### SSD-MobileNetV1 INT8
 
