@@ -381,7 +381,7 @@
       selectActiveModel,
       reportRuntimeEvent,
       setDiagnosticHook:hook=>{diagnosticHook=typeof hook==='function'?hook:null;},
-      getBaselineDiagnosticState:()=>({sessionPresent:Boolean(state.session),provider:state.provider||'',rawBufferPresent:Boolean(state.modelBuffer),rawBufferBytes:state.modelBuffer?.byteLength||0,sessionRuns:baselineSessionRuns}),
+      getBaselineDiagnosticState:()=>({sessionPresent:Boolean(state.session),provider:state.provider||'',rawBufferPresent:Boolean(state.modelBuffer),rawBufferBytes:state.modelBuffer?.byteLength||0,sessionRuns:baselineSessionRuns,wasmThreads:WASM_THREADS}),
       getRetentionThreshold:()=>Number($('confidence').min)||0.1
     });
 
