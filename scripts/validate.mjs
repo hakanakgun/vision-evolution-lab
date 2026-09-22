@@ -71,10 +71,10 @@ for(const mode of ['standard-wasm','jsep']){
   check(runnable.length>0,'no runnable models declared');
   for(const key of runnable){
     const model=registry[key],cap=model.capabilities;
-    check(cap&&cap.timeMachine===true,`${key}: timeMachine capability missing`);
+    check(cap&&typeof cap.timeMachine==='boolean',`${key}: timeMachine capability must be boolean`);
     check(typeof cap.benchmark==='boolean',`${key}: benchmark capability missing`);
     check(typeof cap.live==='boolean',`${key}: live capability missing`);
-    check(cap.inspection&&typeof cap.inspection.mode==='string',`${key}: inspection capability missing`);
+    check(cap.inspection===false||(cap.inspection&&typeof cap.inspection.mode==='string'),`${key}: inspection capability must be false or declare a mode`);
     if(runtimes.capabilityEnabled(model,'race')){
       const race=runtimes.raceMeta(model);
       check(race&&race.group&&Number.isFinite(race.order)&&race.prefix&&race.workCanvasId&&race.timingBoundary,`${key}: race metadata incomplete`);
