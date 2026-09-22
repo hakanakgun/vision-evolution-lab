@@ -3,8 +3,9 @@
   const api=window.VisionLab,registry=window.VisionModels,loader=window.VisionModelLoader;
   if(!api||!registry||!loader||!window.ort)return;
   const $=id=>document.getElementById(id),TINY=registry.tinyyolo,YOLO=registry.yolox,RT=registry.rtdetr,COCO80=registry.labels.coco80,VOC20=registry.labels.voc20,VOC_CANON=registry.labels.vocCanonical;
-  const DIAG_MODE=new URLSearchParams(location.search).get('diag')||'',DIAG=DIAG_MODE==='1'||DIAG_MODE==='2',BLACKBOX=DIAG_MODE==='2',DIAG_KEY='vel:race-diag-v1',BB_KEY='vel:race-diag-blackbox-v1',BB_JOURNAL_KEY='vel:race-diag-journal-v1',BB_SELECTION_KEY='vel:race-diag-selection-v1';
-  let bbStage='page-ready',bbPrevious=null,bbEvents=[],bbPlan=[],bbBenchmarkDoneWall=0,bbLastBeat=performance.now(),bbMaxGap=0,bbLastLifecycle='page-init',bbOrderlyExit=false;
+  const DIAG_MODE=new URLSearchParams(location.search).get('diag')||'',DIAG=DIAG_MODE==='1'||DIAG_MODE==='2',BLACKBOX=DIAG_MODE==='2',DIAG_KEY='vel:race-diag-v1',BB_KEY='vel:race-diag-blackbox-v1',BB_JOURNAL_KEY='vel:race-diag-journal-v1',BB_SELECTION_KEY='vel:race-diag-selection-v1',BB_SETTLE_KEY='vel:race-diag-settle-v1';
+  let bbStage='page-ready',bbPrevious=null,bbEvents=[],bbPlan=[],bbBenchmarkDoneWall=0,bbLastBeat=performance.now(),bbMaxGap=0,bbLastLifecycle='page-init',bbOrderlyExit=false,bbSettleMs=0;
+  const DIAG_TRACE_RUNS=new Set([1,2,3,5,10,15,20]);
   const bbResident={};
   function readLocal(key,fallback=null){try{const v=JSON.parse(localStorage.getItem(key)||'null');return v??fallback}catch(_){return fallback}}
   function writeLocal(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(_){return false}}
@@ -16,11 +17,12 @@
   function diagModelLabel(key){return getRaceSpecs(null,null,{benchmarking:true}).find(x=>x.key===key)?.label||key}
   function bbResidentText(value){const entries=Object.entries(value||{});return entries.length?entries.map(([key,on])=>`${diagModelLabel(key)} ${on?'ON':'OFF'}`).join(' · '):'none'}
   function bbJournal(event,extra={}){if(!BLACKBOX)return;bbEvents=[...bbEvents,{at:new Date().toISOString(),event,...extra}].slice(-40);writeLocal(BB_JOURNAL_KEY,bbEvents)}
-  function bbSnapshot(){return{stage:bbStage,heartbeatAt:new Date().toISOString(),secondsSinceBenchmark:bbBenchmarkDoneWall?Math.max(0,(Date.now()-bbBenchmarkDoneWall)/1000):null,maxEventLoopGapMs:Math.round(bbMaxGap),lastLifecycle:bbLastLifecycle,orderlyExit:bbOrderlyExit,navigationType:bbNavType(),plan:[...bbPlan],resident:{...bbResident},workCanvases:bbWorkCanvases(),memory:bbMemory()}}
+  function bbSnapshot(){return{stage:bbStage,heartbeatAt:new Date().toISOString(),secondsSinceBenchmark:bbBenchmarkDoneWall?Math.max(0,(Date.now()-bbBenchmarkDoneWall)/1000):null,maxEventLoopGapMs:Math.round(bbMaxGap),lastLifecycle:bbLastLifecycle,orderlyExit:bbOrderlyExit,navigationType:bbNavType(),plan:[...bbPlan],settleMs:bbSettleMs,resident:{...bbResident},workCanvases:bbWorkCanvases(),memory:bbMemory()}}
   function renderBlackbox(){if(!BLACKBOX)return;const el=$('race-diag-blackbox');if(!el)return;el.hidden=false;const now=bbSnapshot(),prev=bbPrevious,tail=bbEvents.slice(-12).map(x=>x.at.slice(11,19)+'  '+x.event+(x.ms?(' · '+x.ms+' ms'):'')).join('\n'),plan=x=>(x&&x.length?x.map(diagModelLabel).join(' → '):'—');el.textContent=`DIAGNOSTIC BLACK BOX · diag=2
 CURRENT
 stage: ${now.stage}
 plan: ${plan(now.plan)}
+inter-model settle: ${now.settleMs} ms
 heartbeat: ${now.heartbeatAt}
 since benchmark: ${now.secondsSinceBenchmark===null?'—':now.secondsSinceBenchmark.toFixed(1)+' s'}
 event-loop max gap: ${now.maxEventLoopGapMs} ms
@@ -32,6 +34,7 @@ work canvases: ${now.workCanvases} · memory: ${now.memory}
 PREVIOUS
 ${prev?`stage: ${prev.stage||'unknown'}
 plan: ${plan(prev.plan)}
+inter-model settle: ${prev.settleMs??0} ms
 last heartbeat: ${prev.heartbeatAt||'—'}
 since benchmark: ${Number.isFinite(prev.secondsSinceBenchmark)?prev.secondsSinceBenchmark.toFixed(1)+' s':'—'}
 event-loop max gap: ${prev.maxEventLoopGapMs??'—'} ms
@@ -50,7 +53,7 @@ ${tail||'—'}`;}
   if(BLACKBOX){bbPrevious=readLocal(BB_KEY);bbEvents=readLocal(BB_JOURNAL_KEY,[]);bbJournal('page-init',{navigation:bbNavType()});renderBlackbox();window.addEventListener('pageshow',()=>{bbLastLifecycle='pageshow';bbJournal('pageshow');renderBlackbox()});window.addEventListener('beforeunload',()=>{bbLastLifecycle='beforeunload';bbJournal('beforeunload');writeLocal(BB_KEY,bbSnapshot())});document.addEventListener('visibilitychange',()=>{bbLastLifecycle='visibility:'+document.visibilityState;bbJournal(bbLastLifecycle);writeLocal(BB_KEY,bbSnapshot());renderBlackbox()});setInterval(()=>{const now=performance.now(),gap=Math.max(0,now-bbLastBeat-1000);bbLastBeat=now;if(gap>bbMaxGap)bbMaxGap=gap;if(gap>=1500)bbJournal('event-loop-gap',{ms:Math.round(gap)});writeLocal(BB_KEY,bbSnapshot());renderBlackbox()},1000)}
   const report=(model,event)=>api.reportRuntimeEvent?.(model,event);
   const ms=api.ms,threshold=()=>api.getConfidence(),retainThreshold=()=>api.getRetentionThreshold?api.getRetentionThreshold():0.1,syncConfidence=()=>{$('race-confidence').textContent=threshold().toFixed(2)};syncConfidence();$('confidence').addEventListener('input',()=>{syncConfidence();redrawRaceResults();});
-  const setStatus=(text,kind='')=>{const el=$('race-status');el.textContent=text;el.className=`status ${kind}`.trim()},sourceDims=s=>api.sourceSize(s),sleepFrame=()=>new Promise(requestAnimationFrame);
+  const setStatus=(text,kind='')=>{const el=$('race-status');el.textContent=text;el.className=`status ${kind}`.trim()},sourceDims=s=>api.sourceSize(s),sleepFrame=()=>new Promise(requestAnimationFrame),sleepMs=value=>new Promise(resolve=>setTimeout(resolve,value));
   const median=v=>{const a=[...v].sort((x,y)=>x-y),m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2},percentile=(v,p)=>{const a=[...v].sort((x,y)=>x-y);return a[Math.max(0,Math.min(a.length-1,Math.ceil(p*a.length)-1))]},cv=v=>{const m=v.reduce((a,b)=>a+b,0)/v.length,q=v.reduce((s,x)=>s+(x-m)**2,0)/v.length;return m>0?Math.sqrt(q)/m*100:NaN};
   function updateProgress(prefix,info){const pct=Number.isFinite(info.percent)?Math.max(0,Math.min(100,info.percent)):null,bar=$(`${prefix}-progress-bar`),text=$(`${prefix}-progress-text`);if(bar)bar.style.width=pct===null?'18%':`${pct.toFixed(1)}%`;if(text){const loaded=loader.formatBytes(info.loaded),total=loader.formatBytes(info.total);text.textContent=pct===null?`${loaded} downloaded`:`${pct.toFixed(0)}% · ${loaded} / ${total}`}}
   loader.status(TINY).then(x=>$('race-tiny-cache').textContent=x.source?`${x.state} · ${x.source}`:x.state).catch(()=>{});
@@ -116,9 +119,10 @@ ${tail||'—'}`;}
   }
   function setupDiagnosticControls(){
     if(!BLACKBOX)return;
-    const wrap=$('race-diag-controls'),models=$('race-diag-models');
+    const wrap=$('race-diag-controls'),models=$('race-diag-models'),settle=$('race-diag-settle');
     if(!wrap||!models)return;
-    const specs=getRaceSpecs(null,null,{benchmarking:true}),known=new Set(specs.map(x=>x.key)),saved=readLocal(BB_SELECTION_KEY,null),selected=Array.isArray(saved)?saved.filter(x=>known.has(x)):specs.map(x=>x.key);
+    const specs=getRaceSpecs(null,null,{benchmarking:true}),known=new Set(specs.map(x=>x.key)),saved=readLocal(BB_SELECTION_KEY,null),selected=Array.isArray(saved)?saved.filter(x=>known.has(x)):specs.map(x=>x.key),settleOptions=[0,250,1000,3000],savedSettle=Number(readLocal(BB_SETTLE_KEY,0));
+    bbSettleMs=settleOptions.includes(savedSettle)?savedSettle:0;if(settle){settle.value=String(bbSettleMs);settle.addEventListener('change',()=>{const next=Number(settle.value);bbSettleMs=settleOptions.includes(next)?next:0;writeLocal(BB_SETTLE_KEY,bbSettleMs);renderBlackbox()})}
     models.replaceChildren();
     for(const spec of specs){
       const label=document.createElement('label'),box=document.createElement('input'),text=document.createElement('span');
@@ -132,7 +136,7 @@ ${tail||'—'}`;}
     $('race-diag-none').addEventListener('click',()=>setAll(false));
     wrap.hidden=false;bbPlan=getDiagnosticSelection();for(const spec of specs)if(!(spec.key in bbResident))bbResident[spec.key]=false;renderBlackbox();
   }
-  function setDiagnosticControlsDisabled(disabled){if(!BLACKBOX)return;document.querySelectorAll('[data-diag-model]').forEach(x=>x.disabled=disabled);$('race-diag-all').disabled=disabled;$('race-diag-none').disabled=disabled}
+  function setDiagnosticControlsDisabled(disabled){if(!BLACKBOX)return;document.querySelectorAll('[data-diag-model]').forEach(x=>x.disabled=disabled);$('race-diag-all').disabled=disabled;$('race-diag-none').disabled=disabled;const settle=$('race-diag-settle');if(settle)settle.disabled=disabled}
   const visible=d=>d.filter(x=>x.score>=threshold());
   function compare(a,b){const aa=visible(a),bb=visible(b),used=new Set();let both=0;for(const old of aa){let best=-1,bi=0;for(let i=0;i<bb.length;i++){if(used.has(i)||bb[i].label!==old.label)continue;const v=iou(old.box,bb[i].box);if(v>=.35&&v>bi){best=i;bi=v}}if(best>=0){used.add(best);both++}}return{both,aOnly:aa.length-both,bOnly:bb.length-both}}
   function hasMatch(det,list){return list.some(other=>other.label===det.label&&iou(det.box,other.box)>=.35)}
@@ -156,16 +160,16 @@ ${tail||'—'}`;}
     if(!state.image||state.benchmarking)return;
     const image=state.image,hidden=document.createElement('canvas'),allSpecs=getRaceSpecs(image,hidden,{benchmarking:true}),selectedKeys=diagnostic?getDiagnosticSelection():allSpecs.map(x=>x.key),specs=allSpecs.filter(x=>selectedKeys.includes(x.key));
     if(!specs.length){setStatus('Select at least one diagnostic model.','error');return}
-    const keepKey=diagnostic?specs[specs.length-1].key:'',runs=20;let keptResident=false;
+    const keepKey=diagnostic?specs[specs.length-1].key:'',runs=20,settleMs=diagnostic?bbSettleMs:0;let keptResident=false;
     state.benchmarking=true;bbPlan=specs.map(x=>x.key);
     $('race-image-file').disabled=true;$('race-use-current').disabled=true;$('confidence').disabled=true;$('race-benchmark').disabled=true;$('race-run').disabled=true;
     if(DIAG){$('race-benchmark-diag').disabled=true;$('race-dispose-diag').disabled=true}
-    if(diagnostic){setDiagnosticControlsDisabled(true);writeDiag('diagnostic-start',{plan:[...bbPlan],keepResident:keepKey})}
+    if(diagnostic){setDiagnosticControlsDisabled(true);writeDiag('diagnostic-start',{plan:[...bbPlan],keepResident:keepKey,settleMs})}
     try{
       await releaseRaceRuntimes();
-      if(diagnostic)writeDiag('pre-benchmark-cleanup-complete',{plan:[...bbPlan]});
-      for(const spec of specs){
-        const samples=[];
+      if(diagnostic)writeDiag('pre-benchmark-cleanup-complete',{plan:[...bbPlan],settleMs});
+      for(let specIndex=0;specIndex<specs.length;specIndex++){
+        const spec=specs[specIndex],samples=[];
         try{
           if(diagnostic)writeDiag(spec.key+'-start');
           $('race-benchmark-note').textContent=spec.label+': warm-up…';
@@ -173,8 +177,12 @@ ${tail||'—'}`;}
           if(diagnostic)writeDiag(spec.key+'-warmup-complete');
           await sleepFrame();
           for(let i=0;i<runs;i++){
-            $('race-benchmark-note').textContent=spec.label+': '+(i+1)+'/'+runs+' warm runs…';
-            const result=await spec.run();samples.push({infMs:result.infMs,totalMs:result.totalMs});await sleepFrame();
+            const runNo=i+1,traceRun=diagnostic&&spec.key===keepKey&&DIAG_TRACE_RUNS.has(runNo);
+            $('race-benchmark-note').textContent=spec.label+': '+runNo+'/'+runs+' warm runs…';
+            if(traceRun)writeDiag(spec.key+'-run-'+runNo+'-start',{run:runNo,runs});
+            const result=await spec.run();samples.push({infMs:result.infMs,totalMs:result.totalMs});
+            if(traceRun)writeDiag(spec.key+'-run-'+runNo+'-complete',{run:runNo,runs});
+            await sleepFrame();
           }
           setBench(spec.prefix,spec.backend(),samples);
           if(diagnostic)writeDiag(spec.key+'-20-complete');
@@ -187,6 +195,7 @@ ${tail||'—'}`;}
             if(diagnostic)writeDiag(spec.key+'-dispose-complete');
           }
           hidden.width=1;hidden.height=1;await sleepFrame();
+          if(diagnostic&&settleMs>0&&specIndex<specs.length-1){writeDiag(spec.key+'-settle-start',{settleMs});await sleepMs(settleMs);await sleepFrame();writeDiag(spec.key+'-settle-complete',{settleMs})}
         }
       }
       const kept=specs[specs.length-1];
