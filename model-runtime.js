@@ -33,10 +33,10 @@
     const model=modelFor(key),cap=model.capabilities;
     const errors=[];
     if(!cap||typeof cap!=='object')errors.push('capabilities missing');
-    if(!capabilityEnabled(model,'timeMachine'))errors.push('timeMachine capability must be enabled');
+    if(typeof cap?.timeMachine!=='boolean')errors.push('timeMachine capability must be boolean');
     if(typeof cap?.benchmark!=='boolean')errors.push('benchmark capability must be boolean');
     if(typeof cap?.live!=='boolean')errors.push('live capability must be boolean');
-    if(!cap?.inspection||typeof cap.inspection!=='object')errors.push('inspection capability missing');
+    if(!(cap?.inspection===false||(cap?.inspection&&typeof cap.inspection==='object')))errors.push('inspection capability must be false or an object');
     const race=raceMeta(model);
     if(race){
       if(!race.group)errors.push('race.group missing');
