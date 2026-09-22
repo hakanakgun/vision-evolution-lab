@@ -181,6 +181,7 @@ ${tail||'—'}`;}
       diagnosticBackends:()=>[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU fp16',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM q8'}]
     });
     runtimeRegistry.assertRegistered({capability:'race',group:'general-object'});
+    runtimeRegistry.assertRegistered({capability:'timeMachine'});
   }
   registerRaceRuntimeAdapters();
 
