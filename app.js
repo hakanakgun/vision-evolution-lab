@@ -198,8 +198,8 @@
       $('inside-step3-title').textContent='Runtime tensor';$('inside-step3-text').textContent='Tensor presentation is intentionally unavailable rather than inferred.';
       $('inside-step4-title').textContent=model.family||'Model';$('inside-step4-text').textContent='Run-time detections remain available through Time Machine.';
       for(const [id,value] of [['inside-resize-policy','not exposed'],['inside-tensor','not exposed'],['inside-channels','not exposed'],['inside-normalization','not exposed'],['inside-model-size','—']])setMetric(id,value);
-      $('inside-size').textContent='Inspection unavailable';$('inside-input-caption').textContent='Inspection unavailable';$('inside-input-preview').hidden=true;$('inside-input-empty').hidden=false;
-      if(source){const size=sourceSize(source);setMetric('inside-source-size',size.w+'×'+size.h)}else setMetric('inside-source-size','—');
+      $('inside-size').textContent='Inspection unavailable';$('inside-input-caption').textContent='Inspection unavailable';$('inside-source-preview').hidden=true;$('inside-input-preview').hidden=true;$('inside-source-empty').hidden=false;$('inside-input-empty').hidden=false;
+      if(source){const size=sourceSize(source);setMetric('inside-source-size',size.w+'×'+size.h);$('inside-source-empty').textContent='Source available · inspection disabled'}else{setMetric('inside-source-size','—');$('inside-source-empty').textContent='Source image'}
       $('feature-map-grid').hidden=true;$('inside-intermediate-empty').hidden=false;$('inside-intermediate-title').textContent=model.title+' intermediate tensors not exposed';$('inside-intermediate-subtitle').textContent='No inspection adapter registered';$('inside-intermediate-note').textContent='No simulated intermediate tensors are shown.';$('feature-map-status').textContent='Intermediate activations not exposed';$('inside-summary').textContent=model.title+' selected. This model has no registered Inside the Model presentation contract.';
     }
     function updateInsideModelUI(modelKey,result,source){
