@@ -238,7 +238,7 @@ ${tail||'—'}`;}
     for(const spec of specs){const cell=document.createElement('div');appendText(cell,'span',`${spec.label} unmatched by other models`);const value=appendText(cell,'b','—');value.id=`race-only-${spec.prefix}`;diff.appendChild(cell)}
   }
   renderRaceScaffold();
-  async function releaseRaceRuntimes(exceptKey=''){for(const spec of getRaceSpecs(null,null,{benchmarking:true})){if(spec.key===exceptKey)continue;if(spec.release)await spec.release();if(BLACKBOX)bbResident[spec.key]=false}}
+  async function releaseRaceRuntimes(exceptKey=''){const released=await runtimeRegistry.releaseAll({exceptKey,capability:'race',group:'general-object'});if(BLACKBOX)for(const key of released)bbResident[key]=false}
   function getDiagnosticSelection(){
     const specs=getRaceSpecs(null,null,{benchmarking:true});
     if(!BLACKBOX)return specs.map(x=>x.key);
@@ -337,10 +337,12 @@ ${tail||'—'}`;}
     state.running=true;const image=state.image,specs=getRaceSpecs(image,null,{benchmarking:false});
     $('race-image-file').disabled=true;$('confidence').disabled=true;$('race-run').disabled=true;$('race-benchmark').disabled=true;$('race-use-current').disabled=true;syncConfidence();
     try{
+      await releaseRaceRuntimes();
       for(const spec of specs){
         setStatus('Running '+spec.label+'…','loading');
         const canvas=$(`race-${spec.prefix}-canvas`);if(!canvas)throw new Error(`Missing race canvas for ${spec.label}.`);
-        const result=await spec.run({},canvas);state.lastRun[spec.key]=result;updateRaceCard(spec,result);
+        try{const result=await spec.run({},canvas);state.lastRun[spec.key]=result;updateRaceCard(spec,result)}
+        finally{await spec.release();if(BLACKBOX)bbResident[spec.key]=false}
       }
       updateOverlap();
       const summary=specs.map(spec=>spec.label+' '+(state.lastRun[spec.key]?.visible??0)).join(', ');
