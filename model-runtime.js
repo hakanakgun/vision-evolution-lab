@@ -86,6 +86,7 @@
     for(const method of ['run','release','backend']){
       if(typeof adapter[method]!=='function')throw new Error(`${key} runtime adapter missing ${method}()`);
     }
+    if(model.capabilities?.inspection?.intermediate?.data==='adapter'&&typeof adapter.inspectionData!=='function')throw new Error(`${key} runtime adapter missing inspectionData()`);
     if(adapters.has(key))throw new Error(`Runtime adapter already registered: ${key}`);
     const frozen=Object.freeze({
       key,
