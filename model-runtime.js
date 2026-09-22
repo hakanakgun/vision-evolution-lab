@@ -66,7 +66,8 @@
       backend:adapter.backend,
       runtimeInfo:typeof adapter.runtimeInfo==='function'?adapter.runtimeInfo:()=>({backend:adapter.backend()}),
       diagnosticBackends:typeof adapter.diagnosticBackends==='function'?adapter.diagnosticBackends:()=>[],
-      renderFeatures:adapter.renderFeatures!==false
+      renderFeatures:adapter.renderFeatures!==false,
+      handlesMainUi:adapter.handlesMainUi===true
     });
     adapters.set(key,frozen);
     return frozen;
