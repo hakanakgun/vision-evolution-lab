@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.22-v0.7.2-diag3">
+<html lang="en" data-build="2026.09.22-v0.7.2-diag4">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.22-v0.7.2-diag3';
+      const CURRENT_BUILD = '2026.09.22-v0.7.2-diag4';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.7.2-diag3">
+  <link rel="stylesheet" href="styles.css?v=0.7.2-diag4">
 </head>
 <body>
   <main class="shell">
@@ -258,7 +258,7 @@
         <div class="status" id="race-diag-controls" hidden>
           <div class="tiny"><b>Diagnostic plan</b> · selected models run in Model Race order; the final selected runtime stays resident.</div>
           <div id="race-diag-models" style="margin-top:6px"></div>
-          <div style="margin-top:6px"><button class="btn secondary" id="race-diag-all" type="button">Select all</button> <button class="btn secondary" id="race-diag-none" type="button">Clear</button></div>
+          <div style="margin-top:6px"><button class="btn secondary" id="race-diag-all" type="button">Select all</button> <button class="btn secondary" id="race-diag-none" type="button">Clear</button> <label class="tiny" for="race-diag-settle" style="margin-left:8px">Inter-model settle <select id="race-diag-settle"><option value="0">0 ms</option><option value="250">250 ms</option><option value="1000">1000 ms</option><option value="3000">3000 ms</option></select></label></div>
         </div>
         <pre class="status" id="race-diag-blackbox" hidden style="white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;max-height:240px;overflow:auto"></pre>
       </div>
@@ -455,13 +455,13 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.7.2-diag3 · temporary model-agnostic iOS diagnostic · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.7.2-diag4 · temporary model-agnostic iOS diagnostic · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.js"></script>
-  <script src="models.js?v=0.7.2-diag3"></script>
-  <script src="model-loader.js?v=0.7.2-diag3"></script>
-  <script src="app.js?v=0.7.2-diag3"></script>
-  <script src="race.js?v=0.7.2-diag3"></script>
+  <script src="models.js?v=0.7.2-diag4"></script>
+  <script src="model-loader.js?v=0.7.2-diag4"></script>
+  <script src="app.js?v=0.7.2-diag4"></script>
+  <script src="race.js?v=0.7.2-diag4"></script>
 </body>
 </html>
