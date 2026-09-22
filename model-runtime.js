@@ -29,13 +29,23 @@
     return race&&typeof race==='object'&&race.enabled!==false?race:null;
   }
 
+  function liveMeta(model){
+    const live=capabilityValue(model,'live');
+    return live&&typeof live==='object'&&live.enabled!==false?live:null;
+  }
+
   function validateModelContract(key){
     const model=modelFor(key),cap=model.capabilities;
     const errors=[];
     if(!cap||typeof cap!=='object')errors.push('capabilities missing');
     if(typeof cap?.timeMachine!=='boolean')errors.push('timeMachine capability must be boolean');
     if(typeof cap?.benchmark!=='boolean')errors.push('benchmark capability must be boolean');
-    if(typeof cap?.live!=='boolean')errors.push('live capability must be boolean');
+    if(!(cap?.live===false||(cap?.live&&typeof cap.live==='object')))errors.push('live capability must be false or an object');
+    const live=liveMeta(model);
+    if(live){
+      if(!Number.isFinite(live.order))errors.push('live.order missing');
+      if(!live.summary)errors.push('live.summary missing');
+    }
     if(!(cap?.inspection===false||(cap?.inspection&&typeof cap.inspection==='object')))errors.push('inspection capability must be false or an object');
     if(cap?.inspection&&typeof cap.inspection==='object'){
       const inspection=cap.inspection;
@@ -95,6 +105,7 @@
       run:adapter.run,
       release:adapter.release,
       backend:adapter.backend,
+      prepare:typeof adapter.prepare==='function'?adapter.prepare:async()=>{},
       runtimeInfo:typeof adapter.runtimeInfo==='function'?adapter.runtimeInfo:()=>({backend:adapter.backend()}),
       diagnosticBackends:typeof adapter.diagnosticBackends==='function'?adapter.diagnosticBackends:()=>[],
       inspectionData:typeof adapter.inspectionData==='function'?adapter.inspectionData:()=>null,
@@ -118,6 +129,7 @@
       return true;
     });
     if(capability==='race'||group)keys.sort((a,b)=>(raceMeta(registry[a])?.order??9999)-(raceMeta(registry[b])?.order??9999));
+    else if(capability==='live')keys.sort((a,b)=>(liveMeta(registry[a])?.order??9999)-(liveMeta(registry[b])?.order??9999));
     return keys;
   }
 
@@ -168,6 +180,13 @@
         if(seenPrefix.has(race.prefix))errors.push(`${key}: race.prefix duplicates ${seenPrefix.get(race.prefix)}`);else seenPrefix.set(race.prefix,key);
       }
     }
+    if(options.capability==='live'){
+      const seenLiveOrder=new Map();
+      for(const key of expected){
+        const live=liveMeta(registry[key]);if(!live)continue;
+        if(seenLiveOrder.has(live.order))errors.push(`${key}: live.order duplicates ${seenLiveOrder.get(live.order)}`);else seenLiveOrder.set(live.order,key);
+      }
+    }
     return Object.freeze({expected:Object.freeze(expected),registered:Object.freeze(registered),missing:Object.freeze(missing),errors:Object.freeze(errors)});
   }
 
@@ -187,6 +206,7 @@
     validate,
     assertRegistered,
     capabilityEnabled,
-    raceMeta
+    raceMeta,
+    liveMeta
   });
 })();

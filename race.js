@@ -181,6 +181,8 @@ ${tail||'—'}`;}
     });
     runtimeRegistry.assertRegistered({capability:'race',group:'general-object'});
     runtimeRegistry.assertRegistered({capability:'timeMachine'});
+    runtimeRegistry.assertRegistered({capability:'live'});
+    api.refreshLiveModels?.();
   }
   registerRaceRuntimeAdapters();
 

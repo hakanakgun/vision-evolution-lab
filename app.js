@@ -11,7 +11,8 @@
 
     const $ = id => document.getElementById(id);
     const DEFAULT_MODEL = REGISTRY.defaults?.timeMachine || Object.keys(REGISTRY).find(key=>REGISTRY[key]?.status==='runnable'&&RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine')) || 'ssd';
-    const state = {activeModel:DEFAULT_MODEL,session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false};
+    const DEFAULT_LIVE_MODEL = REGISTRY.defaults?.live || RuntimeRegistry.modelKeys.find(key=>RuntimeRegistry.capabilityEnabled(REGISTRY[key],'live')) || '';
+    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -145,7 +146,6 @@
           releaseBaselineRawBuffer();
           setMetric('m-init', ms(initMs));
           $('backend-badge').textContent=provider.toUpperCase();
-          $('live-backend').textContent=provider.toUpperCase();
           const note=MODEL.providerNote && provider==='wasm' ? ` ${MODEL.providerNote}` : ' First inference can include backend compilation overhead.';
           setStatus(`Model ready on ${provider.toUpperCase()}.${note}`);
           return session;
@@ -404,38 +404,82 @@
     $('benchmark').addEventListener('click',runBenchmark);
     $('confidence').addEventListener('input',()=>{$('confidence-value').textContent=Number($('confidence').value).toFixed(2);redrawUploaded();});
 
+    function liveAdapters(){return RuntimeRegistry.list({capability:'live'})}
+    function currentLiveAdapter(){return state.liveModel?RuntimeRegistry.get(state.liveModel):null}
+    function resetLiveMetrics(){for(const id of ['live-inf','live-total','live-fps','live-count'])$(id).textContent='—';$('live-frames').textContent='0';state.liveSamples=[];state.liveFrameCount=0}
+    function renderLiveModels(){
+      const adapters=liveAdapters(),controls=$('live-model-controls'),label=$('live-model-name');
+      controls.replaceChildren();
+      if(!adapters.length){
+        state.liveModel='';label.textContent='No live-capable runtime registered';controls.hidden=true;$('camera-start').disabled=true;$('live-backend').textContent='Not available';return;
+      }
+      if(!adapters.some(adapter=>adapter.key===state.liveModel))state.liveModel=(REGISTRY.defaults?.live&&adapters.some(adapter=>adapter.key===REGISTRY.defaults.live)?REGISTRY.defaults.live:adapters[0].key);
+      const active=RuntimeRegistry.get(state.liveModel),meta=RuntimeRegistry.liveMeta(active.model);
+      label.textContent=active.model.title+' · '+(meta?.summary||'Sequential inference');
+      if(adapters.length>1){
+        controls.hidden=false;
+        for(const adapter of adapters){
+          const button=document.createElement('button');
+          button.type='button';button.className='btn secondary';button.dataset.liveModel=adapter.key;button.textContent=adapter.model.title;button.disabled=state.live;button.setAttribute('aria-pressed',String(adapter.key===state.liveModel));button.addEventListener('click',()=>selectLiveModel(adapter.key));controls.appendChild(button);
+        }
+      }else controls.hidden=true;
+      $('camera-start').disabled=state.live;
+    }
+    function selectLiveModel(key){
+      if(state.live)return;
+      const adapter=RuntimeRegistry.get(key);
+      if(!adapter||!RuntimeRegistry.capabilityEnabled(adapter.model,'live'))return;
+      state.liveModel=key;resetLiveMetrics();$('live-backend').textContent='Not loaded';renderLiveModels();
+    }
+    function setLiveBackend(adapter){
+      const runtime=adapter?.runtimeInfo?.()||{},backend=runtime.backend||'';
+      if(backend)$('live-backend').textContent=runtime.dtype?String(backend).toUpperCase()+' · '+runtime.dtype:String(backend).toUpperCase();
+      else if(adapter?.backend){const value=adapter.backend();if(value)$('live-backend').textContent=String(value)}
+    }
     async function startCamera(){
-      if(state.live) return;
+      if(state.live)return;
+      const adapter=currentLiveAdapter();
+      if(!adapter){renderLiveModels();return}
+      $('camera-start').disabled=true;
       try{
-        await createSession();
+        await adapter.prepare();
+        setLiveBackend(adapter);
         const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
-        const video=$('camera-video'); video.srcObject=stream; await video.play();
-        state.stream=stream;state.live=true;state.liveSamples=[];state.liveFrameCount=0;
-        $('camera-empty').hidden=true;$('camera-canvas').hidden=false;$('live-badge').classList.add('on');$('camera-start').disabled=true;$('camera-stop').disabled=false;
+        state.stream=stream;
+        const video=$('camera-video');video.srcObject=stream;await video.play();
+        state.live=true;resetLiveMetrics();
+        $('camera-empty').hidden=true;$('camera-canvas').hidden=false;$('live-badge').classList.add('on');$('camera-stop').disabled=false;
         $('live-size').textContent=`${video.videoWidth} × ${video.videoHeight} camera`;
-        liveLoop();
-      }catch(err){console.error(err);$('camera-empty').innerHTML=`<strong>Camera unavailable</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;}
+        renderLiveModels();
+        liveLoop(adapter,state.liveModel);
+      }catch(err){
+        console.error(err);
+        if(state.stream){state.stream.getTracks().forEach(track=>track.stop());state.stream=null}
+        const video=$('camera-video');video.srcObject=null;$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Camera unavailable</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;$('camera-start').disabled=false;
+      }
     }
 
-    async function liveLoop(){
+    async function liveLoop(adapter,modelKey){
       const video=$('camera-video'),canvas=$('camera-canvas');
-      while(state.live){
+      while(state.live&&state.liveModel===modelKey){
         await new Promise(requestAnimationFrame);
-        if(!state.live || video.readyState<2) continue;
+        if(!state.live||state.liveModel!==modelKey||video.readyState<2)continue;
         try{
-          const r=await inferSource(video,canvas,{updateMain:false});
+          const r=await adapter.run(video,canvas,{updateMain:false,live:true});
           state.liveFrameCount++;
           state.liveSamples.push(r);if(state.liveSamples.length>20)state.liveSamples.shift();
-          const avg=(key)=>state.liveSamples.reduce((s,x)=>s+x[key],0)/state.liveSamples.length;
+          const avg=key=>state.liveSamples.reduce((sum,item)=>sum+item[key],0)/state.liveSamples.length;
           const ai=avg('infMs'),at=avg('totalMs');
-          $('live-inf').textContent=ms(ai);$('live-total').textContent=ms(at);$('live-fps').textContent=ai>0?(1000/ai).toFixed(1):'—';$('live-count').textContent=String(r.visible);$('live-frames').textContent=String(state.liveFrameCount);
-        }catch(err){console.error(err);stopCamera();$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Live inference stopped</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;}
+          $('live-inf').textContent=ms(ai);$('live-total').textContent=ms(at);$('live-fps').textContent=ai>0?(1000/ai).toFixed(1):'—';$('live-count').textContent=String(r.visible);$('live-frames').textContent=String(state.liveFrameCount);setLiveBackend(adapter);
+        }catch(err){
+          console.error(err);stopCamera();$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Live inference stopped</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;
+        }
       }
     }
 
     function stopCamera(){
-      state.live=false;if(state.stream){state.stream.getTracks().forEach(t=>t.stop());state.stream=null;}
-      const video=$('camera-video');video.srcObject=null;$('live-badge').classList.remove('on');$('camera-start').disabled=false;$('camera-stop').disabled=true;$('camera-canvas').hidden=true;$('camera-empty').hidden=false;$('live-size').textContent='Camera off';
+      state.live=false;if(state.stream){state.stream.getTracks().forEach(track=>track.stop());state.stream=null}
+      const video=$('camera-video');video.srcObject=null;$('live-badge').classList.remove('on');$('camera-stop').disabled=true;$('camera-canvas').hidden=true;$('camera-empty').hidden=false;$('live-size').textContent='Camera off';renderLiveModels();
     }
     $('camera-start').addEventListener('click',startCamera);$('camera-stop').addEventListener('click',stopCamera);
 
@@ -451,6 +495,9 @@
       bytes,
       getActiveModel:()=>state.activeModel,
       selectActiveModel,
+      getLiveModel:()=>state.liveModel,
+      selectLiveModel,
+      refreshLiveModels:renderLiveModels,
       reportRuntimeEvent,
       setDiagnosticHook:hook=>{diagnosticHook=typeof hook==='function'?hook:null;},
       getBaselineDiagnosticState:()=>({sessionPresent:Boolean(state.session),provider:state.provider||'',rawBufferPresent:Boolean(state.modelBuffer),rawBufferBytes:state.modelBuffer?.byteLength||0,sessionRuns:baselineSessionRuns,wasmThreads:WASM_THREADS}),
@@ -459,12 +506,13 @@
 
     RuntimeRegistry.register('ssd',{
       run:(source,canvas,{updateMain=false}={})=>inferSource(source,canvas,{updateMain}),
+      prepare:()=>createSession(),
       release:releaseBaselineRuntime,
       backend:()=>(state.provider||'wasm').toUpperCase(),
       runtimeInfo:()=>({backend:state.provider||'wasm',bytes:MODEL.bytes,sessionPresent:Boolean(state.session),rawBufferPresent:Boolean(state.modelBuffer),rawBufferBytes:state.modelBuffer?.byteLength||0,sessionRuns:baselineSessionRuns,wasmThreads:WASM_THREADS}),
       handlesMainUi:true
     });
 
-    updateActiveModelUI();updateActiveCacheState();
+    updateActiveModelUI();updateActiveCacheState();renderLiveModels();
     window.addEventListener('pagehide',stopCamera);
   })();

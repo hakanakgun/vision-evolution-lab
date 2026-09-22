@@ -10,9 +10,9 @@ The current runtime is intentionally client-side so users can compare computer-v
 
 - `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints.
 - `models.js` — model registry, provenance/runtime metadata, preprocessing contracts, capability declarations, pinned revisions, backend policy, and label sets.
-- `model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine and Model Race.
+- `model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
 - `model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
-- `app.js` — Time Machine state, the SSD runtime adapter, image/camera flows, Inside the Model rendering, and shared browser diagnostics.
+- `app.js` — Time Machine state, the SSD runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
 - `race.js` — Tiny YOLOv2, YOLOX-Nano, and RT-DETR runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
 - `scripts/validate.mjs` — dependency-free repository contract checks used locally and by pull-request CI.
 
@@ -22,7 +22,7 @@ Runnable model metadata lives in `models.js`. Each runnable model declares capab
 
 - `timeMachine` — boolean opt-in for Time Machine;
 - `benchmark` — boolean opt-in for the warm benchmark contract;
-- `live` — boolean opt-in, currently true only where Live Camera has a real implementation;
+- `live` — `false` or ordered live-camera metadata; SSD-MobileNetV1 INT8 is currently the only enabled live model;
 - `inspection` — a truthful inspection descriptor, or `false` when no inspection surface is exposed;
 - `race` — comparison group, deterministic order, UI prefix/work-canvas ownership, and timing boundary.
 
@@ -31,11 +31,14 @@ Runtime behavior is registered through `model-runtime.js`. Every runnable adapte
 - `run(source, canvas, options)`
 - `release()`
 - `backend()`
-- optional `runtimeInfo()` and diagnostic backend choices
+- optional `prepare()` for pre-run initialization
+- optional `runtimeInfo()`, inspection data, and diagnostic backend choices
 
 SSD registers its adapter in `app.js`; Tiny YOLOv2, YOLOX-Nano, and RT-DETR register theirs in `race.js`. Time Machine and the Model Race benchmark resolve runtimes through this registry instead of selecting implementations with model-name branches.
 
 Model Race presentation is also capability-driven. Each `race` capability declares deterministic order, DOM prefix, work-canvas ownership, timing boundary, card/metric presentation, and architecture summary. `race.js` generates result cards, benchmark rows, pairwise-overlap cells, unmatched counters, architecture cards, and hidden work canvases from that metadata. Adding another model to the `general-object` comparison group no longer requires adding another static result card or pairwise overlap cell to `index.html`.
+
+Live Camera resolves its model through the same runtime registry. The `live` capability provides deterministic ordering and presentation metadata, while `defaults.live` chooses the initial live model. Camera start calls the adapter's optional `prepare()` hook and each frame goes through `adapter.run(..., {live:true})`; the camera loop no longer calls SSD session/inference functions directly. The model-selector container appears only when more than one live-capable adapter exists. Current behavior remains SSD-only, while future YOLOX/RT-DETR live support becomes an explicit capability change instead of another camera-specific path.
 
 ## Runtime entrypoints
 

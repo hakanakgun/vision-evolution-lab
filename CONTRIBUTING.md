@@ -23,7 +23,7 @@ Camera access normally requires HTTPS or localhost.
 
 Before opening a pull request:
 
-- Run `node scripts/validate.mjs`. It covers JavaScript syntax, DOM IDs, cache/version references, timeline/default-model integrity, Time Machine/inspection/Model Race capability contracts, adapter hooks, runtime bootstrap policy, benchmark invariants, and local documentation links.
+- Run `node scripts/validate.mjs`. It covers JavaScript syntax, DOM IDs, cache/version references, timeline/default-model integrity, Time Machine/inspection/Live Camera/Model Race capability contracts, adapter hooks, runtime bootstrap policy, benchmark invariants, and local documentation links.
 - If model runtime behavior changed, confirm the affected adapter still owns and releases its runtime without adding model-name branching to the generic benchmark path.
 - Test image upload and at least one inference.
 - If benchmark code changed, follow [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md), run the 20-run warm benchmark, and verify p50/p90/min-max/CV are populated.
@@ -33,7 +33,7 @@ Before opening a pull request:
 
 ## Model contributions
 
-A runnable model must declare its capabilities in `models.js`, register a runtime adapter through `model-runtime.js`, and include enough provenance to audit it. A model opting into Time Machine must appear in the registry timeline; if it exposes Inside the Model, provide a truthful `inspection` contract for preview, tensor/pipeline text, comparison values, intermediate-data policy, and result note. Adapter-backed intermediate tensors require an explicit `inspectionData()` hook. Models opting into Model Race must also provide unique race order/prefix metadata, presentation metrics, architecture text, and a work-canvas ID. These UI surfaces are generated from the contracts rather than model-name branches. Update `MODEL_SOURCES.md` and `MODEL_CATALOG.md` with:
+A runnable model must declare its capabilities in `models.js`, register a runtime adapter through `model-runtime.js`, and include enough provenance to audit it. A model opting into Time Machine must appear in the registry timeline; if it exposes Inside the Model, provide a truthful `inspection` contract for preview, tensor/pipeline text, comparison values, intermediate-data policy, and result note. Adapter-backed intermediate tensors require an explicit `inspectionData()` hook. A model opting into Live Camera must declare ordered `live` metadata and use the same runtime adapter; add `prepare()` when camera start should initialize the runtime before permission/frame processing. Models opting into Model Race must also provide unique race order/prefix metadata, presentation metrics, architecture text, and a work-canvas ID. These UI surfaces are generated from the contracts rather than model-name branches. Update `MODEL_SOURCES.md` and `MODEL_CATALOG.md` with:
 
 - model/family and publication year;
 - original paper or primary research source;

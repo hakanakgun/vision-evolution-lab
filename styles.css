@@ -38,3 +38,6 @@
 .race-architecture{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
 
 .timeline-track{grid-template-columns:repeat(var(--timeline-count,10),minmax(64px,1fr))}
+
+.live-model-controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.live-model-controls .btn{padding:7px 9px;font-size:12px}
