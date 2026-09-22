@@ -59,7 +59,7 @@
     populateDiagnostics();
 
     function timeMachineEntries(){
-      return (REGISTRY.timeline||[]).filter(entry=>!entry.model||RuntimeRegistry.capabilityEnabled(REGISTRY[entry.model],'timeMachine'));
+      return (REGISTRY.timeline||[]).filter(entry=>!entry.model||(REGISTRY[entry.model]&&RuntimeRegistry.capabilityEnabled(REGISTRY[entry.model],'timeMachine')));
     }
     function renderTimeline(){
       const track=$('timeline-track'),entries=timeMachineEntries();if(!track)return;
