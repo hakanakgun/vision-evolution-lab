@@ -43,6 +43,7 @@
       if(!race.prefix)errors.push('race.prefix missing');
       if(!race.workCanvasId)errors.push('race.workCanvasId missing');
       if(!race.timingBoundary)errors.push('race.timingBoundary missing');
+      if(!Number.isFinite(race.order))errors.push('race.order missing');
     }
     return errors;
   }
@@ -74,7 +75,7 @@
   function get(key){return adapters.get(key)||null}
 
   function expectedKeys({capability='',group=''}={}){
-    return modelKeys.filter(key=>{
+    const keys=modelKeys.filter(key=>{
       const model=registry[key];
       if(capability&&!capabilityEnabled(model,capability))return false;
       if(group){
@@ -83,6 +84,8 @@
       }
       return true;
     });
+    if(capability==='race'||group)keys.sort((a,b)=>(raceMeta(registry[a])?.order??9999)-(raceMeta(registry[b])?.order??9999));
+    return keys;
   }
 
   function list(options={}){
