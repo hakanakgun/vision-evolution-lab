@@ -9,10 +9,33 @@ The current runtime is intentionally client-side so users can compare computer-v
 ## Main modules
 
 - `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints.
-- `models.js` — model registry, model metadata, preprocessing contracts, pinned revisions, backend policy, and label sets.
+- `models.js` — model registry, provenance/runtime metadata, preprocessing contracts, capability declarations, pinned revisions, backend policy, and label sets.
+- `model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine and Model Race.
 - `model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
-- `app.js` — Time Machine active-model state, SSD baseline runtime, image/camera flows, Inside the Model rendering, and shared browser diagnostics.
-- `race.js` — Tiny YOLOv2, YOLOX-Nano, and RT-DETR runtimes, Model Race benchmarking, overlap comparison, and temporary iOS diagnostic runners.
+- `app.js` — Time Machine state, the SSD runtime adapter, image/camera flows, Inside the Model rendering, and shared browser diagnostics.
+- `race.js` — Tiny YOLOv2, YOLOX-Nano, and RT-DETR runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
+- `scripts/validate.mjs` — dependency-free repository contract checks used locally and by pull-request CI.
+
+## Model capability and runtime adapter contract
+
+Runnable model metadata lives in `models.js`. Each runnable model declares capabilities independently from its runtime implementation:
+
+- `timeMachine` — boolean opt-in for Time Machine;
+- `benchmark` — boolean opt-in for the warm benchmark contract;
+- `live` — boolean opt-in, currently true only where Live Camera has a real implementation;
+- `inspection` — a truthful inspection descriptor, or `false` when no inspection surface is exposed;
+- `race` — comparison group, deterministic order, UI prefix/work-canvas ownership, and timing boundary.
+
+Runtime behavior is registered through `model-runtime.js`. Every runnable adapter exposes the same minimum lifecycle:
+
+- `run(source, canvas, options)`
+- `release()`
+- `backend()`
+- optional `runtimeInfo()` and diagnostic backend choices
+
+SSD registers its adapter in `app.js`; Tiny YOLOv2, YOLOX-Nano, and RT-DETR register theirs in `race.js`. Time Machine and the Model Race benchmark resolve runtimes through this registry instead of selecting implementations with model-name branches.
+
+The adapter boundary is intentionally narrower than a full UI rewrite. The current four-card Model Race result layout remains static for now. A later UI refactor can render cards from the same `race` capability metadata without changing model lifecycle ownership.
 
 ## Runtime entrypoints
 
@@ -125,3 +148,10 @@ A service worker is intentionally not used solely for cache invalidation because
 `?diag=3` adds bounded deep, crash-safe telemetry. It is diagnostic-only and must not change the normal benchmark contract.
 
 See [IOS_WEBKIT_DIAGNOSTICS.md](IOS_WEBKIT_DIAGNOSTICS.md).
+
+## Repository validation
+
+Run `node scripts/validate.mjs` before opening a pull request. The same command runs in the `validate` GitHub Actions workflow.
+
+The validation currently checks JavaScript syntax, inline scripts, duplicate/missing static DOM IDs, version/build/cache references, script order, runnable model capability contracts, adapter registration requirements, deterministic Model Race ordering, iOS/desktop ORT bootstrap policy, 20-run benchmark invariants, confidence-retention guardrails, and local Markdown links.
+

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
-  const api=window.VisionLab,registry=window.VisionModels,loader=window.VisionModelLoader,BOOT=window.VisionRuntimeBootstrap||{};
-  if(!api||!registry||!loader||!window.ort)return;
+  const api=window.VisionLab,registry=window.VisionModels,loader=window.VisionModelLoader,runtimeRegistry=window.VisionRuntimeRegistry,BOOT=window.VisionRuntimeBootstrap||{};
+  if(!api||!registry||!loader||!runtimeRegistry||!window.ort)return;
   const $=id=>document.getElementById(id),TINY=registry.tinyyolo,YOLO=registry.yolox,RT=registry.rtdetr,COCO80=registry.labels.coco80,VOC20=registry.labels.voc20,VOC_CANON=registry.labels.vocCanonical;
   const DIAG_MODE=new URLSearchParams(location.search).get('diag')||'',DEEP=DIAG_MODE==='3',DIAG=DIAG_MODE==='1'||DIAG_MODE==='2'||DEEP,BLACKBOX=DIAG_MODE==='2'||DEEP,DIAG_KEY='vel:race-diag-v1',BB_KEY='vel:race-diag-blackbox-v1',BB_DURABLE_KEY='vel:race-diag-durable-v1',BB_JOURNAL_KEY='vel:race-diag-journal-v1',BB_SELECTION_KEY='vel:race-diag-selection-v1',BB_SETTLE_KEY='vel:race-diag-settle-v1',BB_BACKEND_KEY='vel:race-diag-backends-v1',BB_ATTEMPT_KEY='vel:race-diag-attempt-v1',BB_MATRIX_KEY='vel:race-diag-reclaim-matrix-v2',BB_CRITICAL_KEY='vel:race-diag-critical-v1',BB_SEQ_KEY='vel:race-diag-seq-v1',BB_CRASH_KEY='vel:race-diag-crash-v1';
   let bbStage='page-ready',bbPrevious=null,bbEvents=[],bbPlan=[],bbBackendPlan={},bbAttempt=Number(readLocal(BB_ATTEMPT_KEY,0))||0,bbMatrix=readLocal(BB_MATRIX_KEY,null),bbCritical=readLocal(BB_CRITICAL_KEY,null),bbCrash=readLocal(BB_CRASH_KEY,null),bbEventSeq=Number(readLocal(BB_SEQ_KEY,0))||0,bbBenchmarkDoneWall=0,bbLastBeat=performance.now(),bbMaxGap=0,bbLastLifecycle='page-init',bbOrderlyExit=false,bbSettleMs=0,bbCurrentModel='',bbRequestedBackend='',bbLastAlloc={},matrixRunning=false,matrixStopRequested=false;
@@ -158,13 +158,36 @@ ${tail||'—'}`;}
   async function releaseTinyRuntime(){const session=state.tinySession,rawBytes=state.tinyBuffer?.byteLength||0,methodPresent=Boolean(session&&typeof session.release==='function'),provider=state.tinyProvider||'';state.tinySession=null;state.tinySessionRuns=0;evictTinyRawBuffer();if(!session){if(DEEP&&rawBytes)deepStage('tiny-raw-buffer-reference-release',{model:'tinyyolo',bytes:rawBytes,referencePresent:false});return}const start=performance.now();if(DEEP)deepStage('tiny-release-start',{model:'tinyyolo',actualBackend:provider,methodPresent,jsReferenceNull:true});try{if(methodPresent)await session.release();if(DEEP)deepStage('tiny-release-complete',{model:'tinyyolo',actualBackend:provider,methodPresent,jsReferenceNull:true,durationMs:performance.now()-start})}catch(err){if(DEEP)deepStage('tiny-release-error',{model:'tinyyolo',actualBackend:provider,methodPresent,error:boundedError(err),durationMs:performance.now()-start});console.warn('Tiny YOLOv2 session release failed',err)}}
   async function releaseYoloRuntime(){const session=state.yoloSession,rawBytes=state.yoloBuffer?.byteLength||0,methodPresent=Boolean(session&&typeof session.release==='function'),provider=state.yoloProvider||'';state.yoloSession=null;state.yoloSessionRuns=0;evictYoloRawBuffer();if(!session){if(DEEP&&rawBytes)deepStage('yolox-raw-buffer-reference-release',{model:'yolox',bytes:rawBytes,referencePresent:false});return}const start=performance.now();if(DEEP)deepStage('yolox-release-start',{model:'yolox',actualBackend:provider,methodPresent,jsReferenceNull:true});try{if(methodPresent)await session.release();if(DEEP)deepStage('yolox-release-complete',{model:'yolox',actualBackend:provider,methodPresent,jsReferenceNull:true,durationMs:performance.now()-start})}catch(err){if(DEEP)deepStage('yolox-release-error',{model:'yolox',actualBackend:provider,methodPresent,error:boundedError(err),durationMs:performance.now()-start});console.warn('YOLOX session release failed',err)}}
   async function releaseRTRuntime(){const pipe=state.rtPipe,methodPresent=Boolean(pipe&&typeof pipe.dispose==='function'),backend=state.rtBackend||'',dtype=state.rtDtype||'';state.rtPipe=null;state.rtPipeRuns=0;if(!pipe)return;const start=performance.now();if(DEEP)deepStage('rtdetr-release-start',{model:'rtdetr',actualBackend:backend,dtype,methodPresent,jsReferenceNull:true});try{if(methodPresent)await pipe.dispose();if(DEEP)deepStage('rtdetr-release-complete',{model:'rtdetr',actualBackend:backend,dtype,methodPresent,jsReferenceNull:true,durationMs:performance.now()-start})}catch(err){if(DEEP)deepStage('rtdetr-release-error',{model:'rtdetr',actualBackend:backend,dtype,methodPresent,error:boundedError(err),durationMs:performance.now()-start});console.warn('RT-DETR pipeline dispose failed',err)}}
+  function registerRaceRuntimeAdapters(){
+    if(!runtimeRegistry.get('tinyyolo'))runtimeRegistry.register('tinyyolo',{
+      run:(source,canvas)=>runTiny(source,canvas),
+      release:releaseTinyRuntime,
+      backend:()=>state.tinyProvider.toUpperCase(),
+      runtimeInfo:()=>({backend:state.tinyProvider,downloadMs:state.tinyDownloadMs,initMs:state.tinyInitMs,bytes:TINY.bytes,cacheState:state.tinyCacheState,source:state.tinySource})
+    });
+    if(!runtimeRegistry.get('yolox'))runtimeRegistry.register('yolox',{
+      run:(source,canvas,{benchmarking=false,...options}={})=>runYolo(source,canvas,{renderFeatures:!benchmarking,...options}),
+      release:releaseYoloRuntime,
+      backend:()=>state.yoloProvider.toUpperCase(),
+      runtimeInfo:()=>({backend:state.yoloProvider,downloadMs:state.yoloDownloadMs,initMs:state.yoloInitMs,bytes:YOLO.bytes,cacheState:state.yoloCacheState,source:state.yoloSource}),
+      diagnosticBackends:()=>registry.runtime.directOrtMode==='jsep'?[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM · JSEP bundle'}]:[{value:'auto',label:'Auto · standard WASM'},{value:'wasm',label:'WASM · standard bundle'}]
+    });
+    if(!runtimeRegistry.get('rtdetr'))runtimeRegistry.register('rtdetr',{
+      run:(source,canvas,options={})=>runRT(source,canvas,options),
+      release:releaseRTRuntime,
+      backend:()=>state.rtBackend.toUpperCase()+' '+state.rtDtype,
+      runtimeInfo:()=>{const cfg=RT.runtime[state.rtBackend]||{};return{backend:state.rtBackend,dtype:state.rtDtype,initMs:state.rtLoadMs,bytes:cfg.modelBytes,cacheState:state.rtCacheState,source:`HF pinned ${RT.revision}`}},
+      diagnosticBackends:()=>[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU fp16',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM q8'}]
+    });
+    runtimeRegistry.assertRegistered({capability:'race',group:'general-object'});
+  }
+  registerRaceRuntimeAdapters();
+
   function getRaceSpecs(source,canvas,{benchmarking=false}={}){
-    return[
-      {key:'tinyyolo',prefix:'tiny',label:TINY.title,workCanvasId:'race-tiny-work',backend:()=>state.tinyProvider.toUpperCase(),run:()=>runTiny(source,canvas),release:releaseTinyRuntime},
-      {key:'ssd',prefix:'ssd',label:registry.ssd.title,workCanvasId:'input-canvas',backend:()=>(api.getBaselineProvider()||'wasm').toUpperCase(),run:()=>api.runBaseline(source,canvas),release:async()=>{if(api.releaseBaselineRuntime)await api.releaseBaselineRuntime()}},
-      {key:'yolox',prefix:'yolo',label:YOLO.title,workCanvasId:'race-yolo-work',backend:()=>state.yoloProvider.toUpperCase(),diagnosticBackends:registry.runtime.directOrtMode==='jsep'?[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM · JSEP bundle'}]:[{value:'auto',label:'Auto · standard WASM'},{value:'wasm',label:'WASM · standard bundle'}],run:options=>runYolo(source,canvas,{renderFeatures:!benchmarking,...(options||{})}),release:releaseYoloRuntime},
-      {key:'rtdetr',prefix:'rt',label:RT.title,workCanvasId:'race-rt-work',backend:()=>state.rtBackend.toUpperCase()+' '+state.rtDtype,diagnosticBackends:[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU fp16',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM q8'}],run:options=>runRT(source,canvas,options),release:releaseRTRuntime}
-    ];
+    return runtimeRegistry.list({capability:'race',group:'general-object'}).map(adapter=>{
+      const race=runtimeRegistry.raceMeta(adapter.model);
+      return{key:adapter.key,prefix:race.prefix,label:adapter.model.title,workCanvasId:race.workCanvasId,timingBoundary:race.timingBoundary,backend:adapter.backend,diagnosticBackends:adapter.diagnosticBackends(),run:options=>adapter.run(source,canvas,{benchmarking,...(options||{})}),release:adapter.release};
+    });
   }
   async function releaseRaceRuntimes(exceptKey=''){for(const spec of getRaceSpecs(null,null,{benchmarking:true})){if(spec.key===exceptKey)continue;if(spec.release)await spec.release();if(BLACKBOX)bbResident[spec.key]=false}}
   function getDiagnosticSelection(){
@@ -223,8 +246,8 @@ ${tail||'—'}`;}
     updateOverlap();setStatus('Race complete: Tiny YOLOv2 '+tiny.visible+', SSD '+ssd.visible+', YOLOX '+yolo.visible+', RT-DETR '+rt.visible+'. Pairwise overlap is shown below.');$('race-benchmark').disabled=false;if(DIAG)$('race-benchmark-diag').disabled=false;
   }catch(err){console.error(err);setStatus(err&&err.message?err.message:String(err),'error')}finally{state.running=false;$('race-image-file').disabled=false;$('confidence').disabled=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false}}
   $('race-run').addEventListener('click',runRace);
-  async function runModel(model,source,canvas,{benchmarking=false}={}){const spec=getRaceSpecs(source,canvas,{benchmarking}).find(x=>x.key===model);if(!spec)throw new Error(`Unknown runnable model: ${model}`);return spec.run()}
-  function getRuntimeInfo(model){if(model==='tinyyolo')return{backend:state.tinyProvider,downloadMs:state.tinyDownloadMs,initMs:state.tinyInitMs,bytes:TINY.bytes,cacheState:state.tinyCacheState,source:state.tinySource};if(model==='ssd')return{backend:api.getBaselineProvider()||'wasm'};if(model==='yolox')return{backend:state.yoloProvider,downloadMs:state.yoloDownloadMs,initMs:state.yoloInitMs,bytes:YOLO.bytes,cacheState:state.yoloCacheState,source:state.yoloSource};if(model==='rtdetr'){const cfg=RT.runtime[state.rtBackend]||{};return{backend:state.rtBackend,dtype:state.rtDtype,initMs:state.rtLoadMs,bytes:cfg.modelBytes,cacheState:state.rtCacheState,source:`HF pinned ${RT.revision}`}}return{}}
+  async function runModel(model,source,canvas,{benchmarking=false}={}){const adapter=runtimeRegistry.get(model);if(!adapter)throw new Error(`Unknown runnable model: ${model}`);return adapter.run(source,canvas,{benchmarking})}
+  function getRuntimeInfo(model){return runtimeRegistry.get(model)?.runtimeInfo?.()||{}}
   function setBench(prefix,backend,samples){const root=$(`rb-${prefix}-backend`);if(!root)return;const inf=samples.map(x=>x.infMs),tot=samples.map(x=>x.totalMs);root.textContent=backend;$(`rb-${prefix}-p50`).textContent=ms(median(inf));$(`rb-${prefix}-p90`).textContent=ms(percentile(inf,.9));$(`rb-${prefix}-total`).textContent=ms(median(tot));$(`rb-${prefix}-cv`).textContent=`${cv(inf).toFixed(1)}%`}
   async function benchmarkRace(diagnostic=false,options={}){
     if(!state.image||state.benchmarking)return;
