@@ -94,9 +94,13 @@ The iOS/WebKit reload mitigation has passed the current physical-device regressi
 
 ## Local development
 
-No build step is required. Serve the repository directory with a local HTTP server.
+No build step is required. Before serving or opening a pull request, run:
 
-Camera access generally requires HTTPS or localhost.
+`node scripts/validate.mjs`
+
+Then serve the repository directory with a local HTTP server. Camera access generally requires HTTPS or localhost.
+
+Runnable models now declare capability metadata and register through a shared runtime-adapter contract. This keeps Time Machine and Model Race lifecycle ownership extensible as more model generations are added.
 
 ## Contributing
 
