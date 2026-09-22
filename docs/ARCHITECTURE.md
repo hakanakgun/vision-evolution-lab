@@ -14,6 +14,8 @@ The current runtime is intentionally client-side so users can compare computer-v
 - `model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
 - `app.js` — Time Machine state, the SSD runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
 - `race.js` — Tiny YOLOv2, YOLOX-Nano, and RT-DETR runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
+- `classical-cv.js` — Classical CV vs AI orchestration, source-image ownership, AI reference execution, task-aware overlap, and worker lifecycle.
+- `classical-cv-worker.js` — lazy OpenCV.js WASM runtime, frontal-face cascade, HOG pedestrian detection, and explicit OpenCV object cleanup.
 - `scripts/validate.mjs` — dependency-free repository contract checks used locally and by pull-request CI.
 
 ## Model capability and runtime adapter contract
@@ -39,6 +41,18 @@ SSD registers its adapter in `app.js`; Tiny YOLOv2, YOLOX-Nano, and RT-DETR regi
 Model Race presentation is also capability-driven. Each `race` capability declares deterministic order, DOM prefix, work-canvas ownership, timing boundary, card/metric presentation, and architecture summary. `race.js` generates result cards, benchmark rows, pairwise-overlap cells, unmatched counters, architecture cards, and hidden work canvases from that metadata. Adding another model to the `general-object` comparison group no longer requires adding another static result card or pairwise overlap cell to `index.html`.
 
 Live Camera resolves its model through the same runtime registry. The `live` capability provides deterministic ordering and presentation metadata, while `defaults.live` chooses the initial live model. Camera start calls the adapter's optional `prepare()` hook and each frame goes through `adapter.run(..., {live:true})`; the camera loop no longer calls SSD session/inference functions directly. The model-selector container appears only when more than one live-capable adapter exists. Current behavior remains SSD-only, while future YOLOX/RT-DETR live support becomes an explicit capability change instead of another camera-specific path.
+
+## Classical CV runtime isolation
+
+The Classical CV vs AI module is intentionally outside the general-object runtime registry and Model Race because its two classical methods solve different tasks: frontal-face detection and pedestrian detection.
+
+OpenCV.js is not loaded during normal Time Machine, Model Race, Inside the Model, or Live Camera use. `classical-cv.js` creates a dedicated Web Worker only when the user runs the classical comparison. The worker imports pinned OpenCV.js, receives an aspect-preserving RGBA working image capped at 640 px on the longest side, runs the requested detector, returns rectangles/timing metadata, and deletes OpenCV heap objects in `finally` blocks.
+
+The AI reference runs first through the existing runtime adapter selected in Time Machine. That adapter is released before the OpenCV worker is initialized. Leaving the Classical CV tab, pressing **Release OpenCV**, or navigating away terminates the worker. This makes the worker the ownership boundary for the OpenCV WASM context and avoids intentionally keeping an AI runtime resident while the classical runtime starts.
+
+The face cascade and HOG detector are not added to the general-object Model Race. HOG vs AI `person` overlap is shown only as same-class IoU >= 0.35 spatial agreement. The frontal-face cascade is not compared to AI person boxes as if the tasks were equivalent.
+
+See [CLASSICAL_CV.md](CLASSICAL_CV.md).
 
 ## Runtime entrypoints
 
