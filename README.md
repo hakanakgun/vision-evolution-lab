@@ -1,64 +1,105 @@
 # Vision Evolution Lab
 
-A static, browser-native computer vision lab built for GitHub Pages.
+An executable history of computer vision, running directly in the browser.
 
-## v0.7.3-diag10
+Live: https://hakanakgun.github.io/vision-evolution-lab/
 
-- Vision Time Machine uses one active-model runner. Selecting Tiny YOLOv2 (2016), SSD-MobileNet (2017), YOLOX-Nano (2021), or RT-DETR R18 (2023) keeps the user in Time Machine and switches model metadata, preprocessing, runtime/cache state, inference, and warm benchmark behavior in place.
-- Runnable SSD-MobileNetV1 INT8 object detection in the browser.
-- Runnable Tiny YOLOv2 (2016) adds the pre-2017 executable generation: pinned ONNX Model Zoo opset-8 export, Pascal VOC 20 classes, 416×416 float32 NCHW input, WASM compatibility policy, and YOLOv2 grid decoding in-page.
-- ONNX Runtime Web with per-model execution-provider policy and run-time WebGPU → WASM recovery. The current SSD-MobileNetV1 INT8 baseline intentionally uses WASM because its dynamic-shape graph can initialize on ORT WebGPU but fail during `OrtRun()`.
-- Local image upload. User pixels are not uploaded by this application.
-- Startup costs are separated from current-run timings. An optional 20-run warm benchmark reports p50/median, p90, min–max, coefficient of variation (CV), p50 end-to-end, and approximate inference FPS.
-- Model Race benchmark memory is hardened for iOS/WebKit: raw ONNX buffers are evicted after session creation, RT-DETR uses a ≤640 px aspect-preserving staging canvas instead of a full-resolution duplicate, and the four benchmark groups release their runtime before the next model starts.
-- Temporary iOS diagnostics: `?diag=1` keeps the basic lifecycle probe; `?diag=2` keeps the lightweight Black Box and the existing all-WASM R1–R4 reclamation matrix without changing its 1 warm-up + 20 measured-run mechanics. `?diag=3` adds bounded deep telemetry intended for the next abrupt reload: a 200-event compact ring with sequence and `performance.now()` timestamps, a separate lightweight durable critical-stage record, window error/unhandled-rejection capture, page lifecycle details including `persisted` where exposed, loader Cache API/fetch/ArrayBuffer boundaries without logging asset URLs, ORT session create/release boundaries, first-run tensor/canvas allocation estimates when shape/dtype are known, SSD lifecycle hooks, and RT-DETR module/cache/pipeline/staging/first-pipeline-call boundaries. The full ring is checkpointed periodically while every critical stage is durably stored separately to reduce instrumentation overhead. It records only browser-exposed memory proxies; process RSS remains `N/A`, WASM memory is reported unavailable unless an actual runtime object exposes it, estimated canvas/tensor bytes are explicitly labeled estimates, HTTP-cache hits are not inferred from fetch, and the diagnostic deliberately does not create an extra WebGPU adapter/device merely to observe `device.lost`. `Copy Black Box` remains, while `Copy full diagnostic JSON` exports build/capabilities/matrix/critical-stage/runtime state/memory proxies/the bounded journal without image pixels or local file paths. Crash recovery now renders an immediate `Abrupt reload detected` banner with the actual failed case/attempt/stage and shows the next case as pending; a recovered R3 failure can no longer be presented as `R4 1/10` before R4 really starts. Existing diag9 matrix state remains readable so the pending R4 experiment can be resumed, although a run resumed after deployment is no longer a byte-identical diag9 build. The instrumentation remains diagnostic-only and does not claim the iOS/WebKit reload is fixed.
-- Inside the Model follows the active Time Machine model, including Tiny YOLOv2. It shows each model's native preprocessing contract and prepared-input preview; YOLOX additionally exposes real pre-NMS detection-head objectness maps at strides 8/16/32, while Tiny YOLOv2/SSD/RT-DETR explicitly state that deeper intermediate tensors are not yet exported.
-- Live Camera mode with sequential inference and rolling latency measurements.
-- Model Race is now a four-generation comparison: Tiny YOLOv2 (2016, Pascal VOC20), SSD-MobileNetV1 INT8 (2017), YOLOX-Nano (2021), and RT-DETR R18 (2023, Transformers.js/ONNX), with a 20-run warm benchmark, six pairwise overlap counts, and per-model unmatched counts. Tiny YOLOv2 legacy VOC label synonyms are canonicalized only for overlap with the COCO models; the differing label spaces remain visible and are not treated as accuracy evidence. The UI confidence threshold is applied to retained outputs so slider changes can redraw retained detections without rerunning inference; run/benchmark operations lock source, model and confidence.
-- Mobile tab/timeline scroll affordances make hidden horizontal content discoverable.
-- Runtime diagnostics expose browser identity conservatively, engine, UA-reported OS/platform, logical CPU count, approximate device memory when available, WebGPU availability, WASM SIMD capability, configured WASM thread count, cross-origin isolation, and the current model input size. On iOS the UI distinguishes WebKit engine facts from browser-brand inference because third-party browsers may mask their brand.
-- Central model registry (`models.js`) owns model URLs/IDs, year, license note, preprocessing contract, decoder, backend policy, and pinned revisions.
-- Shared cache-aware model loader (`model-loader.js`) adds streamed download progress, Cache API persistence, retry/fallback, and visible cache state for raw ONNX assets.
+## What it does
 
-There is no application backend, database, account system, or analytics in v0.7.1. The browser makes ordinary network requests to jsDelivr for ONNX Runtime Web, Hugging Face for the pinned Tiny YOLOv2 and SSD-MobileNet models, and the official Megvii YOLOX GitHub Release for YOLOX-Nano. If that release asset cannot be fetched by the browser, YOLOX falls back to a pinned Apache-2.0 Hugging Face mirror that states it hosts Megvii's published ONNX checkpoints.
+Vision Evolution Lab lets you run and compare object-detection generations without an application backend.
 
-## Runtime model
+- **Vision Time Machine** switches the active runnable generation in place.
+- **Model Race** benchmarks four generations sequentially on the same image.
+- **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
+- **Live Camera** runs local browser inference with rolling latency measurements.
+- **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively, with additional diagnostic-only modes for the ongoing iOS/WebKit memory investigation.
 
-The earliest runnable generation is the pinned ONNX Model Zoo `Tiny YOLOv2` opset-8 export (2016), followed by `SSD-MobileNetV1-12 INT8`, the official `YOLOX-Nano` ONNX release asset, and pinned RT-DETR R18 ONNX conversion. Model binaries are fetched at runtime rather than redistributed in this repository.
+Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model.
 
-See [MODEL_SOURCES.md](MODEL_SOURCES.md), [MODEL_CATALOG.md](MODEL_CATALOG.md), [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md), and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+## Runnable generations
+
+| Year | Model | Dataset / labels | Main browser path |
+| --- | --- | --- | --- |
+| 2016 | Tiny YOLOv2 | Pascal VOC 20 | ONNX Runtime Web / WASM |
+| 2017 | SSD-MobileNetV1 INT8 | COCO | ONNX Runtime Web / intentional WASM |
+| 2021 | YOLOX-Nano | COCO | ONNX Runtime Web / WebGPU or WASM |
+| 2023 | RT-DETR R18 | COCO | Transformers.js / WebGPU fp16 or WASM q8 |
+
+Exact model revisions, licenses, provenance, preprocessing, and fallback rules are maintained in [MODEL_SOURCES.md](MODEL_SOURCES.md), [MODEL_CATALOG.md](MODEL_CATALOG.md), and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+
+## Benchmark contract
+
+Model Race locks the source image, model order, and confidence for the benchmark.
+
+Each model performs:
+
+1. one unmeasured warm-up,
+2. 20 measured warm runs,
+3. runtime release before the next model in the normal race path.
+
+The benchmark reports p50, p90, min-max, coefficient of variation, p50 end-to-end time, and approximate inference FPS.
+
+Pairwise same-class IoU overlap is a disagreement/overlap diagnostic, not an accuracy metric.
+
+See [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md).
+
+## Browser runtime
+
+The application is static and browser-native:
+
+- no application backend,
+- no database or account system,
+- no analytics service,
+- model binaries are fetched at runtime,
+- user image pixels are processed locally by the application.
+
+Current runtime versions are pinned in the repository. Release/cache behavior and runtime ownership are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## iOS / WebKit diagnostic status
+
+The repeated four-model benchmark can still trigger an abrupt page recreation on physical iPhone/WebKit runs. The root cause is not yet proven and the bug is **not fixed**.
+
+The current diagnostic build adds bounded crash-safe telemetry without changing the normal 1 warm-up + 20 measured-run benchmark contract.
+
+Investigation history, physical-device evidence, upstream WebKit/ONNX Runtime/Transformers.js research, and the next experiments are in [docs/IOS_WEBKIT_DIAGNOSTICS.md](docs/IOS_WEBKIT_DIAGNOSTICS.md).
+
+## Documentation
+
+See [docs/README.md](docs/README.md) for the documentation map.
+
+Stable repository references:
+
+- [Benchmark methodology](BENCHMARK_METHODOLOGY.md)
+- [Model catalog](MODEL_CATALOG.md)
+- [Model sources and provenance](MODEL_SOURCES.md)
+- [Third-party licenses](THIRD_PARTY_LICENSES.md)
 
 ## Roadmap
 
-Priority modes:
+Current priority order:
 
 1. Vision Time Machine
 2. Model Race
-3. What Does the Model See? / Inside the Model
-4. Live Camera Lab
+3. Inside the Model
+4. Live Camera
+5. Failure Gallery
+6. Efficiency Lab
+7. Classical CV vs AI
+8. Resolution Microscope
+9. Architecture Explorer
 
-Completed foundations now include the browser benchmark layer, four-model race, sourced evolution atlas, active-model preprocessing inspector, and a Time Machine active-model runner. Physical iPhone/WebKit validation on 2026-09-21 confirmed RT-DETR R18 inference and a 20-run warm benchmark on native WebGPU fp16 with the pinned checkpoint; this is device evidence, not a guarantee for every WebKit build. Tiny YOLOv2 browser integration is statically validated in v0.7.0 but still requires first physical-device runtime/benchmark evidence. Next candidates include Failure Gallery, Classical CV vs AI, Efficiency Lab, Resolution Microscope, and deeper feature inspection.
+The iOS/WebKit benchmark reload investigation remains the current P0 before returning to Classical CV work.
 
 ## Local development
 
-No build step is required. Serve the repository directory with a local HTTP server. Camera access generally requires HTTPS or localhost.
+No build step is required. Serve the repository directory with a local HTTP server.
 
-## Community
+Camera access generally requires HTTPS or localhost.
 
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening substantial changes, follow the [Code of Conduct](CODE_OF_CONDUCT.md), and use the issue/PR templates for reproducible reports. Security issues should follow [SECURITY.md](SECURITY.md).
+## Contributing
 
-The original project code is released under the [MIT License](LICENSE). Model weights, datasets, papers, and third-party runtimes keep their own terms; see [MODEL_SOURCES.md](MODEL_SOURCES.md) and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening substantial changes and follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
+Security reports should follow [SECURITY.md](SECURITY.md).
 
-## Freshness / cache strategy
-
-GitHub Pages does not provide repository-level control over HTTP response headers such as `Cache-Control`. To reduce stale-page behavior on mobile browsers, the app uses a small client-side freshness guard:
-
-1. Every published release updates `version.json`.
-2. On `pageshow` and when the tab becomes visible, the page requests `version.json` with `cache: "no-store"` and a unique `_fresh` query parameter.
-3. If the manifest build differs from the build embedded in the loaded HTML, the page replaces its URL with a unique `_build` / `_fresh` URL.
-4. CSS and JavaScript files also use release-version query strings.
-
-This cannot make a release visible before GitHub Pages finishes deploying it, but once the new deployment is available it prevents a previously loaded page from remaining stale indefinitely. The first release containing this guard may still need one cache-busted visit; later releases self-check automatically.
-
-Do not add a service worker solely for cache invalidation: a misconfigured service worker can become another source of stale content.
+The original project code is released under the [MIT License](LICENSE). Model weights, datasets, papers, and third-party runtimes keep their own terms.
