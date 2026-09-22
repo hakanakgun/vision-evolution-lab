@@ -23,7 +23,7 @@ Camera access normally requires HTTPS or localhost.
 
 Before opening a pull request:
 
-- Run `node scripts/validate.mjs`. It covers JavaScript syntax, DOM IDs, cache/version references, timeline/default-model integrity, Time Machine/inspection/Live Camera/Model Race capability contracts, adapter hooks, runtime bootstrap policy, benchmark invariants, and local documentation links.
+- Run `node scripts/validate.mjs`. It covers JavaScript syntax, DOM IDs, cache/version references, timeline/default-model integrity, Time Machine/inspection/Live Camera/Model Race capability contracts, Classical CV isolation/pinning, adapter hooks, runtime bootstrap policy, benchmark invariants, and local documentation links.
 - If model runtime behavior changed, confirm the affected adapter still owns and releases its runtime without adding model-name branching to the generic benchmark path.
 - Test image upload and at least one inference.
 - If benchmark code changed, follow [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md), run the 20-run warm benchmark, and verify p50/p90/min-max/CV are populated.
@@ -46,6 +46,8 @@ A runnable model must declare its capabilities in `models.js`, register a runtim
 - any known browser/runtime limitations.
 
 Do not assume that an implementation license automatically covers downloaded weights.
+
+Classical CV additions must also pin the browser runtime and any downloaded classifier/cascade asset, document file-specific notices, keep task boundaries explicit, and clean up OpenCV.js/WASM objects rather than relying on JavaScript garbage collection.
 
 For fair Model Race comparisons, document preprocessing, input resolution, confidence policy, warm-up/measurement method, and any backend differences.
 
