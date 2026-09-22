@@ -37,6 +37,22 @@
     if(typeof cap?.benchmark!=='boolean')errors.push('benchmark capability must be boolean');
     if(typeof cap?.live!=='boolean')errors.push('live capability must be boolean');
     if(!(cap?.inspection===false||(cap?.inspection&&typeof cap.inspection==='object')))errors.push('inspection capability must be false or an object');
+    if(cap?.inspection&&typeof cap.inspection==='object'){
+      const inspection=cap.inspection;
+      if(!inspection.mode)errors.push('inspection.mode missing');
+      if(!Array.isArray(inspection.stages))errors.push('inspection.stages missing');
+      if(!inspection.input||!inspection.resize||!inspection.tensor||!inspection.channels||!inspection.normalization)errors.push('inspection display contract incomplete');
+      if(!inspection.preview?.mode||!inspection.preview?.caption)errors.push('inspection.preview incomplete');
+      else if(inspection.preview.mode==='aspect-max'&&!Number.isFinite(inspection.preview.maxSide))errors.push('inspection.preview.maxSide missing');
+      else if(['stretch','letterbox-top-left'].includes(inspection.preview.mode)&&(!Number.isFinite(inspection.preview.width)||!Number.isFinite(inspection.preview.height)))errors.push('inspection.preview dimensions missing');
+      if(!inspection.shape?.layout||!Number.isFinite(inspection.shape?.channels))errors.push('inspection.shape incomplete');
+      for(const step of ['step2','step3','step4'])if(!inspection.pipeline?.[step]?.title||!inspection.pipeline?.[step]?.text)errors.push(`inspection.pipeline.${step} incomplete`);
+      for(const field of ['label','input','resize','padding','layout','dtype','channels'])if(!inspection.comparison?.[field])errors.push(`inspection.comparison.${field} missing`);
+      if(!inspection.intermediate?.title||!inspection.intermediate?.subtitle||!inspection.intermediate?.note||!inspection.intermediate?.data)errors.push('inspection.intermediate incomplete');
+      else if(inspection.intermediate.data==='adapter'&&(!inspection.intermediate.renderer||!inspection.intermediate.statusEmpty||!inspection.intermediate.statusReady))errors.push('inspection adapter renderer/statuses missing');
+      else if(inspection.intermediate.data!=='adapter'&&!inspection.intermediate.status)errors.push('inspection unavailable status missing');
+      if(!inspection.resultNote)errors.push('inspection.resultNote missing');
+    }
     const race=raceMeta(model);
     if(race){
       if(!race.group)errors.push('race.group missing');
@@ -70,6 +86,7 @@
     for(const method of ['run','release','backend']){
       if(typeof adapter[method]!=='function')throw new Error(`${key} runtime adapter missing ${method}()`);
     }
+    if(model.capabilities?.inspection?.intermediate?.data==='adapter'&&typeof adapter.inspectionData!=='function')throw new Error(`${key} runtime adapter missing inspectionData()`);
     if(adapters.has(key))throw new Error(`Runtime adapter already registered: ${key}`);
     const frozen=Object.freeze({
       key,
@@ -80,6 +97,7 @@
       backend:adapter.backend,
       runtimeInfo:typeof adapter.runtimeInfo==='function'?adapter.runtimeInfo:()=>({backend:adapter.backend()}),
       diagnosticBackends:typeof adapter.diagnosticBackends==='function'?adapter.diagnosticBackends:()=>[],
+      inspectionData:typeof adapter.inspectionData==='function'?adapter.inspectionData:()=>null,
       renderFeatures:adapter.renderFeatures!==false,
       handlesMainUi:adapter.handlesMainUi===true
     });
@@ -117,9 +135,30 @@
     return Object.freeze(released);
   }
 
+  function validateRegistryContract(){
+    const errors=[],timeline=registry.timeline,defaults=registry.defaults||{};
+    if(!Array.isArray(timeline)||!timeline.length)errors.push('timeline missing');
+    else{
+      const seenModels=new Set();let previousYear=-Infinity;
+      for(const entry of timeline){
+        if(!Number.isFinite(entry?.year)||!entry?.title)errors.push('timeline entry incomplete');
+        if(Number.isFinite(entry?.year)&&entry.year<previousYear)errors.push('timeline must be chronological');
+        if(Number.isFinite(entry?.year))previousYear=entry.year;
+        if(entry?.model){
+          if(seenModels.has(entry.model))errors.push(`timeline model duplicated: ${entry.model}`);else seenModels.add(entry.model);
+          if(!modelKeys.includes(entry.model))errors.push(`timeline model is not runnable: ${entry.model}`);
+          else if(!capabilityEnabled(registry[entry.model],'timeMachine'))errors.push(`timeline model is not Time Machine enabled: ${entry.model}`);
+        }
+      }
+      for(const key of modelKeys.filter(key=>capabilityEnabled(registry[key],'timeMachine')))if(!seenModels.has(key))errors.push(`Time Machine model missing from timeline: ${key}`);
+    }
+    if(!defaults.timeMachine||!modelKeys.includes(defaults.timeMachine)||!capabilityEnabled(registry[defaults.timeMachine],'timeMachine'))errors.push('defaults.timeMachine invalid');
+    return errors;
+  }
+
   function validate(options={}){
     const expected=expectedKeys(options),registered=expected.filter(key=>adapters.has(key)),missing=expected.filter(key=>!adapters.has(key));
-    const errors=[];
+    const errors=validateRegistryContract();
     for(const key of expected)for(const error of validateModelContract(key))errors.push(`${key}: ${error}`);
     if(options.capability==='race'||options.group){
       const seenOrder=new Map(),seenPrefix=new Map();

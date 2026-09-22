@@ -87,12 +87,16 @@ RT-DETR uses an aspect-preserving staging canvas capped at 640 px on the longest
 
 Time Machine owns the active runnable model. Selecting a generation does not navigate to Model Race.
 
-Inside the Model follows the same active model:
+The timeline itself is registry-driven. `models.js` owns the chronological timeline entries and the default Time Machine model. Runnable timeline entries reference model keys; historical/research entries can remain non-runnable. `app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
 
-- Tiny YOLOv2 shows its real preprocessing contract and the final detection grid contract.
-- SSD shows native preprocessing and does not invent deeper tensors.
-- YOLOX shows real pre-NMS detection-head objectness maps at strides 8/16/32; these are not backbone feature maps.
-- RT-DETR shows the processor contract and does not claim encoder/decoder activations are exposed.
+Inside the Model follows the same active model through the `inspection` capability contract. The contract declares the native input/preprocessing presentation, tensor shape/layout, pipeline explanation, comparison-table values, preview strategy, intermediate-data policy, and result note. `app.js` renders these fields generically.
+
+- Tiny YOLOv2 declares preprocessing plus its final-grid contract, but no simulated backbone activations.
+- SSD declares native preprocessing and no deeper exported activations.
+- YOLOX declares real adapter-supplied pre-NMS detection-head objectness maps at strides 8/16/32; these are not backbone feature maps.
+- RT-DETR declares the processor contract and no encoder/decoder activation export.
+
+A model may set `inspection:false`; the inspector then reports that no inspection surface is registered rather than inventing one. Adapter-backed intermediate data requires an explicit `inspectionData()` runtime hook. The native-preprocessing comparison table is generated from the same inspection metadata, so adding another Time Machine model does not require another static HTML column.
 
 ## Benchmark contract
 
@@ -155,5 +159,5 @@ See [IOS_WEBKIT_DIAGNOSTICS.md](IOS_WEBKIT_DIAGNOSTICS.md).
 
 Run `node scripts/validate.mjs` before opening a pull request. The same command runs in the `validate` GitHub Actions workflow.
 
-The validation currently checks JavaScript syntax, inline scripts, static and generated DOM IDs, version/build/cache references, script order, runnable model capability/presentation contracts, unique race order/prefixes, adapter registration and group-release ownership, dynamic Model Race scaffolding, diagnostic isolation, iOS/desktop ORT bootstrap policy, 20-run benchmark invariants, confidence-retention guardrails, and local Markdown links.
+The validation currently checks JavaScript syntax, inline scripts, static and generated DOM IDs, version/build/cache references, script order, timeline/default-model integrity, runnable model capability/presentation contracts, inspection preview/pipeline/comparison contracts, adapter-backed inspection hooks, unique race order/prefixes, adapter registration and group-release ownership, dynamic Time Machine/Inside the Model/Model Race scaffolding, diagnostic isolation, iOS/desktop ORT bootstrap policy, 20-run benchmark invariants, confidence-retention guardrails, and local Markdown links.
 

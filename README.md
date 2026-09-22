@@ -100,7 +100,7 @@ No build step is required. Before serving or opening a pull request, run:
 
 Then serve the repository directory with a local HTTP server. Camera access generally requires HTTPS or localhost.
 
-Runnable models declare capability metadata and register through a shared runtime-adapter contract. Model Race presentation and pairwise-overlap structure are generated from those capabilities, while sequential adapter release keeps runtime residency bounded as more model generations are added.
+Runnable models declare capability metadata and register through a shared runtime-adapter contract. Time Machine timeline entries, Inside the Model presentation, native-preprocessing comparison, Model Race cards, benchmark rows, and pairwise-overlap structure are generated from those contracts. Sequential adapter release keeps runtime residency bounded as more model generations are added.
 
 ## Contributing
 
