@@ -35,7 +35,7 @@ Latest completed diag9 reclamation evidence before the diag10 instrumentation pa
 
 The R3 failure's last durable coarse stage was `rtdetr-start`. Immediately before that, SSD and YOLOX had completed and their release paths had returned. All model-resident booleans were OFF immediately before RT initialization.
 
-The old recovery UI advanced the persistent matrix cursor to R4 and could therefore display `R4 1/10` even though the failure happened in R3 and R4 had not started. diag10 changes that presentation to show the failed case/attempt separately and the next case as pending.
+The old recovery UI advanced the persistent matrix cursor to R4 and could therefore display `R4 1/10` even though the failure happened in R3 and R4 had not started. diag10 changed that presentation to show the failed case/attempt separately and the next case as pending. diag11 additionally accepts a deep durable critical stage during recovery only when its diagnostic attempt, matrix case, and case-attempt match the interrupted run; lightweight `diag=2` therefore cannot inherit a stale deep-stage record from an earlier `diag=3` session.
 
 ## What existing evidence does not support
 
