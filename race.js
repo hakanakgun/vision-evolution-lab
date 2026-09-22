@@ -282,18 +282,72 @@ ${tail||'—'}`;}
   const visible=d=>d.filter(x=>x.score>=threshold());
   function compare(a,b){const aa=visible(a),bb=visible(b),used=new Set();let both=0;for(const old of aa){let best=-1,bi=0;for(let i=0;i<bb.length;i++){if(used.has(i)||bb[i].label!==old.label)continue;const v=iou(old.box,bb[i].box);if(v>=.35&&v>bi){best=i;bi=v}}if(best>=0){used.add(best);both++}}return{both,aOnly:aa.length-both,bOnly:bb.length-both}}
   function hasMatch(det,list){return list.some(other=>other.label===det.label&&iou(det.box,other.box)>=.35)}
-  function updateOverlap(){const t=state.lastRun.tiny?.detections,s=state.lastRun.ssd?.detections,y=state.lastRun.yolo?.detections,r=state.lastRun.rt?.detections;if(!t||!s||!y||!r)return;const tv=visible(t),sv=visible(s),yv=visible(y),rv=visible(r);$('race-match-tiny-ssd').textContent=String(compare(t,s).both);$('race-match-tiny-yolo').textContent=String(compare(t,y).both);$('race-match-tiny-rt').textContent=String(compare(t,r).both);$('race-match-ssd-yolo').textContent=String(compare(s,y).both);$('race-match-ssd-rt').textContent=String(compare(s,r).both);$('race-match-yolo-rt').textContent=String(compare(y,r).both);$('race-only-tiny').textContent=String(tv.filter(d=>!hasMatch(d,sv)&&!hasMatch(d,yv)&&!hasMatch(d,rv)).length);$('race-only-ssd').textContent=String(sv.filter(d=>!hasMatch(d,tv)&&!hasMatch(d,yv)&&!hasMatch(d,rv)).length);$('race-only-yolo').textContent=String(yv.filter(d=>!hasMatch(d,tv)&&!hasMatch(d,sv)&&!hasMatch(d,rv)).length);$('race-only-rt').textContent=String(rv.filter(d=>!hasMatch(d,tv)&&!hasMatch(d,sv)&&!hasMatch(d,yv)).length);}
-  function redrawRaceResults(){if(!state.image||state.running||state.benchmarking)return;let redrawn=false;for(const pair of [['tiny','tiny'],['ssd','ssd'],['yolo','yolo'],['rt','rt']]){const key=pair[0],slot=pair[1],run=state.lastRun[key];if(!run)continue;const canvas=$('race-'+slot+'-canvas');prepareDisplay(state.image,canvas);run.visible=api.drawDetections(canvas,run.detections);$('race-'+slot+'-count').textContent=String(run.visible);redrawn=true}if(redrawn){updateOverlap();setStatus('Confidence '+threshold().toFixed(2)+' applied to retained race outputs without new inference.')}}
-  function useImage(img,label){state.image=img;state.lastRun={tiny:null,ssd:null,yolo:null,rt:null};$('race-run').disabled=false;$('race-benchmark').disabled=true;if(DIAG){$('race-benchmark-diag').disabled=false;$('race-dispose-diag').disabled=true;}for(const k of['tiny','ssd','yolo','rt']){$('race-'+k+'-empty').hidden=false;$('race-'+k+'-canvas').hidden=true}for(const id of['race-tiny-inf','race-tiny-total','race-tiny-count','race-ssd-inf','race-ssd-total','race-ssd-count','race-yolo-inf','race-yolo-total','race-yolo-count','race-rt-inf','race-rt-total','race-rt-count','race-rt-retained','race-rt-invalid','race-match-tiny-ssd','race-match-tiny-yolo','race-match-tiny-rt','race-match-ssd-yolo','race-match-ssd-rt','race-match-yolo-rt','race-only-tiny','race-only-ssd','race-only-yolo','race-only-rt','rb-tiny-backend','rb-tiny-p50','rb-tiny-p90','rb-tiny-total','rb-tiny-cv','rb-ssd-backend','rb-ssd-p50','rb-ssd-p90','rb-ssd-total','rb-ssd-cv','rb-yolo-backend','rb-yolo-p50','rb-yolo-p90','rb-yolo-total','rb-yolo-cv','rb-rt-backend','rb-rt-p50','rb-rt-p90','rb-rt-total','rb-rt-cv'])$(id).textContent='—';$('race-ssd-input').textContent='dynamic ≤640';$('race-benchmark-note').textContent='Not benchmarked yet.';setStatus(label+' ready. Run four generations with confidence '+threshold().toFixed(2)+'.');updateMatrixControls()}
+  function currentRaceSpecs(){return getRaceSpecs(null,null,{benchmarking:false})}
+  function updateOverlap(){
+    const specs=currentRaceSpecs();
+    if(!specs.length||!specs.every(spec=>Array.isArray(state.lastRun[spec.key]?.detections)))return;
+    for(let i=0;i<specs.length;i++)for(let j=i+1;j<specs.length;j++){
+      const a=specs[i],b=specs[j],cell=$(`race-match-${a.prefix}-${b.prefix}`);
+      if(cell)cell.textContent=String(compare(state.lastRun[a.key].detections,state.lastRun[b.key].detections).both);
+    }
+    for(const spec of specs){
+      const own=visible(state.lastRun[spec.key].detections),others=specs.filter(other=>other.key!==spec.key).map(other=>visible(state.lastRun[other.key].detections));
+      const unmatched=own.filter(det=>others.every(list=>!hasMatch(det,list))).length,cell=$(`race-only-${spec.prefix}`);
+      if(cell)cell.textContent=String(unmatched);
+    }
+  }
+  function updateRaceCard(spec,result){
+    const empty=$(`race-${spec.prefix}-empty`),canvas=$(`race-${spec.prefix}-canvas`),backend=$(`race-${spec.prefix}-backend`);
+    if(empty)empty.hidden=true;if(canvas)canvas.hidden=false;if(backend)backend.textContent=spec.backend()||'—';
+    const set=(slot,value)=>{const el=$(`race-${spec.prefix}-${slot}`);if(el)el.textContent=value};
+    if(Number.isFinite(result.width)&&Number.isFinite(result.height))set('input',result.width+'×'+result.height);
+    set('inf',ms(result.infMs));set('total',ms(result.totalMs));set('count',String(result.visible));
+    if(Number.isFinite(result.retained))set('retained',Number.isFinite(result.retentionThreshold)?result.retained+' @ ≥'+result.retentionThreshold.toFixed(2):String(result.retained));
+    if(Number.isFinite(result.droppedInvalid))set('invalid',String(result.droppedInvalid));
+  }
+  function redrawRaceResults(){
+    if(!state.image||state.running||state.benchmarking)return;
+    let redrawn=false;
+    for(const spec of currentRaceSpecs()){
+      const run=state.lastRun[spec.key];if(!run)continue;
+      const canvas=$(`race-${spec.prefix}-canvas`);if(!canvas)continue;
+      prepareDisplay(state.image,canvas);run.visible=api.drawDetections(canvas,run.detections);const count=$(`race-${spec.prefix}-count`);if(count)count.textContent=String(run.visible);redrawn=true;
+    }
+    if(redrawn){updateOverlap();setStatus('Confidence '+threshold().toFixed(2)+' applied to retained race outputs without new inference.')}
+  }
+  function resetRaceUi(){
+    for(const spec of currentRaceSpecs()){
+      const empty=$(`race-${spec.prefix}-empty`),canvas=$(`race-${spec.prefix}-canvas`),backend=$(`race-${spec.prefix}-backend`);
+      if(empty)empty.hidden=false;if(canvas)canvas.hidden=true;if(backend)backend.textContent='not loaded';
+      document.querySelectorAll(`#race-results [id^="race-${spec.prefix}-"][data-race-initial]`).forEach(el=>{el.textContent=el.dataset.raceInitial||'—'});
+      const bar=$(`race-${spec.prefix}-progress-bar`),caption=$(`race-${spec.prefix}-progress-text`);if(bar)bar.style.width='0%';if(caption)caption.textContent=spec.race.progressText||'Model not loaded.';
+    }
+    document.querySelectorAll('#race-benchmark-body b,#race-diff-grid b').forEach(el=>{el.textContent='—'});
+    $('race-benchmark-note').textContent='Not benchmarked yet.';
+  }
+  function useImage(img,label){
+    const specs=currentRaceSpecs();state.image=img;state.lastRun={};$('race-run').disabled=false;$('race-benchmark').disabled=true;
+    if(DIAG){$('race-benchmark-diag').disabled=false;$('race-dispose-diag').disabled=true}
+    resetRaceUi();setStatus(label+' ready. Run '+specs.length+' detector generation'+(specs.length===1?'':'s')+' with confidence '+threshold().toFixed(2)+'.');updateMatrixControls();
+  }
   $('race-image-file').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')){setStatus('Please choose an image file.','error');return}const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);useImage(img,file.name||'Race image')};img.onerror=()=>{URL.revokeObjectURL(url);setStatus('The selected race image could not be decoded.','error')};img.src=url});
   $('race-use-current').addEventListener('click',()=>{const img=api.getImage();if(!img){setStatus('No Time Machine image is loaded yet.','error');return}useImage(img,'Time Machine image')});
-  async function runRace(){if(!state.image||state.running)return;state.running=true;const image=state.image;$('race-image-file').disabled=true;$('confidence').disabled=true;$('race-run').disabled=true;$('race-benchmark').disabled=true;$('race-use-current').disabled=true;syncConfidence();try{
-    setStatus('Running Tiny YOLOv2 (2016)… first load is ~63.5 MB.','loading');const tiny=await runTiny(image,$('race-tiny-canvas'));state.lastRun.tiny=tiny;$('race-tiny-empty').hidden=true;$('race-tiny-canvas').hidden=false;$('race-tiny-inf').textContent=ms(tiny.infMs);$('race-tiny-total').textContent=ms(tiny.totalMs);$('race-tiny-count').textContent=String(tiny.visible);
-    setStatus('Running SSD-MobileNet baseline…','loading');const ssd=await api.runBaseline(image,$('race-ssd-canvas'));state.lastRun.ssd=ssd;$('race-ssd-empty').hidden=true;$('race-ssd-canvas').hidden=false;$('race-ssd-backend').textContent=(api.getBaselineProvider()||'WASM').toUpperCase();$('race-ssd-input').textContent=ssd.width+'×'+ssd.height;$('race-ssd-inf').textContent=ms(ssd.infMs);$('race-ssd-total').textContent=ms(ssd.totalMs);$('race-ssd-count').textContent=String(ssd.visible);
-    setStatus('Running YOLOX-Nano…','loading');const yolo=await runYolo(image,$('race-yolo-canvas'));state.lastRun.yolo=yolo;$('race-yolo-empty').hidden=true;$('race-yolo-canvas').hidden=false;$('race-yolo-inf').textContent=ms(yolo.infMs);$('race-yolo-total').textContent=ms(yolo.totalMs);$('race-yolo-count').textContent=String(yolo.visible);
-    setStatus('Running RT-DETR R18… first load may download 20–40 MB.','loading');const rt=await runRT(image,$('race-rt-canvas'));state.lastRun.rt=rt;$('race-rt-empty').hidden=true;$('race-rt-canvas').hidden=false;$('race-rt-inf').textContent=ms(rt.infMs);$('race-rt-total').textContent=ms(rt.totalMs);$('race-rt-count').textContent=String(rt.visible);$('race-rt-retained').textContent=rt.retained+' @ ≥'+rt.retentionThreshold.toFixed(2);$('race-rt-invalid').textContent=String(rt.droppedInvalid);
-    updateOverlap();setStatus('Race complete: Tiny YOLOv2 '+tiny.visible+', SSD '+ssd.visible+', YOLOX '+yolo.visible+', RT-DETR '+rt.visible+'. Pairwise overlap is shown below.');$('race-benchmark').disabled=false;if(DIAG)$('race-benchmark-diag').disabled=false;
-  }catch(err){console.error(err);setStatus(err&&err.message?err.message:String(err),'error')}finally{state.running=false;$('race-image-file').disabled=false;$('confidence').disabled=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false}}
+  async function runRace(){
+    if(!state.image||state.running)return;
+    state.running=true;const image=state.image,specs=getRaceSpecs(image,null,{benchmarking:false});
+    $('race-image-file').disabled=true;$('confidence').disabled=true;$('race-run').disabled=true;$('race-benchmark').disabled=true;$('race-use-current').disabled=true;syncConfidence();
+    try{
+      for(const spec of specs){
+        setStatus('Running '+spec.label+'…','loading');
+        const canvas=$(`race-${spec.prefix}-canvas`);if(!canvas)throw new Error(`Missing race canvas for ${spec.label}.`);
+        const result=await spec.run();state.lastRun[spec.key]=result;updateRaceCard(spec,result);
+      }
+      updateOverlap();
+      const summary=specs.map(spec=>spec.label+' '+(state.lastRun[spec.key]?.visible??0)).join(', ');
+      setStatus('Race complete: '+summary+'. Pairwise overlap is shown below.');$('race-benchmark').disabled=false;if(DIAG)$('race-benchmark-diag').disabled=false;
+    }catch(err){console.error(err);setStatus(err&&err.message?err.message:String(err),'error')}
+    finally{state.running=false;$('race-image-file').disabled=false;$('confidence').disabled=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false}
+  }
   $('race-run').addEventListener('click',runRace);
   async function runModel(model,source,canvas,{benchmarking=false}={}){const adapter=runtimeRegistry.get(model);if(!adapter)throw new Error(`Unknown runnable model: ${model}`);return adapter.run(source,canvas,{benchmarking})}
   function getRuntimeInfo(model){return runtimeRegistry.get(model)?.runtimeInfo?.()||{}}
