@@ -93,6 +93,16 @@
     return expectedKeys(options).map(key=>adapters.get(key)).filter(Boolean);
   }
 
+  async function releaseAll({exceptKey='',capability='',group=''}={}){
+    const released=[];
+    for(const adapter of list({capability,group})){
+      if(adapter.key===exceptKey)continue;
+      await adapter.release();
+      released.push(adapter.key);
+    }
+    return Object.freeze(released);
+  }
+
   function validate(options={}){
     const expected=expectedKeys(options),registered=expected.filter(key=>adapters.has(key)),missing=expected.filter(key=>!adapters.has(key));
     const errors=[];
@@ -112,6 +122,7 @@
     register,
     get,
     list,
+    releaseAll,
     validate,
     assertRegistered,
     capabilityEnabled,
