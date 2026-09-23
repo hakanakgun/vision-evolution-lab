@@ -8,7 +8,7 @@ Live: https://hakanakgun.github.io/vision-evolution-lab/
 
 Vision Evolution Lab lets you run and compare object-detection generations without an application backend.
 
-- **Vision Time Machine** keeps one selected image while you move through runnable years. Early task-specific experiments can show a pattern-response map, handwritten digits, faces, or pedestrians on that same image.
+- **Vision Time Machine** opens with YOLOX-Nano as a lightweight fast-inference starting point; all runnable years remain selectable. One image stays selected while early task-specific experiments show pattern responses, handwritten digits, faces, or pedestrians. Live Camera remains SSD-MobileNetV1 INT8.
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
 - **Live Camera** runs local browser inference through live-capable runtime adapters with rolling latency measurements; SSD-MobileNetV1 INT8 is currently the only live-enabled model.
