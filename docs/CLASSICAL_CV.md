@@ -62,6 +62,7 @@ The implementation uses:
 - `cv.HOGDescriptor`
 - `cv.HOGDescriptor.getDefaultPeopleDetector()`, whose `FloatVector` coefficients are copied to a `CV_32FC1` matrix before `setSVMDetector()` in the pinned OpenCV.js binding.
 - the default 64×128 detection window
+- a `cv.DoubleVector` output for per-window scores, as required by the pinned OpenCV.js binding;
 - multi-scale sliding-window detection
 
 The HOG implementation is the OpenCV implementation of the Dalal–Triggs descriptor/object detector family. The built-in default people detector coefficients are supplied by OpenCV.js; Vision Evolution Lab does not redistribute a separate SVM model file.
