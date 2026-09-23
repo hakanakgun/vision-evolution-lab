@@ -35,7 +35,7 @@ This project currently loads the following runtime dependency from a CDN.
 - License: MIT
 - Upstream: `microsoft/onnxruntime`
 
-Model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched from a pinned ONNX Model Zoo migration repository on Hugging Face; its repository metadata says Apache-2.0 while the imported model-card body says MIT, so both upstream statements are recorded rather than treated as one definitive weights-license claim. The browser fetches SSD-MobileNetV1 and the MNIST task-reference model from pinned upstream repositories. YOLOX-Nano uses the official Megvii GitHub Release first and a pinned Apache-2.0 Hugging Face mirror only as a browser-fetch fallback. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
+Model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched from a pinned ONNX Model Zoo migration repository on Hugging Face; its repository metadata says Apache-2.0 while the imported model-card body says MIT, so both upstream statements are recorded rather than treated as one definitive weights-license claim. The browser fetches SSD-MobileNetV1, SSD 2016, DETR 2020, and the MNIST task-reference model from pinned upstream repositories. YOLOX-Nano uses the official Megvii GitHub Release first and a pinned Apache-2.0 Hugging Face mirror only as a browser-fetch fallback. DETR's base model declares Apache-2.0, while its conversion repository has no independent license declaration. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
 
 ## MNIST digit task-reference checkpoint
 
@@ -89,8 +89,23 @@ The original Vision Evolution Lab source code is licensed under the repository's
 
 - Project: Hugging Face Transformers.js
 - Browser import: jsDelivr, pinned to `@huggingface/transformers@4.3.0`
-- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for RT-DETR R18 and RT-DETRv2 R18. v4 uses the newer native WebGPU runtime/EP; WASM remains available as fallback.
+- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for DETR, RT-DETR R18 and RT-DETRv2 R18. v4 uses the newer native WebGPU runtime/EP; WASM is used by the historical DETR reference and remains available as fallback for RT-DETR.
 - Upstream package/project terms remain their own.
+
+## SSD 2016 browser checkpoint
+
+- Model repository: `onnxmodelzoo/ssd-12-int8` on Hugging Face, pinned revision `bf6cc24948f7cf6c50127798c33d900813678b4e`.
+- Upstream repository metadata license: Apache-2.0.
+- File: `ssd-12-int8.onnx`, 20,485,276 bytes; SHA-256 `56d2c03a8c74c03f704509ccfcd91763991c6e1b92f63da730fb2b3d07565453`.
+- This is a later COCO 2017 ResNet-34 INT8 reference checkpoint for the 2016 SSD design, not original paper weights.
+- Fetched and checksum-verified in browser; not bundled or redistributed here.
+
+## DETR 2020 browser conversion
+
+- Base model: `facebook/detr-resnet-50` (Apache-2.0; COCO 2017).
+- Browser conversion: `Xenova/detr-resnet-50`, pinned revision `8be7ab59ff663484ee9ba2e8d8f267330d5ad03e`.
+- Quantized asset: `onnx/model_quantized.onnx`, 43,102,531 bytes; SHA-256 `cae09a307ed9247da7e2ce8bcf81522a6817f1ea2e82b9c4dde59f5964b62b4f`.
+- Base repository declares Apache-2.0; conversion repository does not independently state a license. Runtime fetch only; not bundled here.
 
 ## RT-DETR R18 browser conversion
 

@@ -19,10 +19,10 @@ Status meanings:
 | 2014 | R-CNN | History only | region proposals plus CNN features and class-specific SVMs | Girshick et al., CVPR 2014; paper reference only | object-detection research reference; no checkpoint/runtime integrated |
 | 2015 | Faster R-CNN | History only | region proposal network shares features with the detector | Ren et al., NeurIPS 2015; paper reference only | two-stage detector reference; no checkpoint/runtime integrated |
 | 2016 | YOLOv1 | History only | unified single-stage grid-based detection | Redmon et al., CVPR 2016; paper reference only | arXiv preprint appeared in 2015; the timeline uses conference year 2016 |
-| 2016 | SSD | History only | single-shot multi-scale dense detection | Liu et al., ECCV 2016; paper reference only | one-stage detector milestone; not the 2017 runnable SSD-MobileNet export |
+| 2016 | SSD · ResNet-34 INT8 | Runnable | single-shot multi-scale dense detection | pinned `onnxmodelzoo/ssd-12-int8`; repository Apache-2.0; reference weights are a later COCO 2017 checkpoint | Time Machine only; WASM; 1200×1200 input; not the original paper weights |
 | 2016 | Tiny YOLOv2 | Runnable | compact grid/anchor CNN detector | ONNX Model Zoo migration; pinned HF revision; Pascal VOC; upstream license metadata/body conflict documented | WASM; user-reported physical iPhone/Brave inference and five four-model ×20 runs on 2026-09-22; normalization remains unspecified upstream |
 | 2017 | SSD-MobileNetV1 INT8 | Runnable | lightweight mobile backbone + SSD | pinned ONNX Model Zoo source; see `MODEL_SOURCES.md` | WASM policy because current ORT WebGPU path fails at run time for this export |
-| 2020 | DETR | History only | transformer set prediction | Carion et al., ECCV 2020; paper reference only | end-to-end detector milestone; the runnable reference is later RT-DETR |
+| 2020 | DETR · ResNet-50 | Runnable | transformer set prediction | pinned Xenova conversion of Apache-2.0 `facebook/detr-resnet-50`; conversion license is not independently declared | Time Machine only; Transformers.js q8/WASM; 43.1 MB; later COCO 2017 reference checkpoint |
 | 2021 | YOLOX-Nano | Runnable | anchor-free decoupled YOLO head | official Megvii project/release, Apache-2.0 | iOS: standard non-JSEP WASM; other platforms: WebGPU-first JSEP bundle with WASM fallback |
 | 2023 | RT-DETR R18 | Runnable | real-time end-to-end DETR | base `PekingU/rtdetr_r18vd`: Apache-2.0, COCO, 20.2M params; HF Staff ONNX conversion `onnx-community/rtdetr_r18vd` | Transformers.js 4.3.0; native WebGPU fp16 first, WASM q8 fallback; physical iPhone/WebKit WebGPU fp16 inference + 20-run warm benchmark verified 2026-09-21 |
 | 2024 | RT-DETRv2 R18 | Research preview | improved end-to-end DETR training recipe | base `PekingU/rtdetr_v2_r18vd`; Apache-2.0 ONNX Community conversion pinned in `MODEL_SOURCES.md`; COCO | User-reported iOS/WebKit WebGPU fp16 inference; one run only, broader device/sample validation and warm benchmark pending |
@@ -69,6 +69,10 @@ Face detection, pedestrian detection, handwritten-digit classification, pattern 
 
 Added as the first pre-2017 runnable generation. It gives the timeline a real 2016 detector with a materially different 13×13 grid/anchor output and Pascal VOC 20-class label space. The exact ONNX Model Zoo export is pinned rather than mirrored locally. Because the upstream Hugging Face metadata says Apache-2.0 while the model-card body says MIT, the repository records both statements instead of collapsing them into a single checkpoint-license claim. The user reported physical iPhone/Brave detections and five consecutive four-model ×20 runs on 2026-09-22. The input tensor packing is covered by a deterministic contract check; upstream pixel normalization remains unspecified.
 
+### SSD 2016 · ResNet-34 INT8 reference
+
+This Time Machine-only entry runs a pinned SSD ONNX Model Zoo graph through ONNX Runtime Web WASM. It uses a later COCO 2017 ResNet-34 INT8 checkpoint to demonstrate the 2016 SSD design; it is not the original ECCV checkpoint. Its 1200×1200 normalized input and 20.5 MB file make it substantially heavier than SSD-MobileNetV1. The downloaded artifact is size- and SHA-256-verified before execution. It is excluded from Model Race and Live Camera.
+
 ### SSD-MobileNetV1 INT8
 
 Kept as the historical mobile baseline because it is small and exposes the practical browser constraints of an older detector export.
@@ -76,6 +80,10 @@ Kept as the historical mobile baseline because it is small and exposes the pract
 ### YOLOX-Nano
 
 Chosen as the second runnable generation because the official Apache-2.0 project ships a compact ONNX Runtime deployment asset (0.91M parameters, 416×416, 25.8 COCO AP reported upstream).
+
+### DETR 2020 · ResNet-50 reference
+
+This Time Machine-only entry uses the pinned Xenova Transformers.js conversion in q8/WASM. The base Facebook checkpoint is Apache-2.0, but the conversion repository does not declare a separate license. It is a later COCO 2017 reference checkpoint rather than the exact paper weights. The 43.1 MB q8 pipeline may be slow or memory-intensive on phones; iOS/WebKit testing remains pending. It is excluded from Model Race and Live Camera.
 
 ### RT-DETR R18
 

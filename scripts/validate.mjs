@@ -18,6 +18,7 @@ const files={
   runtime:read('model-runtime.js'),
   loader:read('model-loader.js'),
   app:read('app.js'),
+  historicalDetectors:read('historical-detectors.js'),
   race:read('race.js'),
   historyExperiments:read('history-experiments.js'),
   classicalWorker:read('classical-cv-worker.js'),
@@ -33,7 +34,7 @@ const files={
   version:JSON.parse(read('version.json'))
 };
 
-for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,race:files.race,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
+for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,historicalDetectors:files.historicalDetectors,race:files.race,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
 for(const [index,code] of [...files.index.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match=>match[1]).entries()){
@@ -87,6 +88,7 @@ for(let i=0;i<raceModels.length;i++)for(let j=i+1;j<raceModels.length;j++)genera
 
 const literalRefs=[...new Set([
   ...files.app.matchAll(/\$\('([^']+)'\)/g),
+  ...files.historicalDetectors.matchAll(/\$\('([^']+)'\)/g),
   ...files.race.matchAll(/\$\('([^']+)'\)/g),
   ...files.historyExperiments.matchAll(/\$\('([^']+)'\)/g)
 ].map(match=>match[1]))];
@@ -96,10 +98,10 @@ check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
 const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
 check(files.index.includes(`const CURRENT_BUILD = '${build}'`),'CURRENT_BUILD does not match version.json');
-for(const asset of ['styles.css','runtime-bootstrap.js','preprocessing.js','detection-metrics.js','models.js','model-runtime.js','model-loader.js','app.js','race.js','history-experiments.js']){
+for(const asset of ['styles.css','runtime-bootstrap.js','preprocessing.js','detection-metrics.js','models.js','model-runtime.js','model-loader.js','app.js','historical-detectors.js','race.js','history-experiments.js']){
   check(files.index.includes(`${asset}?v=${version}`),`cache-busted asset missing or stale: ${asset}`);
 }
-const scriptOrder=['runtime-bootstrap.js','preprocessing.js','models.js','detection-metrics.js','model-runtime.js','model-loader.js','app.js','race.js','history-experiments.js'];
+const scriptOrder=['runtime-bootstrap.js','preprocessing.js','models.js','detection-metrics.js','model-runtime.js','model-loader.js','app.js','historical-detectors.js','race.js','history-experiments.js'];
 let previous=-1;
 for(const script of scriptOrder){
   const current=files.index.indexOf(script);
@@ -240,7 +242,7 @@ check(historyExperiments['mnist-digits'].model?.sha256==='5c688690f8bacf667d4c20
 check(historyExperiments['mnist-digits'].model?.url==='https://media.githubusercontent.com/media/onnx/models/4f43949841cb55a0b98dc8fcd045431ccafd9f96/validated/vision/classification/mnist/model/mnist-12.onnx','MNIST download must stay on the pinned Model Zoo artifact');
 check(historyExperiments['mnist-digits'].model?.provider==='wasm'&&historyExperiments['mnist-digits'].model?.licenseMetadata==='Apache-2.0'&&historyExperiments['mnist-digits'].model?.licenseCard==='MIT','MNIST model runtime or license ambiguity must remain disclosed');
 const historicalMilestones=(metadataRegistry.timeline||[]).filter(entry=>entry.kind==='historical');
-const expectedHistoricalMilestones=[[2012,'AlexNet'],[2014,'R-CNN'],[2015,'Faster R-CNN'],[2016,'YOLOv1'],[2016,'SSD'],[2020,'DETR']];
+const expectedHistoricalMilestones=[[2012,'AlexNet'],[2014,'R-CNN'],[2015,'Faster R-CNN'],[2016,'YOLOv1']];
 check(historicalMilestones.length===expectedHistoricalMilestones.length,'paper-only timeline milestone count changed');
 for(const [year,title] of expectedHistoricalMilestones)check(historicalMilestones.some(entry=>entry.year===year&&entry.title===title),'paper-only milestone missing: '+year+' '+title);
 check(historicalMilestones.every(entry=>!entry.model&&!entry.jump&&entry.note?.startsWith('history only ·')),'paper-only milestones must not select or load a runtime');
@@ -251,8 +253,17 @@ check(files.index.includes('Historical experiment · same image')&&historyExperi
 check(files.catalog.includes('| 1980 | Neocognitron-inspired feature response | Runnable historical experiment |')&&files.catalog.includes('| 1998 | LeNet-era MNIST CNN reference | Runnable historical experiment |')&&files.catalog.includes('| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable historical experiment |')&&files.catalog.includes('| 2005 | HOG + linear SVM pedestrian detector | Runnable historical experiment |'),'catalog must distinguish runnable historical experiments');
 check(files.readme.includes('one image selected in Time Machine')&&files.docsIndex.includes('[Time Machine historical experiments](CLASSICAL_CV.md)'),'README/docs map must describe and link to same-image history experiments');
 for(const source of ['https://doi.org/10.1007/BF00344251','https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf','https://doi.org/10.1109/CVPR.2001.990517','https://doi.org/10.1109/CVPR.2005.177','https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2014/html/Girshick_Rich_Feature_Hierarchies_2014_CVPR_paper.html','https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html','https://research.google/pubs/ssd-single-shot-multibox-detector/','https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php'])check(files.history.includes(source),'historical primary-paper source missing: '+source);
-check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===5,'historical methods must not enter the general runtime/model registry');
-check(timeMachineModels.length===5,'historical methods must not enter the AI Time Machine model set');
+check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===7,'Time Machine registry should contain five race models and two historical detectors');
+check(timeMachineModels.length===7,'Time Machine must expose seven runnable model generations');
+for(const [key,year,title] of [['ssd2016',2016,'SSD · ResNet-34 INT8'],['detr',2020,'DETR · ResNet-50']]){
+  const model=metadataRegistry[key],entry=metadataRegistry.timeline.find(item=>item.model===key);
+  check(model&&entry&&entry.year===year&&entry.title===title,'historical detector timeline entry missing: '+key);
+  check(model.capabilities.timeMachine&&model.capabilities.benchmark&&model.capabilities.live===false&&model.capabilities.race===false,`${key}: historical detectors must be Time Machine/individual benchmark only`);
+  check(!metadataWindow.VisionRuntimeRegistry.capabilityEnabled(model,'race')&&!metadataWindow.VisionRuntimeRegistry.capabilityEnabled(model,'live'),`${key}: historical detector entered Model Race or Live Camera`);
+}
+check(metadataRegistry.ssd2016.bytes===20485276&&metadataRegistry.ssd2016.sha256==='56d2c03a8c74c03f704509ccfcd91763991c6e1b92f63da730fb2b3d07565453','SSD 2016 pinned artifact integrity metadata changed');
+check(metadataRegistry.detr.revision==='8be7ab59ff663484ee9ba2e8d8f267330d5ad03e'&&metadataRegistry.detr.runtime.wasm.dtype==='q8','DETR must stay on its pinned q8/WASM conversion');
+check(files.historicalDetectors.includes("runtimes.register('ssd2016'")&&files.historicalDetectors.includes("runtimes.register('detr'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("subtle.digest('SHA-256'"),'historical model adapters must register SSD, use WASM, and checksum SSD weights');
 check((files.index.match(/id="image-file"/g)||[]).length===1,'Time Machine must keep one shared image input');
 check(!files.index.includes('data-tab="classical-cv"')&&!files.index.includes('id="classical-cv"'),'separate Classical CV tab/panel must not return');
 for(const id of ['history-experiment-panel','history-experiment-title','history-experiment-description','history-experiment-note','history-runtime-state','history-input-size','history-output-count','history-preprocess','history-inference','history-load','history-run','history-release','history-status'])check(files.index.includes('id="'+id+'"'),'historical experiment DOM contract missing: '+id);
