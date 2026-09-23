@@ -81,7 +81,7 @@ async function runFace(cv,width,height,pixels){
 
 async function runHog(cv,width,height,pixels){
   const src=makeRgbaMat(cv,width,height,pixels),rgb=new cv.Mat(),rects=new cv.RectVector(),hog=new cv.HOGDescriptor();
-  let detector=null,detectorMat=null;
+  let detector=null,detectorMat=null,weights=null;
   try{
     cv.cvtColor(src,rgb,cv.COLOR_RGBA2RGB,0);
     detector=cv.HOGDescriptor.getDefaultPeopleDetector();
@@ -91,10 +91,11 @@ async function runHog(cv,width,height,pixels){
     for(let index=0;index<detectorSize;index++)detectorMat.data32F[index]=detector.get(index);
     hog.setSVMDetector(detectorMat);
     const started=performance.now();
-    hog.detectMultiScale(rgb,rects,0,new cv.Size(8,8),new cv.Size(8,8),1.05,2,false);
+    weights=new cv.DoubleVector();
+    hog.detectMultiScale(rgb,rects,weights,0,new cv.Size(8,8),new cv.Size(8,8),1.05,2,false);
     return{boxes:rectsToArray(rects),inferenceMs:performance.now()-started};
   }finally{
-    safeDelete(detectorMat);safeDelete(detector);safeDelete(hog);safeDelete(rects);safeDelete(rgb);safeDelete(src);
+    safeDelete(weights);safeDelete(detectorMat);safeDelete(detector);safeDelete(hog);safeDelete(rects);safeDelete(rgb);safeDelete(src);
   }
 }
 
