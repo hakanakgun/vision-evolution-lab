@@ -439,7 +439,6 @@
         $('benchmark-note').textContent=REGISTRY[benchmarkModel]?.ui?.runtime?.benchmarkBoundary||'p50, p90, min–max and run-to-run timing variation from 20 sequential warm runs; model transfer and session init excluded.';
         setStatus(`Warm benchmark complete: p50 inference ${ms(infMed)}, p90 ${ms(infP90)}, CV ${cv.toFixed(1)}%.`);
       }catch(err){
-        if(token!==state.cameraStartToken)return;
         console.error(err);
         setStatus(err.message || String(err),'error');
         $('benchmark-note').textContent='Benchmark failed; current-run metrics were left unchanged.';
@@ -510,6 +509,7 @@
         renderLiveModels();
         liveLoop(adapter,modelKey);
       }catch(err){
+        if(token!==state.cameraStartToken)return;
         console.error(err);
         if(state.stream){state.stream.getTracks().forEach(track=>track.stop());state.stream=null}
         const video=$('camera-video');video.srcObject=null;$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Camera unavailable</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;$('camera-start').disabled=false;
