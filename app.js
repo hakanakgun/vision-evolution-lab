@@ -12,7 +12,7 @@
     const $ = id => document.getElementById(id);
     const DEFAULT_MODEL = REGISTRY.defaults?.timeMachine || Object.keys(REGISTRY).find(key=>REGISTRY[key]?.status==='runnable'&&RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine')) || 'yolox';
     const DEFAULT_LIVE_MODEL = REGISTRY.defaults?.live || RuntimeRegistry.modelKeys.find(key=>RuntimeRegistry.capabilityEnabled(REGISTRY[key],'live')) || '';
-    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve()};
+    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,liveInference:Promise.resolve(),runtimeTransition:Promise.resolve(),session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve()};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -38,9 +38,11 @@
     function selectActiveModel(key,{scroll=true}={}){
       if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}
       if(!REGISTRY[key]||!RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine'))return;
+      const previousKey=state.activeModel;
       if(state.live)stopCamera();
       state.cameraStartToken++;
       state.historyExperiment='';state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.clear?.());state.activeModel=key;state.liveModel=key;syncHistoryControls();
+      if(previousKey!==key){const previousAdapter=RuntimeRegistry.get(previousKey);state.runtimeTransition=state.runtimeTransition.catch(()=>{}).then(async()=>{await state.liveInference.catch(()=>{});await previousAdapter?.release();}).catch(error=>console.warn('Previous model runtime release failed',error));}
       resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();renderLiveModels();
       if(state.image){drawSourceOnly();setStatus(activeModel().title+' selected. Run the current image when ready.');}
       else setStatus(activeModel().title+' selected. Choose an image to run this generation.');
@@ -376,6 +378,7 @@
       state.running=true;$('image-file').disabled=true;$('confidence').disabled=true;$('rerun').disabled=true;$('benchmark').disabled=true;$('history-run').disabled=true;
       try{
         await state.historyTransition;
+        await state.runtimeTransition;
         if(state.historyExperiment){
           if(!window.VisionHistoryExperiments)throw new Error('Historical experiment runtime is unavailable.');
           await window.VisionHistoryExperiments.run(state.historyExperiment,state.image);
@@ -416,6 +419,7 @@
       const benchmarkModel=state.activeModel;
       const samples=[];
       try{
+        await state.runtimeTransition;
         const RUNS=20;
         setStatus(`Running ${RUNS} warm measurements on the same image…`,'loading');
         for(let i=0;i<RUNS;i++){
@@ -496,6 +500,8 @@
       if(!adapter){renderLiveModels();return}
       $('camera-start').disabled=true;
       try{
+        await state.runtimeTransition;
+        if(token!==state.cameraStartToken||state.activeModel!==modelKey)return;
         await adapter.prepare?.();
         if(token!==state.cameraStartToken||state.activeModel!==modelKey)return;
         setLiveBackend(adapter);
@@ -521,8 +527,10 @@
       while(state.live&&state.activeModel===modelKey){
         await new Promise(requestAnimationFrame);
         if(!state.live||state.activeModel!==modelKey||video.readyState<2)continue;
+        let framePromise;
         try{
-          const r=await adapter.run(video,canvas,{updateMain:false,live:true});
+          framePromise=Promise.resolve(adapter.run(video,canvas,{updateMain:false,live:true}));state.liveInference=framePromise;
+          const r=await framePromise;
           state.liveFrameCount++;
           state.liveSamples.push(r);if(state.liveSamples.length>20)state.liveSamples.shift();
           const avg=key=>state.liveSamples.reduce((sum,item)=>sum+item[key],0)/state.liveSamples.length;
@@ -530,7 +538,7 @@
           $('live-inf').textContent=ms(ai);$('live-total').textContent=ms(at);$('live-fps').textContent=ai>0?(1000/ai).toFixed(1):'—';$('live-count').textContent=String(r.visible);$('live-frames').textContent=String(state.liveFrameCount);setLiveBackend(adapter);
         }catch(err){
           console.error(err);stopCamera();$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Live inference stopped</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;
-        }
+        }finally{if(framePromise&&state.liveInference===framePromise)state.liveInference=Promise.resolve();}
       }
     }
 

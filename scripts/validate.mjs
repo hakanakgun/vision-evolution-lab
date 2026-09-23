@@ -200,6 +200,8 @@ check(files.app.includes("RuntimeRegistry.list({capability:'live'})")&&files.app
 check(files.app.includes('function currentLiveAdapter(){return RuntimeRegistry.get(state.activeModel)}'),'Live Camera must use the active Time Machine model');
 check(files.app.includes('selectActiveModel(key,{scroll:false})'),'Live Camera model choices must update Time Machine selection');
 check(files.app.includes('state.cameraStartToken++')&&files.app.includes('token!==state.cameraStartToken'),'Live Camera start must cancel when Time Machine selection changes');
+check(files.app.includes('await previousAdapter?.release()')&&files.app.includes('await state.liveInference.catch(()=>{})'),'switching models must release the old runtime after any current camera inference finishes');
+check(files.app.includes('await state.runtimeTransition;')&&files.app.includes('state.liveInference=framePromise'),'Time Machine inference and Live Camera must serialize model-runtime transitions');
 const benchmarkFunction=files.app.slice(files.app.indexOf('async function runBenchmark()'),files.app.indexOf("$('image-file').addEventListener('change'"));
 const cameraStartFunction=files.app.slice(files.app.indexOf('async function startCamera()'),files.app.indexOf('async function liveLoop('));
 check(!benchmarkFunction.includes('cameraStartToken'),'benchmark error handling must not use Live Camera cancellation state');
