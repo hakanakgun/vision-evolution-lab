@@ -12,6 +12,8 @@ const files={
   index:read('index.html'),
   styles:read('styles.css'),
   bootstrap:read('runtime-bootstrap.js'),
+  preprocessing:read('preprocessing.js'),
+  metrics:read('detection-metrics.js'),
   models:read('models.js'),
   runtime:read('model-runtime.js'),
   loader:read('model-loader.js'),
@@ -31,7 +33,7 @@ const files={
   version:JSON.parse(read('version.json'))
 };
 
-for(const [name,code] of Object.entries({bootstrap:files.bootstrap,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,race:files.race,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
+for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,race:files.race,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
 for(const [index,code] of [...files.index.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match=>match[1]).entries()){
@@ -55,6 +57,17 @@ const raceModels=metadataWindow.VisionRuntimeRegistry.modelKeys
 const timeMachineModels=(metadataRegistry.timeline||[])
   .filter(entry=>entry.model)
   .map(entry=>({entry,key:entry.model,model:metadataRegistry[entry.model],inspection:metadataRegistry[entry.model]?.capabilities?.inspection}));
+
+const preprocessingWindow={};vm.runInNewContext(files.preprocessing,{window:preprocessingWindow,Float32Array,TypeError,Number,Object},{filename:'preprocessing.js'});
+const tinyPixels=preprocessingWindow.VisionPreprocessing.packTinyRgbNchw(Uint8Array.from([10,20,30,255,40,50,60,128]),2,1);
+check(tinyPixels instanceof Float32Array&&JSON.stringify([...tinyPixels])==='[10,40,20,50,30,60]','Tiny input packer must emit RGB planar float32 pixels and ignore alpha');
+const metricsWindow={};vm.runInNewContext(files.metrics,{window:metricsWindow,Number,Array,Set,Object},{filename:'detection-metrics.js'});
+const metricCheck=metricsWindow.VisionDetectionMetrics.evaluate([
+  {label:'person',score:.9,box:[0,0,.5,.5]},
+  {label:'person',score:.8,box:[0,0,.5,.5]},
+  {label:'cat',score:.7,box:[.5,.5,1,1]}
+],[{label:'person',box:[0,0,.5,.5]},{label:'dog',box:[.5,.5,1,1]}],{confidence:.4,iouThreshold:.5});
+check(metricCheck.truePositives===1&&metricCheck.falsePositives===2&&metricCheck.falseNegatives===1&&metricCheck.f1===.4,'limited detection metric must enforce one-to-one, same-class IoU matches');
 
 const ids=[...files.index.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
 const duplicateIds=[...new Set(ids.filter((id,index,list)=>list.indexOf(id)!==index))];
@@ -83,10 +96,10 @@ check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
 const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
 check(files.index.includes(`const CURRENT_BUILD = '${build}'`),'CURRENT_BUILD does not match version.json');
-for(const asset of ['styles.css','runtime-bootstrap.js','models.js','model-runtime.js','model-loader.js','app.js','race.js','history-experiments.js']){
+for(const asset of ['styles.css','runtime-bootstrap.js','preprocessing.js','detection-metrics.js','models.js','model-runtime.js','model-loader.js','app.js','race.js','history-experiments.js']){
   check(files.index.includes(`${asset}?v=${version}`),`cache-busted asset missing or stale: ${asset}`);
 }
-const scriptOrder=['runtime-bootstrap.js','models.js','model-runtime.js','model-loader.js','app.js','race.js','history-experiments.js'];
+const scriptOrder=['runtime-bootstrap.js','preprocessing.js','models.js','detection-metrics.js','model-runtime.js','model-loader.js','app.js','race.js','history-experiments.js'];
 let previous=-1;
 for(const script of scriptOrder){
   const current=files.index.indexOf(script);
@@ -228,8 +241,8 @@ check(files.index.includes('Historical experiment · same image')&&historyExperi
 check(files.catalog.includes('| 1980 | Neocognitron-inspired feature response | Runnable historical experiment |')&&files.catalog.includes('| 1998 | LeNet-era MNIST CNN reference | Runnable historical experiment |')&&files.catalog.includes('| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable historical experiment |')&&files.catalog.includes('| 2005 | HOG + linear SVM pedestrian detector | Runnable historical experiment |'),'catalog must distinguish runnable historical experiments');
 check(files.readme.includes('one image selected in Time Machine')&&files.docsIndex.includes('[Time Machine historical experiments](CLASSICAL_CV.md)'),'README/docs map must describe and link to same-image history experiments');
 for(const source of ['https://doi.org/10.1007/BF00344251','https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf','https://doi.org/10.1109/CVPR.2001.990517','https://doi.org/10.1109/CVPR.2005.177','https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2014/html/Girshick_Rich_Feature_Hierarchies_2014_CVPR_paper.html','https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html','https://research.google/pubs/ssd-single-shot-multibox-detector/','https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php'])check(files.history.includes(source),'historical primary-paper source missing: '+source);
-check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===4,'historical methods must not enter the general runtime/model registry');
-check(timeMachineModels.length===4,'historical methods must not enter the AI Time Machine model set');
+check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===5,'historical methods must not enter the general runtime/model registry');
+check(timeMachineModels.length===5,'historical methods must not enter the AI Time Machine model set');
 check((files.index.match(/id="image-file"/g)||[]).length===1,'Time Machine must keep one shared image input');
 check(!files.index.includes('data-tab="classical-cv"')&&!files.index.includes('id="classical-cv"'),'separate Classical CV tab/panel must not return');
 for(const id of ['history-experiment-panel','history-experiment-title','history-experiment-description','history-experiment-note','history-runtime-state','history-input-size','history-output-count','history-preprocess','history-inference','history-load','history-run','history-release','history-status'])check(files.index.includes('id="'+id+'"'),'historical experiment DOM contract missing: '+id);
@@ -291,6 +304,7 @@ check(!files.index.includes('race-diag-copy-row" hidden style="')&&!files.index.
 
 check(files.app.includes("RuntimeRegistry.register('ssd'"),'SSD adapter is not registered');
 for(const key of ['tinyyolo','yolox','rtdetr'])check(files.race.includes(`runtimeRegistry.register('${key}'`),`${key} adapter is not registered`);
+check(files.race.includes("runtimeRegistry.register('rtdetrv2',createRtResearchAdapter('rtdetrv2'))"),'RT-DETRv2 research adapter is not registered');
 check(!files.app.includes("if(model==='ssd')return inferSource"),'Time Machine still bypasses the runtime adapter for SSD');
 check(!files.app.includes("['tinyyolo','ssd','yolox','rtdetr'].includes(key)"),'Time Machine selection still hard-codes runnable model keys');
 check(files.race.includes('runs=20'),'Model Race measured-run count changed');

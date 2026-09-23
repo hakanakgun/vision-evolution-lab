@@ -5,7 +5,8 @@ Status meanings:
 - **Runnable** — a general-object model is downloaded and executed in the browser by Vision Evolution Lab.
 - **Runnable historical experiment** — a task-specific earlier method runs on the selected Time Machine image; it stays outside the general-object Model Race.
 - **History only** — historical context is shown without loading a checkpoint or runtime.
-- **Research** — current/recent research references or candidates; not downloaded or executed.
+- **Research preview** — a recent detector has a pinned checkpoint and browser runtime path, but has not completed broad device or dataset validation.
+- **Research-only** — reference or candidate shown without downloading or executing its checkpoint.
 - **Candidate** — may become runnable only after browser compatibility plus checkpoint/license provenance are verified.
 
 | Year | Model | Status | Architecture shift | Upstream license/provenance | Browser note |
@@ -19,13 +20,14 @@ Status meanings:
 | 2015 | Faster R-CNN | History only | region proposal network shares features with the detector | Ren et al., NeurIPS 2015; paper reference only | two-stage detector reference; no checkpoint/runtime integrated |
 | 2016 | YOLOv1 | History only | unified single-stage grid-based detection | Redmon et al., CVPR 2016; paper reference only | arXiv preprint appeared in 2015; the timeline uses conference year 2016 |
 | 2016 | SSD | History only | single-shot multi-scale dense detection | Liu et al., ECCV 2016; paper reference only | one-stage detector milestone; not the 2017 runnable SSD-MobileNet export |
-| 2016 | Tiny YOLOv2 | Runnable | compact grid/anchor CNN detector | ONNX Model Zoo migration; pinned HF revision; Pascal VOC; upstream license metadata/body conflict documented | WASM compatibility policy; physical iPhone/WebKit runtime validation pending |
+| 2016 | Tiny YOLOv2 | Runnable | compact grid/anchor CNN detector | ONNX Model Zoo migration; pinned HF revision; Pascal VOC; upstream license metadata/body conflict documented | WASM; user-reported physical iPhone/Brave inference and five four-model ×20 runs on 2026-09-22; normalization remains unspecified upstream |
 | 2017 | SSD-MobileNetV1 INT8 | Runnable | lightweight mobile backbone + SSD | pinned ONNX Model Zoo source; see `MODEL_SOURCES.md` | WASM policy because current ORT WebGPU path fails at run time for this export |
 | 2020 | DETR | History only | transformer set prediction | Carion et al., ECCV 2020; paper reference only | end-to-end detector milestone; the runnable reference is later RT-DETR |
 | 2021 | YOLOX-Nano | Runnable | anchor-free decoupled YOLO head | official Megvii project/release, Apache-2.0 | iOS: standard non-JSEP WASM; other platforms: WebGPU-first JSEP bundle with WASM fallback |
 | 2023 | RT-DETR R18 | Runnable | real-time end-to-end DETR | base `PekingU/rtdetr_r18vd`: Apache-2.0, COCO, 20.2M params; HF Staff ONNX conversion `onnx-community/rtdetr_r18vd` | Transformers.js 4.3.0; native WebGPU fp16 first, WASM q8 fallback; physical iPhone/WebKit WebGPU fp16 inference + 20-run warm benchmark verified 2026-09-21 |
-| 2024 | LW-DETR-tiny | Research / candidate | lightweight ViT encoder + shallow DETR decoder | Hugging Face `xbsu/LW-DETR`: Apache-2.0; official repo points to these weights | ONNX export exists upstream; browser operator/runtime fit not yet validated |
-| 2024 | D-FINE-N | Research / candidate | fine-grained distribution refinement for DETR box regression | official code Apache-2.0; 4M / 42.8 AP reported upstream | checkpoint/dataset provenance and browser operator fit must be re-verified before runnable integration |
+| 2024 | RT-DETRv2 R18 | Research preview | improved end-to-end DETR training recipe | base `PekingU/rtdetr_v2_r18vd`; Apache-2.0 ONNX Community conversion pinned in `MODEL_SOURCES.md`; COCO | Transformers.js 4.3.0; WebGPU fp16 first, WASM int8 fallback; app wiring added, browser inference still awaits a live device run |
+| 2024 | LW-DETR-tiny | Research-only | lightweight ViT encoder + shallow DETR decoder | Hugging Face `xbsu/LW-DETR`: Apache-2.0; official repo points to these weights | ONNX export exists upstream; browser operator/runtime fit not yet validated |
+| 2024 | D-FINE-N | Research-only | fine-grained distribution refinement for DETR box regression | official code Apache-2.0; 4M / 42.8 AP reported upstream | checkpoint/dataset provenance and browser operator fit must be re-verified before runnable integration |
 
 ## License policy
 
@@ -41,8 +43,6 @@ Before a candidate becomes runnable, verify:
 6. model input/output and postprocessing contract.
 
 The current app avoids redistributing model binaries: runnable models are fetched from pinned or official upstream sources.
-
-## Current selection rationale
 
 ## Early task-specific experiments in Time Machine
 
@@ -67,7 +67,7 @@ Face detection, pedestrian detection, handwritten-digit classification, pattern 
 
 ### Tiny YOLOv2
 
-Added as the first pre-2017 runnable generation. It gives the timeline a real 2016 detector with a materially different 13×13 grid/anchor output and Pascal VOC 20-class label space. The exact ONNX Model Zoo export is pinned rather than mirrored locally. Because the upstream Hugging Face metadata says Apache-2.0 while the model-card body says MIT, the repository records both statements instead of collapsing them into a single checkpoint-license claim. The browser integration starts with WASM for compatibility; physical iPhone/WebKit inference and benchmark evidence remain pending.
+Added as the first pre-2017 runnable generation. It gives the timeline a real 2016 detector with a materially different 13×13 grid/anchor output and Pascal VOC 20-class label space. The exact ONNX Model Zoo export is pinned rather than mirrored locally. Because the upstream Hugging Face metadata says Apache-2.0 while the model-card body says MIT, the repository records both statements instead of collapsing them into a single checkpoint-license claim. The user reported physical iPhone/Brave detections and five consecutive four-model ×20 runs on 2026-09-22. The input tensor packing is covered by a deterministic contract check; upstream pixel normalization remains unspecified.
 
 ### SSD-MobileNetV1 INT8
 
@@ -84,3 +84,7 @@ Promoted to runnable because the Apache-2.0 PekingU base model has a Hugging Fac
 ### LW-DETR / D-FINE
 
 Remain research-only. They still represent important transformer-era transitions, but this project has not promoted their exact checkpoints to the same browser/provenance confidence level.
+
+### RT-DETRv2 R18 research preview
+
+This is the first runnable research-preview detector. It uses an ONNX Community conversion explicitly tagged for Transformers.js and the existing Transformers.js object-detection pipeline, avoiding custom output decoding. Its runtime adapter supports WebGPU fp16 with WASM int8 fallback. Browser timing and the single-image ground-truth check are project measurements; paper metrics remain upstream reports. The exact checkpoint is pinned in `MODEL_SOURCES.md`.

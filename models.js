@@ -6,7 +6,7 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.10.3',
+    version:'0.10.4',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'ssd'}),
@@ -25,6 +25,7 @@
       Object.freeze({year:2020,title:'DETR',note:'history only · set prediction',kind:'historical'}),
       Object.freeze({year:2021,model:'yolox',title:'YOLOX-Nano',note:'tap to run',kind:'runnable'}),
       Object.freeze({year:2023,model:'rtdetr',title:'RT-DETR R18',note:'tap to run',kind:'runnable',className:'transformer'}),
+      Object.freeze({year:2024,model:'rtdetrv2',title:'RT-DETRv2 R18',note:'research preview · tap to run',kind:'runnable',className:'transformer'}),
       Object.freeze({year:2024,title:'LW-DETR',note:'research',kind:'research'}),
       Object.freeze({year:2024,title:'D-FINE',note:'research',kind:'research'})
     ]),
@@ -189,6 +190,37 @@
       decoder:'Transformers.js RT-DETR postprocessor',
       ui:Object.freeze({runtime:Object.freeze({initLabel:'Pipeline load',bytesText:'~21.7 MB q8 / 41.4 MB fp16',cacheInitial:'checked at load',managedTransferWhenMissing:true,inferenceBoundaryNote:'RT-DETR inference is the Transformers.js pipeline call, including processor/model/postprocessor work.',benchmarkBoundary:'p50, p90, min–max and run-to-run timing variation from 20 warm Transformers.js pipeline calls; pipeline/model load excluded.'}),subtitle:'COCO object detection · Transformers.js · DETR',provenance:'PekingU RT-DETR R18 base model with the pinned Hugging Face ONNX Community conversion. The browser keeps the exact conversion revision and uses Transformers.js v4 native WebGPU runtime with WASM q8 fallback.',links:Object.freeze([Object.freeze({label:'Base model ↗',url:'https://huggingface.co/PekingU/rtdetr_r18vd'}),Object.freeze({label:'Pinned conversion ↗',url:'https://huggingface.co/onnx-community/rtdetr_r18vd/tree/ec641af14c7cc8f93cd641a1458f498abbbbb533'}),Object.freeze({label:'Official repo ↗',url:'https://github.com/lyuwenyu/RT-DETR'}),Object.freeze({label:'License/provenance ↗',url:'MODEL_SOURCES.md#rt-detr-r18'})])}),
       source:'https://huggingface.co/onnx-community/rtdetr_r18vd'
+    }),
+    rtdetrv2:Object.freeze({
+      id:'rtdetrv2-r18vd-transformersjs',title:'RT-DETRv2 R18',year:2024,status:'runnable',family:'RT-DETRv2',task:'object-detection',license:'Apache-2.0',
+      modelId:'onnx-community/rtdetr_v2_r18vd-ONNX',baseModel:'PekingU/rtdetr_v2_r18vd',revision:'936f90b6a476c6da4dfe053fc521af55285976ba',parameters:'20M',input:640,
+      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:false,race:Object.freeze({
+        enabled:true,group:'general-object',order:50,prefix:'rtv2',workCanvasId:'race-rtv2-work',timingBoundary:'transformers-pipeline',
+        badge:'2024 research preview',badgeClass:'transformer-pill',cardClass:'transformer-model',emptyText:'Pinned ONNX Community conversion · RT-DETRv2 R18 · COCO.',progress:true,progressText:'Transformers.js model not loaded.',
+        architecture:'end-to-end set prediction · improved DETR training · no page-side NMS',
+        metrics:Object.freeze([
+          Object.freeze({label:'Input',value:'640×640 processor'}),Object.freeze({label:'Parameters',value:'~20M'}),Object.freeze({label:'Runtime asset',slot:'asset',initial:'fp16/int8'}),
+          Object.freeze({label:'Cache',slot:'cache',initial:'checking…'}),Object.freeze({label:'Load',slot:'load',initial:'—'}),Object.freeze({label:'Pipeline',slot:'inf',initial:'—'}),
+          Object.freeze({label:'End-to-end',slot:'total',initial:'—'}),Object.freeze({label:'Detections',slot:'count',initial:'—'}),Object.freeze({label:'Retained outputs',slot:'retained',initial:'—'})
+        ])
+      }),inspection:Object.freeze({
+        mode:'processor-contract-only',stages:Object.freeze(['preprocessing']),
+        input:'640×640',resize:'processor resize · no pad',tensor:'float32 · NCHW',channels:'RGB',normalization:'rescale 1/255 · no mean/std normalization',
+        preview:Object.freeze({mode:'stretch',width:640,height:640,caption:'Processor-equivalent 640×640 preview'}),shape:Object.freeze({layout:'NCHW',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'Processor resize',text:'Transformers.js resizes the source to 640×640 without page-side padding.'}),
+          step3:Object.freeze({title:'Processor tensor',text:'RGB pixels are rescaled by 1/255 and arranged as float NCHW input, without mean/std normalization.'}),
+          step4:Object.freeze({title:'RT-DETRv2',text:'The end-to-end transformer predicts scored boxes; page-side NMS is not added.'})
+        }),
+        comparison:Object.freeze({label:'RT-DETRv2 R18',input:'640×640',resize:'processor resize',padding:'none',layout:'NCHW',dtype:'float input',channels:'RGB · 1/255'}),
+        intermediate:Object.freeze({title:'RT-DETRv2 intermediate tensors not exposed',subtitle:'The production pipeline exposes detections but not selected encoder/decoder activations.',note:'Intermediate activations are not fabricated; an inspectable ONNX export is required to expose them.',data:'none',status:'Intermediate activations not exposed'}),
+        resultNote:'No page-side NMS is added.'
+      })}),
+      preprocessing:Object.freeze({resize:'640×640 processor-managed',layout:'NCHW',dtype:'float32 input / quantized weights',channels:'RGB',rescale:'1/255',normalize:false,padding:'none'}),
+      runtime:Object.freeze({webgpu:Object.freeze({device:'webgpu',dtype:'fp16',modelBytes:40750249}),wasm:Object.freeze({device:'wasm',dtype:'q8',modelBytes:20991219})}),
+      decoder:'Transformers.js RT-DETRv2 postprocessor',
+      ui:Object.freeze({runtime:Object.freeze({initLabel:'Pipeline load',bytesText:'~21.0 MB int8 / 40.8 MB fp16',cacheInitial:'checked at load',managedTransferWhenMissing:true,inferenceBoundaryNote:'Inference is the Transformers.js processor/model/postprocessor call.',benchmarkBoundary:'p50, p90, min–max and run-to-run timing variation from 20 warm Transformers.js pipeline calls; pipeline/model load excluded.'}),subtitle:'COCO object detection · Transformers.js · RT-DETRv2',provenance:'PekingU RT-DETRv2 R18 COCO checkpoint with the pinned Hugging Face ONNX Community conversion. Research preview: runtime path is wired in the app; live browser inference is pending device validation.',links:Object.freeze([Object.freeze({label:'Base model ↗',url:'https://huggingface.co/PekingU/rtdetr_v2_r18vd'}),Object.freeze({label:'Pinned ONNX conversion ↗',url:'https://huggingface.co/onnx-community/rtdetr_v2_r18vd-ONNX/tree/936f90b6a476c6da4dfe053fc521af55285976ba'}),Object.freeze({label:'Official implementation ↗',url:'https://github.com/lyuwenyu/RT-DETR'}),Object.freeze({label:'License/provenance ↗',url:'MODEL_SOURCES.md#rt-detrv2-r18'})])}),
+      source:'https://huggingface.co/onnx-community/rtdetr_v2_r18vd-ONNX'
     })
   });
 })();

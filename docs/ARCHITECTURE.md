@@ -9,7 +9,7 @@ The current runtime is intentionally client-side so users can compare computer-v
 ## Main modules
 
 - `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints.
-- `models.js` — four general-object runtime models plus separate task-specific history-experiment metadata, timeline references, provenance, preprocessing contracts, capability declarations, pinned revisions, backend policy, and label sets.
+- `models.js` — five general-object runtime models plus separate task-specific history-experiment metadata, timeline references, provenance, preprocessing contracts, capability declarations, pinned revisions, backend policy, and label sets.
 - `model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
 - `model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
 - `app.js` — Time Machine state, the SSD runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
@@ -46,7 +46,7 @@ Live Camera resolves its model through the same runtime registry. The `live` cap
 
 Historical experiments consume the current Time Machine source image and render their task-specific output onto the same image canvas. Selecting one does not replace the active general-object model, so Inside the Model continues to follow the selected runnable AI model.
 
-These experiments are registered under `models.js:historyExperiments`, outside `VisionRuntimeRegistry`. The general-object runtime registry and Model Race remain the four detection models. Each history experiment declares an image input, its task, and an output type such as a response map or labeled boxes. A future image-and-prompt VLM can add a text or grounded-text output adapter without changing the general-object race contract; no VLM runtime is loaded now.
+These experiments are registered under `models.js:historyExperiments`, outside `VisionRuntimeRegistry`. Each history experiment declares an image input, its task, and an output type such as a response map or labeled boxes. A future image-and-prompt VLM can add a text or grounded-text output adapter without changing the general-object race contract; no VLM runtime is loaded now.
 
 Before a history experiment runs, the registered AI adapters are released. The 2001 face cascade, 2005 HOG detector, and 1998 digit-region proposal stage use a dedicated worker that lazily imports pinned OpenCV.js. The worker receives an aspect-preserving image capped at 640 px on its longest side and returns only region boxes and timings. It deletes OpenCV objects within each run.
 
@@ -84,9 +84,11 @@ This policy is an iOS memory-safety mitigation based on upstream ONNX Runtime ev
 
 RT-DETR R18 is loaded through pinned Transformers.js 4.3.0 using the pinned `onnx-community/rtdetr_r18vd` revision declared in `models.js`.
 
+RT-DETRv2 R18 uses the same pipeline contract with its separate pinned ONNX Community revision. It is marked as a research preview pending live-device validation.
+
 The production preference is WebGPU fp16 with WASM q8 fallback where supported. Diagnostic runs can explicitly lock the requested device.
 
-RT-DETR timing is intentionally broader than the direct ORT model timings: the measured pipeline call includes Transformers.js processor/model/postprocessor work.
+Both RT-DETR variants have a broader timing boundary than the direct ORT models: the measured pipeline call includes Transformers.js processor/model/postprocessor work. RT-DETRv2 remains a research preview pending live-device validation.
 
 ## Runtime ownership
 
@@ -181,4 +183,3 @@ See [IOS_WEBKIT_DIAGNOSTICS.md](IOS_WEBKIT_DIAGNOSTICS.md).
 Run `node scripts/validate.mjs` before opening a pull request. The same command runs in the `validate` GitHub Actions workflow.
 
 The validation currently checks JavaScript syntax, inline scripts, static and generated DOM IDs, version/build/cache references, script order, timeline/default-model integrity, runnable model capability/presentation contracts, inspection preview/pipeline/comparison contracts, adapter-backed inspection hooks, unique race order/prefixes, adapter registration and group-release ownership, dynamic Time Machine/Inside the Model/Model Race scaffolding, diagnostic isolation, iOS/desktop ORT bootstrap policy, 20-run benchmark invariants, confidence-retention guardrails, and local Markdown links.
-

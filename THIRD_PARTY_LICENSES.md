@@ -76,12 +76,20 @@ The original Vision Evolution Lab source code is licensed under the repository's
 - SHA-256: `09e1d25c75f7879bdaa69c327fece5cabacd53939c8c2ef9e87f1c97a2e478c4`.
 - This is a single shared smoke-test input, not a representative validation set or an accuracy benchmark. Pascal VOC test images are not included because their individual Flickr reuse terms must be checked separately.
 
+### COCO validation annotations
+
+- File: `assets/benchmark/coco-val-000000397133.annotations.json`.
+- Source: the 19 `instances_val2017.json` annotations for image 397133, a small derived subset of official COCO box labels.
+- Annotation license: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); attribution: COCO Consortium / Microsoft COCO dataset.
+- Image license remains the image-specific CC BY 2.0 term above.
+- The page uses these boxes only for same-image precision/recall/F1 at a stated confidence and IoU threshold; it does not claim to reproduce the COCO evaluation API.
+
 
 ## Hugging Face Transformers.js 4.3.0
 
 - Project: Hugging Face Transformers.js
 - Browser import: jsDelivr, pinned to `@huggingface/transformers@4.3.0`
-- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for RT-DETR R18. v4 uses the newer native WebGPU runtime/EP; WASM remains available as fallback.
+- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for RT-DETR R18 and RT-DETRv2 R18. v4 uses the newer native WebGPU runtime/EP; WASM remains available as fallback.
 - Upstream package/project terms remain their own.
 
 ## RT-DETR R18 browser conversion
@@ -91,3 +99,12 @@ The original Vision Evolution Lab source code is licensed under the repository's
 - Browser conversion: `onnx-community/rtdetr_r18vd`
 - Pinned conversion revision: `ec641af14c7cc8f93cd641a1458f498abbbbb533`
 - The conversion is referenced from Hugging Face at runtime and is not bundled in this repository.
+
+## RT-DETRv2 R18 browser conversion
+
+- Base model: `PekingU/rtdetr_v2_r18vd` (Apache-2.0; COCO).
+- Browser conversion: `onnx-community/rtdetr_v2_r18vd-ONNX` (Apache-2.0 metadata).
+- Pinned conversion revision: `936f90b6a476c6da4dfe053fc521af55285976ba`.
+- fp16 asset SHA-256: `2922e7137689ac648cd99f0aa33b885d681fd981302ac5c77ed9a4ee946eaa36`.
+- Quantized asset SHA-256: `4b839c46187b77fc620c770de0be6790637b98afde9b386232b0fcf74382eb3`.
+- The pinned ONNX files are fetched at runtime and are not bundled in this repository.

@@ -60,7 +60,7 @@ A zero-result run is valid. It means that this detector returned no pedestrian b
 - Historical experiments release registered AI adapters before running. The experiment does not change Time Machine's selected general-object model.
 - Leaving Time Machine, **Release historical runtime**, or page exit terminates the worker and releases any MNIST session. Returning to Time Machine keeps the displayed result but a new run initializes the runtime again.
 
-This separation keeps the four general-object adapters, Model Race's 1 warm-up + 20 measured runs, Live Camera's SSD-only contract, and the existing ONNX/WebGPU/WASM policies unchanged.
+This separation keeps task-specific historical adapters outside Model Race while the general-object adapter set grows. Model Race still uses 1 warm-up + 20 measured runs, Live Camera remains SSD-only, and the existing ONNX/WebGPU/WASM policies stay model-specific.
 
 ## Future multimodal experiments
 
