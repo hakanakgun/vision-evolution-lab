@@ -200,6 +200,10 @@ check(files.app.includes("RuntimeRegistry.list({capability:'live'})")&&files.app
 check(files.app.includes('function currentLiveAdapter(){return RuntimeRegistry.get(state.activeModel)}'),'Live Camera must use the active Time Machine model');
 check(files.app.includes('selectActiveModel(key,{scroll:false})'),'Live Camera model choices must update Time Machine selection');
 check(files.app.includes('state.cameraStartToken++')&&files.app.includes('token!==state.cameraStartToken'),'Live Camera start must cancel when Time Machine selection changes');
+const benchmarkFunction=files.app.slice(files.app.indexOf('async function runBenchmark()'),files.app.indexOf("$('image-file').addEventListener('change'"));
+const cameraStartFunction=files.app.slice(files.app.indexOf('async function startCamera()'),files.app.indexOf('async function liveLoop('));
+check(!benchmarkFunction.includes('cameraStartToken'),'benchmark error handling must not use Live Camera cancellation state');
+check(cameraStartFunction.includes('if(token!==state.cameraStartToken)return;'),'Live Camera must ignore errors from a cancelled start');
 check(files.app.includes('prepare:()=>createSession()'),'SSD live adapter does not preserve pre-camera runtime preparation');
 for(const [key,needle] of [['tinyyolo','prepare:()=>createTinySession()'],['yolox','prepare:()=>createYoloSession()'],['rtdetr','prepare:()=>createRT()'],['rtdetrv2','prepare:()=>create()']])check(files.race.includes(needle),`${key}: Live Camera adapter does not prepare its runtime before camera access`);
 check(!files.app.includes('inferSource(video,canvas,{updateMain:false})'),'Live Camera still directly calls SSD inference');
