@@ -1,42 +1,51 @@
 # Model sources and provenance
 
-## Classical detector sources and provenance
+## Early Time Machine experiments
 
-### Viola–Jones method family / OpenCV frontal-face cascade
+### 1980 · Neocognitron-inspired pattern-response preview
 
-- Purpose: runnable historical face-detection method in the Classical CV vs AI lab.
+- Historical reference: Fukushima, *Biological Cybernetics* (1980), [paper DOI](https://doi.org/10.1007/BF00344251).
+- In-browser behavior: four fixed 3×3 orientation responses, max combination, and two 2×2 local max-pooling stages.
+- This is an educational feature-response approximation, not the original self-organizing Neocognitron code or a trained checkpoint.
+- The CMU Artificial Intelligence Repository lists a distinct 1992 C simulator as public domain. Vision Evolution Lab does not redistribute that archive or claim to execute it; see the [CMU archive record](https://www.cs.cmu.edu/afs/cs/project/ai-repository/ai/areas/neural/systems/neocog/0.html).
+
+### 1998 era · MNIST digit CNN reference
+
+- Historical task: LeNet-5-era handwritten digit classification; LeNet-5 was introduced for document recognition.
+- Browser checkpoint: ONNX Model Zoo `onnxmodelzoo/mnist-1`, fetched only when digit-like image regions are proposed.
+- Pinned revision: `16c6d2bc15b28b69752d300bfdac5e91c1e19d4b`.
+- File: `mnist-1.onnx`.
+- File SHA-256 reported by Hugging Face/Xet: `22239f3fcc38f34d02eecd6869aed15b93f8e3e1125dda48990d244a5e113d49`.
+- File size: approximately 27.3 kB.
+- Upstream model card says it was trained with CNTK from the “CNTK 103D: Convolutional Neural Network with MNIST” tutorial; it is a later MNIST CNN reference, not original 1998 LeNet-5 trained weights.
+- Model-card input: float32 `1×1×28×28`; grayscale values scaled to [0,1]; black background with white digit strokes. The browser proposes regions with OpenCV, fits each crop inside a 28×28 input, normalizes grayscale to white strokes on black with values in [0,1], applies the model logits through softmax, and displays crops with a score of at least 0.70.
+- The 0.70 display cutoff is not calibrated confidence. Region proposals are a browser experiment and can miss digits or classify non-digits.
+- Repository metadata declares Apache-2.0 while the model-card body includes an MIT SPDX marker and License section. Both upstream declarations are recorded; this project does not present one as a definitive weights license.
+- The model file is fetched at runtime from a pinned Hugging Face URL and verified by SHA-256; it is not bundled in this repository.
+- This task is limited to isolated handwritten digits. It does not detect general objects or promise OCR of printed text.
+
+### 2001 · Viola–Jones method family / OpenCV frontal-face cascade
+
 - Historical method: Viola & Jones, *Rapid Object Detection using a Boosted Cascade of Simple Features* (2001).
-- Browser implementation: OpenCV.js `CascadeClassifier`.
-- Runtime package: `@techstark/opencv-js@4.12.0-release.1`, loaded lazily in a dedicated Web Worker.
-- Package license: Apache-2.0; package metadata identifies its browser binary as OpenCV.js 4.12.0.
-- Cascade source: OpenCV repository release 4.12.0, exact commit `49486f61fb25722cbcf586b7f4320921d46fb38e`.
-- File: `data/haarcascades/haarcascade_frontalface_default.xml`.
-- Git blob SHA: `cbd1aa89e927d8d54b49fe666bf17244c3c46a7b`.
-- The XML header describes a stump-based 24×24 AdaBoost frontal-face detector and credits Rainer Lienhart.
-- The XML contains its own Intel License Agreement / BSD-style redistribution terms.
-- Delivery: fetched at runtime from a pinned jsDelivr GitHub URL; not bundled in this repository.
-- Working image: aspect-preserving, longest side <=640 for browser practicality.
-- Page preprocessing: RGBA → grayscale → histogram equalization.
-- Detection call: scale factor 1.1, minimum neighbors 3, minimum object size 24×24.
-- Important interpretation: this is a runnable representative of the Viola–Jones cascade method family. It is **not** described as the original 2001 paper's trained weights.
+- Browser implementation: OpenCV.js `CascadeClassifier`, loaded lazily in a dedicated Web Worker.
+- Runtime package: `@techstark/opencv-js@4.12.0-release.1`, package metadata license Apache-2.0.
+- Cascade source: OpenCV 4.12.0, exact commit `49486f61fb25722cbcf586b7f4320921d46fb38e`.
+- File: `data/haarcascades/haarcascade_frontalface_default.xml`; Git blob `cbd1aa89e927d8d54b49fe666bf17244c3c46a7b`.
+- Header credits Rainer Lienhart and contains an Intel License Agreement / BSD-style notice.
+- The later OpenCV cascade represents the method family; it is not the original paper's trained weights.
 
-### HOG + linear SVM pedestrian detector
+### 2005 · HOG + linear SVM pedestrian detector
 
-- Purpose: runnable 2005-era pedestrian-detection method in the Classical CV vs AI lab.
 - Historical method: Dalal & Triggs, *Histograms of Oriented Gradients for Human Detection* (2005).
-- Browser implementation: OpenCV.js `HOGDescriptor`.
-- Detector coefficients: OpenCV's built-in `HOGDescriptor.getDefaultPeopleDetector()`.
-- Detection window: OpenCV default 64×128 people detector.
-- Browser call: multi-scale sliding-window detection with 8×8 window stride, 8×8 padding, scale 1.05, group threshold 2.
-- The OpenCV HOG implementation source explicitly identifies the Dalal–Triggs descriptor/object-detection family and carries the applicable OpenCV/legacy source notice.
-- No separate SVM model binary is redistributed by this repository; the default detector coefficients come from the OpenCV.js distribution.
-- Important interpretation: Vision Evolution Lab does not claim OpenCV's embedded default detector coefficients are the exact original paper training artifact.
+- Browser implementation: OpenCV.js `HOGDescriptor` with `getDefaultPeopleDetector()`.
+- Default detector window: 64×128; 8×8 stride, 8×8 padding, scale 1.05, group threshold 2.
+- OpenCV supplies the detector coefficients; this repository does not redistribute a separate SVM weights file or claim the embedded coefficients are the exact original paper checkpoint.
 
-### Task and comparison boundary
+### Task and runtime boundary
 
-These classical methods are intentionally excluded from the general-object Model Race. The face cascade, pedestrian detector, and modern general-object AI detectors have different tasks and label spaces.
+All four early experiments operate on the same Time Machine source image but retain different tasks and output types. They remain outside the general-object Model Race. There is no accuracy leaderboard or cross-task box overlap.
 
-The Classical CV vs AI lab only computes same-class HOG ↔ AI `person` spatial overlap at IoU >= 0.35. That overlap is comparison evidence, not ground-truth accuracy.
+OpenCV.js loads on demand in `classical-cv-worker.js`; the worker receives an aspect-preserving copy capped at 640 px on its longest side and returns only boxes/timings or digit-region proposals. Before a history experiment runs, registered AI adapters are released. For digit classification, the OpenCV worker is terminated before the ONNX Runtime WASM session is loaded.
 
 ## Tiny YOLOv2
 

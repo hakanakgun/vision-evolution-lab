@@ -99,6 +99,59 @@ async function runHog(cv,width,height,pixels){
   }
 }
 
+function boxIoU(a,b){
+  const x1=Math.max(a.x,b.x),y1=Math.max(a.y,b.y),x2=Math.min(a.x+a.width,b.x+b.width),y2=Math.min(a.y+a.height,b.y+b.height);
+  const inter=Math.max(0,x2-x1)*Math.max(0,y2-y1),union=a.width*a.height+b.width*b.height-inter;
+  return inter/(union||1);
+}
+
+function candidateBoxes(cv,binary,width,height){
+  const contours=new cv.MatVector(),hierarchy=new cv.Mat();
+  const found=[];
+  try{
+    cv.findContours(binary,contours,hierarchy,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
+    for(let index=0;index<contours.size();index++){
+      const contour=contours.get(index);
+      try{
+        const rect=cv.boundingRect(contour),area=rect.width*rect.height,ratio=rect.width/Math.max(1,rect.height);
+        if(rect.x<=1||rect.y<=1||rect.x+rect.width>=width-1||rect.y+rect.height>=height-1)continue;
+        if(rect.width<6||rect.height<11||area<45||rect.width>width*.28||rect.height>height*.78||ratio<.12||ratio>2.4)continue;
+        const splitCount=ratio>1.05?Math.max(1,Math.min(8,Math.round(ratio/.62))):1;
+        if(splitCount>1&&rect.width/splitCount>=6&&rect.width/splitCount<=rect.height*1.2){
+          const partWidth=rect.width/splitCount;
+          for(let part=0;part<splitCount;part++)found.push({x:Math.round(rect.x+part*partWidth),y:rect.y,width:Math.round(part===splitCount-1?rect.x+rect.width-(rect.x+part*partWidth):partWidth),height:rect.height});
+        }else found.push({x:rect.x,y:rect.y,width:rect.width,height:rect.height});
+      }finally{safeDelete(contour)}
+    }
+  }finally{safeDelete(hierarchy);safeDelete(contours)}
+  return found;
+}
+
+async function runDigitCandidates(cv,width,height,pixels){
+  if(!cv.MatVector||typeof cv.findContours!=='function'||typeof cv.boundingRect!=='function')throw new Error('OpenCV contour bindings are unavailable for digit-region proposals.');
+  const src=makeRgbaMat(cv,width,height,pixels),gray=new cv.Mat(),all=[];
+  const started=performance.now();
+  try{
+    cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY,0);
+    for(const flag of [cv.THRESH_BINARY|cv.THRESH_OTSU,cv.THRESH_BINARY_INV|cv.THRESH_OTSU]){
+      const binary=new cv.Mat();
+      try{
+        cv.threshold(gray,binary,0,255,flag);
+        all.push(...candidateBoxes(cv,binary,width,height));
+      }finally{safeDelete(binary)}
+    }
+    all.sort((a,b)=>b.width*b.height-a.width*a.height);
+    const unique=[];
+    for(const box of all){
+      if(unique.some(other=>boxIoU(box,other)>.82))continue;
+      unique.push(box);
+      if(unique.length>=32)break;
+    }
+    unique.sort((a,b)=>a.x-b.x||a.y-b.y);
+    return{boxes:unique,proposalMs:performance.now()-started};
+  }finally{safeDelete(gray);safeDelete(src)}
+}
+
 self.onmessage=async event=>{
   const message=event.data||{},id=message.id;
   try{
@@ -114,7 +167,9 @@ self.onmessage=async event=>{
       ?await runFace(cv,width,height,message.pixels)
       :message.method==='hog'
         ?await runHog(cv,width,height,message.pixels)
-        :(()=>{throw new Error('Unknown classical detector.');})();
+        :message.method==='digits'
+          ?await runDigitCandidates(cv,width,height,message.pixels)
+          :(()=>{throw new Error('Unknown historical image method.');})();
     self.postMessage({id,ok:true,type:'result',method:message.method,width,height,...result});
   }catch(error){
     self.postMessage({id,ok:false,error:{name:error?.name||'Error',message:String(error?.message||error).slice(0,800)}});

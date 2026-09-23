@@ -2,18 +2,18 @@
 
 Status meanings:
 
-- **Runnable** — downloaded and executed in the browser by Vision Evolution Lab.
-- **Runnable (Classical CV)** — executed in the isolated Classical CV worker; not a general-object Model Race model.
-- **History only** — historical model or method context; no checkpoint or runtime is loaded, and the entry is not benchmarked.
+- **Runnable** — a general-object model is downloaded and executed in the browser by Vision Evolution Lab.
+- **Runnable historical experiment** — a task-specific earlier method runs on the selected Time Machine image; it stays outside the general-object Model Race.
+- **History only** — historical context is shown without loading a checkpoint or runtime.
 - **Research** — current/recent research references or candidates; not downloaded or executed.
 - **Candidate** — may become runnable only after browser compatibility plus checkpoint/license provenance are verified.
 
 | Year | Model | Status | Architecture shift | Upstream license/provenance | Browser note |
 | --- | --- | --- | --- | --- | --- |
-| 1980 | Neocognitron | History only | self-organizing hierarchical visual-pattern recognition | Fukushima, *Biological Cybernetics* (1980); paper reference only | pattern-recognition model, not a modern CNN object detector |
-| 1998 | LeNet-5 | History only | gradient-trained convolutional network | LeCun et al., *Proceedings of the IEEE* (1998); paper reference only | document and digit classification, not general-object detection |
-| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable (Classical CV) | boosted cascade with Haar-like features | OpenCV 4.12.0 cascade at commit `49486f61...`; XML blob `cbd1aa89...`; file header credits Rainer Lienhart and carries Intel/BSD-style terms | OpenCV.js/WASM worker; representative of the cascade family, not the original 2001 paper weights |
-| 2005 | HOG + linear SVM pedestrian detector | Runnable (Classical CV) | gradient-orientation descriptor + sliding-window linear classifier | OpenCV `HOGDescriptor.getDefaultPeopleDetector()`; OpenCV distribution/source notices | OpenCV.js/WASM worker; 64×128 default people detector; not included in general-object Model Race |
+| 1980 | Neocognitron-inspired feature response | Runnable historical experiment | oriented local responses + max pooling | Fukushima 1980 paper reference; no original weights used; CMU's separate 1992 simulator is documented as public domain but not redistributed | educational approximation; response map only, no object labels |
+| 1998 | LeNet-era MNIST CNN reference | Runnable historical experiment | crop proposals + handwritten-digit CNN | pinned ONNX Model Zoo `onnxmodelzoo/mnist-1` revision and SHA-256 in `MODEL_SOURCES.md`; metadata Apache-2.0 / card MIT noted | digit crops only; later MNIST checkpoint, not original LeNet-5 weights |
+| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable historical experiment | boosted cascade with Haar-like features | pinned OpenCV 4.12.0 cascade; XML header credits Rainer Lienhart and carries Intel/BSD-style terms | OpenCV.js worker; representative of the method family, not the original paper weights |
+| 2005 | HOG + linear SVM pedestrian detector | Runnable historical experiment | gradient descriptor + sliding-window linear classifier | OpenCV `HOGDescriptor.getDefaultPeopleDetector()`; OpenCV distribution/source notices | OpenCV.js worker; 64×128 default people detector; pedestrians only |
 | 2012 | AlexNet | History only | deep CNN for large-scale image classification | Krizhevsky et al., NeurIPS 2012; paper reference only | image classification, no object boxes |
 | 2014 | R-CNN | History only | region proposals plus CNN features and class-specific SVMs | Girshick et al., CVPR 2014; paper reference only | object-detection research reference; no checkpoint/runtime integrated |
 | 2015 | Faster R-CNN | History only | region proposal network shares features with the detector | Ren et al., NeurIPS 2015; paper reference only | two-stage detector reference; no checkpoint/runtime integrated |
@@ -44,17 +44,25 @@ The current app avoids redistributing model binaries: runnable models are fetche
 
 ## Current selection rationale
 
-## Classical CV runnable methods
+## Early task-specific experiments in Time Machine
+
+### LeNet-era MNIST digit task
+
+The pinned MNIST CNN is a later ONNX Model Zoo reference for the handwritten-digit task, not original LeNet-5 weights. OpenCV proposes digit-like crops; a 28×28 WASM CNN classifies each crop into 0–9. If proposals are absent or scores stay below the display filter, the UI says the experiment recognizes isolated handwritten digits only. Printed text and arbitrary objects are outside its scope. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for exact artifact and license presentation.
+
+### Neocognitron-inspired pattern response
+
+The 1980 entry produces a feature-response overlay from fixed oriented filters and local max pooling. It is explicitly an educational approximation without original Neocognitron weights or object labels. The public-domain 1992 CMU simulator is a separate archive and is not redistributed.
 
 ### Viola–Jones method family / OpenCV frontal-face cascade
 
-The runnable 2001-era entry uses OpenCV's `haarcascade_frontalface_default.xml` to make the boosted-cascade method family executable in the browser. The pinned XML is a later OpenCV-distributed trained frontal-face cascade created by Rainer Lienhart; Vision Evolution Lab does not present it as the original Viola–Jones paper's trained artifact.
+The runnable 2001-era entry uses OpenCV's `haarcascade_frontalface_default.xml` on the selected Time Machine image. The pinned XML is a later OpenCV-distributed trained frontal-face cascade created by Rainer Lienhart; Vision Evolution Lab does not present it as the original Viola–Jones paper's trained artifact.
 
 ### HOG + linear SVM
 
-The runnable 2005-era entry uses OpenCV's `HOGDescriptor` with `getDefaultPeopleDetector()` and its default 64×128 pedestrian window. It represents the Dalal–Triggs HOG + linear-classifier family without claiming that OpenCV's embedded coefficients are the original paper training artifact.
+The runnable 2005-era entry uses OpenCV's `HOGDescriptor` with `getDefaultPeopleDetector()` and its default 64×128 pedestrian window on the same selected image. It represents the Dalal–Triggs HOG + linear-classifier family without claiming that OpenCV's embedded coefficients are the original paper training artifact.
 
-Both methods remain outside Model Race because face detection, pedestrian detection, and general-object detection are not the same evaluation task.
+Face detection, pedestrian detection, handwritten-digit classification, pattern response, and general-object detection remain different tasks. They are not scored against each other and do not enter Model Race.
 
 
 ### Tiny YOLOv2

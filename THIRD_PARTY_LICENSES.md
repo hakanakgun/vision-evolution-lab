@@ -7,7 +7,7 @@
 - Package repository: `TechStark/opencv-js`.
 - Package metadata license: Apache-2.0.
 - Package metadata/readme identify the distributed OpenCV.js binary with OpenCV 4.12.0.
-- Purpose here: frontal-face cascade execution and HOG + linear SVM pedestrian detection.
+- Purpose here: frontal-face cascade execution, HOG + linear SVM pedestrian detection, and digit-region proposals for the MNIST experiment.
 - The runtime is not bundled in this repository.
 
 OpenCV project licensing is Apache-2.0 for current OpenCV releases. Individual legacy source/data files can retain their own notices and those notices continue to apply.
@@ -35,7 +35,16 @@ This project currently loads the following runtime dependency from a CDN.
 - License: MIT
 - Upstream: `microsoft/onnxruntime`
 
-Model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched from a pinned ONNX Model Zoo migration repository on Hugging Face; its repository metadata says Apache-2.0 while the imported model-card body says MIT, so both upstream statements are recorded rather than treated as one definitive weights-license claim. The browser fetches the SSD-MobileNet baseline from its pinned upstream model repository. YOLOX-Nano uses the official Megvii GitHub Release first and a pinned Apache-2.0 Hugging Face mirror only as a browser-fetch fallback. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
+Model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched from a pinned ONNX Model Zoo migration repository on Hugging Face; its repository metadata says Apache-2.0 while the imported model-card body says MIT, so both upstream statements are recorded rather than treated as one definitive weights-license claim. The browser fetches SSD-MobileNetV1 and the MNIST task-reference model from pinned upstream repositories. YOLOX-Nano uses the official Megvii GitHub Release first and a pinned Apache-2.0 Hugging Face mirror only as a browser-fetch fallback. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
+
+## MNIST digit task-reference checkpoint
+
+- Repository: `onnxmodelzoo/mnist-1` on Hugging Face.
+- Pinned revision: `16c6d2bc15b28b69752d300bfdac5e91c1e19d4b`.
+- File SHA-256: `22239f3fcc38f34d02eecd6869aed15b93f8e3e1125dda48990d244a5e113d49`.
+- Repository metadata declares Apache-2.0; the imported model-card body includes `SPDX-License-Identifier: MIT` and a License section stating MIT. Both upstream statements are preserved in the provenance notes, without treating the metadata/body mismatch as one definitive weights-license claim.
+- The checkpoint is fetched only when digit-like regions are found, then SHA-256 verified. It is not bundled in this repository.
+- It illustrates the handwritten MNIST digit task. It is not the original 1998 LeNet-5 weights and does not provide general-object detection.
 
 ## Tiny YOLOv2 upstream checkpoint
 

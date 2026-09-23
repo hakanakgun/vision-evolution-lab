@@ -96,28 +96,22 @@ The UI reports all six pairwise match counts across Tiny YOLOv2, SSD, YOLOX and 
 
 Without ground-truth annotations this does **not** establish which model is correct.
 
-## 6. Classical CV vs AI timing and comparison
+## 6. Historical task-specific experiment timing
 
-The Classical CV vs AI lab is intentionally **not** part of the general-object 20-run Model Race. Its runnable classical methods solve different tasks:
+The 1980, 1998, 2001, and 2005 historical experiments run on the current Time Machine image. They remain outside the general-object 20-run Model Race because their tasks and outputs differ.
 
-- the OpenCV frontal-face cascade detects frontal faces;
-- HOG + linear SVM detects pedestrians;
-- the modern AI reference is the Time Machine general-object detector selected when the comparison starts.
+Their reported work is separated into these boundaries:
 
-The same local source image is reused, but the classical worker receives an aspect-preserving copy capped at 640 px on the longest side for browser practicality. That resize is an implementation/runtime choice, not a historical-algorithm claim.
+- **Working image** — aspect-preserving copy capped at 640 px on its longest side.
+- **OpenCV startup** — dedicated worker creation plus lazy OpenCV.js import/runtime initialization.
+- **Cascade asset** — first fetch/install of the pinned frontal-face XML into the OpenCV virtual filesystem.
+- **Digit proposals** — OpenCV contour search for small candidate crops; this may miss or propose non-digit regions.
+- **MNIST load** — pinned model transfer plus WASM ONNX session creation, displayed separately from per-crop inference.
+- **Method inference** — the cascade/HOG call, the 28×28 CNN calls, or the fixed-filter pattern response computation.
 
-The module reports these timing boundaries separately:
+The digit experiment terminates its OpenCV worker before it loads the ONNX session, so the two WASM contexts are not intentionally held at the same time. The MNIST 0.70 score cutoff is only a display filter, not calibrated confidence. A zero-result run is valid and does not establish dataset-level accuracy.
 
-- **OpenCV startup** — dedicated worker creation plus lazy OpenCV.js import/runtime initialization;
-- **Cascade asset** — first runtime fetch/install of the pinned frontal-face XML into the OpenCV virtual filesystem;
-- **Detection** — the detector call itself after its runtime/input objects are ready;
-- **AI inference** — the selected AI adapter's native inference boundary, consistent with that model's existing runtime contract.
-
-The AI reference runs first and is released before OpenCV.js initializes so the comparison does not intentionally keep both an AI model runtime and the classical WASM runtime resident at the same time.
-
-Only HOG and the AI detector's `person` outputs receive a spatial agreement count. A match requires same-class IoU >= 0.35. This is **overlap evidence, not accuracy**. The frontal-face cascade is not scored against general-object person boxes because the tasks/classes are not equivalent.
-
-Zero classical detections are valid results. Dataset-level accuracy claims require annotated ground truth and are outside this module.
+No cross-task spatial overlap or accuracy claim is computed between digit, face, pedestrian, and general-object methods. Annotated ground truth and task-appropriate evaluation datasets are required for accuracy claims.
 
 ## 7. Research metrics
 

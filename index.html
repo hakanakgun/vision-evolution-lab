@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.23-v0.9.0">
+<html lang="en" data-build="2026.09.23-v0.10.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.23-v0.9.0';
+      const CURRENT_BUILD = '2026.09.23-v0.10.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.9.0">
+  <link rel="stylesheet" href="styles.css?v=0.10.0">
 </head>
 <body>
   <main class="shell">
@@ -72,7 +72,6 @@
         <button class="tab" role="tab" aria-selected="false" aria-controls="model-race" data-tab="model-race">Model Race</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="inside-model" data-tab="inside-model">Inside the Model</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="live-camera" data-tab="live-camera">Live Camera</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="classical-cv" data-tab="classical-cv">Classical CV vs AI</button>
       </nav>
       <div class="scroll-cue" aria-hidden="true">Swipe →</div>
     </div>
@@ -83,7 +82,7 @@
           <div class="timeline-track" id="timeline-track" aria-label="Computer vision timeline"></div>
         </div>
         <div class="scroll-cue timeline-cue" aria-hidden="true">Swipe through history →</div>
-        <div class="timeline-help">Runnable models switch Time Machine in place. History-only milestones show their original task and do not load or benchmark a model. The 2001 Viola–Jones and 2005 HOG + SVM entries open Classical CV vs AI.</div>
+        <div class="timeline-help">Choose one local image, then select any runnable year. Historical methods use task-specific outputs on this same image; only later general-object models enter Model Race.</div>
       </div>
 
       <div class="grid">
@@ -91,7 +90,7 @@
           <div class="stage-head"><div><div class="stage-title" id="active-model-title">SSD-MobileNetV1 INT8</div><div class="tiny" id="active-model-subtitle">COCO object detection · ONNX · opset 12</div></div><div class="tiny" id="input-size">No input</div></div>
           <div class="stage" id="image-stage">
             <canvas id="image-canvas" hidden></canvas>
-            <div class="empty" id="image-empty"><strong>Bring your own image</strong>Nothing is uploaded. The model and runtime download to your browser; inference runs locally.</div>
+            <div class="empty" id="image-empty"><strong>Bring your own image</strong>Nothing is uploaded. Any required model or runtime loads in your browser; inference runs locally.</div>
           </div>
           <div class="controls">
             <label class="btn" for="image-file">Choose image</label>
@@ -99,8 +98,28 @@
             <button class="btn secondary" id="rerun" disabled>Run SSD-MobileNetV1 INT8</button>
             <button class="btn secondary" id="benchmark" disabled>Benchmark ×20</button>
             <span class="control-spacer"></span>
-            <label class="range-wrap">Confidence <input id="confidence" type="range" min="0.10" max="0.90" step="0.05" value="0.40"><b id="confidence-value">0.40</b></label>
+            <label class="range-wrap">AI confidence <input id="confidence" type="range" min="0.10" max="0.90" step="0.05" value="0.40"><b id="confidence-value">0.40</b></label>
           </div>
+          <section class="history-experiment-panel" id="history-experiment-panel" hidden aria-live="polite">
+            <div class="history-experiment-head">
+              <div><div class="eyebrow">Historical experiment · same image</div><h3 id="history-experiment-title">Select an earlier year</h3></div>
+              <div class="tiny" id="history-runtime-state">not loaded</div>
+            </div>
+            <p class="history-experiment-description" id="history-experiment-description">Historical methods will run on the image selected above.</p>
+            <div class="history-experiment-note note" id="history-experiment-note">Each method keeps its original task and output type.</div>
+            <div class="metrics history-experiment-metrics">
+              <div class="metric"><span>Working input</span><b id="history-input-size">—</b></div>
+              <div class="metric"><span>Method output</span><b id="history-output-count">—</b></div>
+              <div class="metric"><span>Preprocess / proposals</span><b id="history-preprocess">—</b></div>
+              <div class="metric"><span>Inference</span><b id="history-inference">—</b></div>
+              <div class="metric"><span>Runtime / model setup</span><b id="history-load">—</b></div>
+            </div>
+            <div class="controls history-experiment-controls">
+              <button class="btn secondary" id="history-run" disabled>Run selected experiment</button>
+              <button class="btn secondary" id="history-release">Release historical runtime</button>
+            </div>
+            <div id="history-status" class="status" aria-live="polite">Choose an earlier timeline year to run its method on this image.</div>
+          </section>
         </section>
 
         <aside class="card">
@@ -369,106 +388,17 @@
       </div>
     </section>
 
-    <section class="panel" id="classical-cv" role="tabpanel">
-      <div class="card classical-intro">
-        <div>
-          <div class="eyebrow">2001 → 2005 → modern AI</div>
-          <h2>Classical CV vs AI</h2>
-          <p class="lede">Run a Viola–Jones-era frontal-face cascade, HOG + linear SVM pedestrian detection, and the currently selected Time Machine AI detector on the same local image. The tasks and label spaces differ, so this is a method comparison—not an accuracy leaderboard.</p>
-        </div>
-        <div class="controls classical-controls">
-          <label class="btn" for="classical-image-file">Choose image</label>
-          <input class="file-input" id="classical-image-file" type="file" accept="image/*">
-          <button class="btn secondary" id="classical-use-current" type="button">Use Time Machine image</button>
-          <button class="btn secondary" id="classical-run" type="button" disabled>Run comparison</button>
-          <button class="btn secondary" id="classical-release" type="button">Release OpenCV</button>
-          <span class="control-spacer"></span>
-          <span class="tiny">Classical working image ≤640 px longest side</span>
-        </div>
-        <div class="status" id="classical-status">Choose an image here, or reuse the current Time Machine image.</div>
-      </div>
-
-      <div class="classical-grid">
-        <article class="card classical-card">
-          <div class="side-head">
-            <div><span class="pill">2001 · method family</span><h2>Viola–Jones face cascade</h2></div>
-            <div class="tiny">OpenCV.js · WASM</div>
-          </div>
-          <div class="classical-stage">
-            <canvas id="classical-face-canvas" hidden></canvas>
-            <div class="empty" id="classical-face-empty"><strong>Frontal-face detection</strong>OpenCV's pinned frontal-face cascade is used as a runnable representative of the Viola–Jones cascade family. It is not claimed to be the original 2001 paper's trained weights.</div>
-          </div>
-          <div class="metrics">
-            <div class="metric"><span>Working input</span><b id="classical-face-input">—</b></div>
-            <div class="metric"><span>OpenCV startup</span><b id="classical-face-init">—</b></div>
-            <div class="metric"><span>Cascade asset</span><b id="classical-face-asset">—</b></div>
-            <div class="metric"><span>Detection</span><b id="classical-face-inf">—</b></div>
-            <div class="metric"><span>Faces</span><b id="classical-face-count">—</b></div>
-          </div>
-        </article>
-
-        <article class="card classical-card">
-          <div class="side-head">
-            <div><span class="pill">2005 · HOG + SVM</span><h2>Pedestrian detector</h2></div>
-            <div class="tiny">64×128 window</div>
-          </div>
-          <div class="classical-stage">
-            <canvas id="classical-hog-canvas" hidden></canvas>
-            <div class="empty" id="classical-hog-empty"><strong>Gradient features + linear classifier</strong>OpenCV HOGDescriptor with its built-in default people detector. Sliding-window multi-scale detection is intentionally kept separate from the general-object Model Race.</div>
-          </div>
-          <div class="metrics">
-            <div class="metric"><span>Working input</span><b id="classical-hog-input">—</b></div>
-            <div class="metric"><span>OpenCV startup</span><b id="classical-hog-init">—</b></div>
-            <div class="metric"><span>Detector</span><b>default 64×128 SVM</b></div>
-            <div class="metric"><span>Detection</span><b id="classical-hog-inf">—</b></div>
-            <div class="metric"><span>People</span><b id="classical-hog-count">—</b></div>
-          </div>
-        </article>
-
-        <article class="card classical-card">
-          <div class="side-head">
-            <div><span class="pill generation">Modern AI reference</span><h2 id="classical-ai-title">Active Time Machine model</h2></div>
-            <div class="tiny" id="classical-ai-reference">Current Time Machine model at run start</div>
-          </div>
-          <div class="classical-stage">
-            <canvas id="classical-ai-canvas" hidden></canvas>
-            <div class="empty" id="classical-ai-empty"><strong>General-object detector</strong>The selected Time Machine model runs with its own native preprocessing and label space. This card provides context rather than a task-equivalent score.</div>
-          </div>
-          <div class="metrics">
-            <div class="metric"><span>Model input</span><b id="classical-ai-input">—</b></div>
-            <div class="metric"><span>Backend</span><b id="classical-ai-backend">—</b></div>
-            <div class="metric"><span>Inference</span><b id="classical-ai-inf">—</b></div>
-            <div class="metric"><span>Visible detections</span><b id="classical-ai-count">—</b></div>
-          </div>
-        </article>
-      </div>
-
-      <div class="card classical-summary">
-        <div class="race-summary-head">
-          <div><div class="eyebrow">Task-aware evidence</div><h2>What can actually be compared?</h2></div>
-          <div class="tiny" id="classical-runtime-state">not loaded</div>
-        </div>
-        <div class="classical-evidence-grid">
-          <div><span>HOG ↔ AI person overlap</span><b id="classical-person-overlap">—</b><p>Same-class IoU ≥ 0.35. This is spatial agreement, not correctness.</p></div>
-          <div><span>Face ↔ AI</span><b>not directly comparable</b><p>The classical cascade detects frontal faces; the general-object AI models do not expose a face class.</p></div>
-          <div><span>Memory ownership</span><b>isolated worker</b><p>OpenCV.js loads only on demand. Leaving this tab or pressing Release OpenCV terminates the worker so its WASM context can be reclaimed independently.</p></div>
-        </div>
-        <div class="note">The same source image is used, but native preprocessing and tasks are preserved. HOG/person overlap uses the current UI confidence for retained AI detections. No classical result is included in the general-object Model Race or presented as ground-truth accuracy.</div>
-        <div class="links classical-links"><a href="BENCHMARK_METHODOLOGY.md" target="_blank">Methodology ↗</a><a href="MODEL_SOURCES.md" target="_blank">Classical provenance ↗</a><a href="THIRD_PARTY_LICENSES.md" target="_blank">Third-party terms ↗</a></div>
-      </div>
-    </section>
-
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.9.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.10.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="runtime-bootstrap.js?v=0.9.0"></script>
-  <script src="models.js?v=0.9.0"></script>
-  <script src="model-runtime.js?v=0.9.0"></script>
-  <script src="model-loader.js?v=0.9.0"></script>
-  <script src="app.js?v=0.9.0"></script>
-  <script src="race.js?v=0.9.0"></script>
-  <script src="classical-cv.js?v=0.9.0"></script>
+  <script src="runtime-bootstrap.js?v=0.10.0"></script>
+  <script src="models.js?v=0.10.0"></script>
+  <script src="model-runtime.js?v=0.10.0"></script>
+  <script src="model-loader.js?v=0.10.0"></script>
+  <script src="app.js?v=0.10.0"></script>
+  <script src="race.js?v=0.10.0"></script>
+  <script src="history-experiments.js?v=0.10.0"></script>
 </body>
 </html>

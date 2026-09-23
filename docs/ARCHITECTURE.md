@@ -9,12 +9,12 @@ The current runtime is intentionally client-side so users can compare computer-v
 ## Main modules
 
 - `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints.
-- `models.js` — runnable-model registry, history-only timeline references, provenance/runtime metadata, preprocessing contracts, capability declarations, pinned revisions, backend policy, and label sets. History-only entries are not runtime adapters.
+- `models.js` — four general-object runtime models plus separate task-specific history-experiment metadata, timeline references, provenance, preprocessing contracts, capability declarations, pinned revisions, backend policy, and label sets.
 - `model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
 - `model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
 - `app.js` — Time Machine state, the SSD runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
 - `race.js` — Tiny YOLOv2, YOLOX-Nano, and RT-DETR runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
-- `classical-cv.js` — Classical CV vs AI orchestration, source-image ownership, AI reference execution, task-aware overlap, and worker lifecycle.
+- `history-experiments.js` — Time Machine historical experiment runners for a pattern-response preview, MNIST digit crops, frontal-face cascade, and HOG pedestrian detection.
 - `classical-cv-worker.js` — lazy OpenCV.js WASM runtime, frontal-face cascade, HOG pedestrian detection, and explicit OpenCV object cleanup.
 - `scripts/validate.mjs` — dependency-free repository contract checks used locally and by pull-request CI.
 
@@ -42,17 +42,21 @@ Model Race presentation is also capability-driven. Each `race` capability declar
 
 Live Camera resolves its model through the same runtime registry. The `live` capability provides deterministic ordering and presentation metadata, while `defaults.live` chooses the initial live model. Camera start calls the adapter's optional `prepare()` hook and each frame goes through `adapter.run(..., {live:true})`; the camera loop no longer calls SSD session/inference functions directly. The model-selector container appears only when more than one live-capable adapter exists. Current behavior remains SSD-only, while future YOLOX/RT-DETR live support becomes an explicit capability change instead of another camera-specific path.
 
-## Classical CV runtime isolation
+## Historical experiments in Time Machine
 
-The Classical CV vs AI module is intentionally outside the general-object runtime registry and Model Race because its two classical methods solve different tasks: frontal-face detection and pedestrian detection.
+Historical experiments consume the current Time Machine source image and render their task-specific output onto the same image canvas. Selecting one does not replace the active general-object model, so Inside the Model continues to follow the selected runnable AI model.
 
-OpenCV.js is not loaded during normal Time Machine, Model Race, Inside the Model, or Live Camera use. `classical-cv.js` creates a dedicated Web Worker only when the user runs the classical comparison. The worker imports pinned OpenCV.js, receives an aspect-preserving RGBA working image capped at 640 px on the longest side, runs the requested detector, returns rectangles/timing metadata, and deletes OpenCV heap objects in `finally` blocks.
+These experiments are registered under `models.js:historyExperiments`, outside `VisionRuntimeRegistry`. The general-object runtime registry and Model Race remain the four detection models. Each history experiment declares an image input, its task, and an output type such as a response map or labeled boxes. A future image-and-prompt VLM can add a text or grounded-text output adapter without changing the general-object race contract; no VLM runtime is loaded now.
 
-The AI reference runs first through the existing runtime adapter selected in Time Machine. That adapter is released before the OpenCV worker is initialized. Leaving the Classical CV tab, pressing **Release OpenCV**, or navigating away terminates the worker. This makes the worker the ownership boundary for the OpenCV WASM context and avoids intentionally keeping an AI runtime resident while the classical runtime starts.
+Before a history experiment runs, the registered AI adapters are released. The 2001 face cascade, 2005 HOG detector, and 1998 digit-region proposal stage use a dedicated worker that lazily imports pinned OpenCV.js. The worker receives an aspect-preserving image capped at 640 px on its longest side and returns only region boxes and timings. It deletes OpenCV objects within each run.
 
-The face cascade and HOG detector are not added to the general-object Model Race. HOG vs AI `person` overlap is shown only as same-class IoU >= 0.35 spatial agreement. The frontal-face cascade is not compared to AI person boxes as if the tasks were equivalent.
+For the digit experiment, the OpenCV worker is terminated after candidate extraction and before the pinned MNIST ONNX session is initialized. The digit model is SHA-256 checked and uses ONNX Runtime Web's WASM provider. This avoids intentionally keeping OpenCV WASM and the digit-model runtime resident together.
 
-See [CLASSICAL_CV.md](CLASSICAL_CV.md).
+Leaving Time Machine, pressing **Release historical runtime**, or navigating away terminates the OpenCV worker and releases the digit ONNX session. Worker termination defines the JavaScript ownership boundary; it does not prove the browser has already returned native/WASM pages to the operating system.
+
+The 1980 feature response is an educational approximation using fixed orientation filters and local max pooling. It is not a trained Neocognitron checkpoint. The 1998 checkpoint illustrates the handwritten-digit task from the LeNet era; it is not original 1998 LeNet-5 weights. Face and pedestrian outputs retain their own tasks and are not compared to each other as accuracy evidence.
+
+See [CLASSICAL_CV.md](CLASSICAL_CV.md) for method details and provenance.
 
 ## Runtime entrypoints
 
@@ -104,7 +108,7 @@ RT-DETR uses an aspect-preserving staging canvas capped at 640 px on the longest
 
 Time Machine owns the active runnable model. Selecting a generation does not navigate to Model Race.
 
-The timeline itself is registry-driven. `models.js` owns the chronological timeline entries and the default Time Machine model. Runnable timeline entries reference model keys; historical/research entries can remain non-runnable. `app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
+The timeline itself is registry-driven. `models.js` owns chronological entries, the default Time Machine AI model, and a separate `historyExperiments` table. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model. `app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
 
 Inside the Model follows the same active model through the `inspection` capability contract. The contract declares the native input/preprocessing presentation, tensor shape/layout, pipeline explanation, comparison-table values, preview strategy, intermediate-data policy, and result note. `app.js` renders these fields generically.
 
