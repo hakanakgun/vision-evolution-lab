@@ -3,13 +3,14 @@
   const api=window.VisionLab,registry=window.VisionModels,runtimes=window.VisionRuntimeRegistry;
   if(!api||!registry||!runtimes)return;
 
-  const $=id=>document.getElementById(id),VERSION=registry.version||'0.10.0',WORK_MAX=640,DIGIT_SCORE_FLOOR=.70;
-  const state={worker:null,workerReady:null,pending:new Map(),seq:0,runToken:0,running:false,digitSession:null,result:null,image:null};
+  const $=id=>document.getElementById(id),VERSION=registry.version||'0.11.0',WORK_MAX=640,DIGIT_SCORE_FLOOR=.70;
+  const state={worker:null,workerReady:null,pending:new Map(),seq:0,runToken:0,running:false,digitSession:null,alexnetSession:null,alexnetAbort:null,imagenetLabels:null,result:null,image:null};
 
   const ms=value=>Number.isFinite(value)?value.toFixed(1)+' ms':'—';
   const setText=(id,value)=>{const element=$(id);if(element)element.textContent=String(value)};
   const setStatus=(message,kind='')=>{const element=$('history-status');if(!element)return;element.textContent=message;element.className=`status ${kind}`.trim()};
   const setRuntime=value=>setText('history-runtime-state',value);
+  const clearClassification=()=>{const section=$('history-classification'),list=$('history-classification-results');if(section)section.hidden=true;if(list)list.replaceChildren()};
 
   function workingImage(source){
     const size=api.sourceSize(source),scale=Math.min(1,WORK_MAX/Math.max(size.w,size.h)),width=Math.max(1,Math.round(size.w*scale)),height=Math.max(1,Math.round(size.h*scale));
@@ -132,9 +133,15 @@
     if(session&&typeof session.release==='function')try{await session.release()}catch(error){console.warn('Historical digit session release failed',error)}
   }
 
+  async function releaseAlexNetSession(){
+    if(state.alexnetAbort){state.alexnetAbort.abort();state.alexnetAbort=null}
+    const session=state.alexnetSession;state.alexnetSession=null;
+    if(session&&typeof session.release==='function')try{await session.release()}catch(error){console.warn('Historical AlexNet session release failed',error)}
+  }
+
   async function releaseAll({status='released'}={}){
     state.runToken++;state.running=false;disposeWorker();
-    await releaseDigitSession();
+    await Promise.all([releaseDigitSession(),releaseAlexNetSession()]);
     if(status)setRuntime(status);
   }
 
@@ -173,6 +180,80 @@
     const session=await window.ort.InferenceSession.create(new Uint8Array(buffer),{executionProviders:['wasm']});
     state.digitSession=session;
     return{session,elapsedMs:performance.now()-started,bytes:buffer.byteLength};
+  }
+
+  async function loadAlexNetSession(spec,runId){
+    if(!window.ort?.InferenceSession||!window.crypto?.subtle)throw new Error('ONNX Runtime Web or secure SHA-256 support is unavailable.');
+    const model=spec.model,started=performance.now(),controller=new AbortController();state.alexnetAbort=controller;
+    let session=null;
+    try{
+      const response=await fetch(model.url,{mode:'cors',cache:'default',signal:controller.signal});
+      if(!response.ok)throw new Error('AlexNet model download failed: HTTP '+response.status);
+      const buffer=await response.arrayBuffer();
+      if(runId!==state.runToken)return null;
+      if(buffer.byteLength!==model.bytes)throw new Error('AlexNet model size did not match the pinned ONNX asset.');
+      const digest=await window.crypto.subtle.digest('SHA-256',buffer),actual=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
+      if(actual!==model.sha256)throw new Error('AlexNet model SHA-256 verification failed; the unverified model was discarded.');
+      session=await window.ort.InferenceSession.create(new Uint8Array(buffer),{executionProviders:['wasm']});
+      if(runId!==state.runToken){await session.release();return null}
+      if(session.inputNames[0]!=='data_0'||session.outputNames[0]!=='prob_1')throw new Error('AlexNet ONNX input/output contract did not match the pinned checkpoint.');
+      state.alexnetSession=session;session=null;
+      return{session:state.alexnetSession,elapsedMs:performance.now()-started,bytes:buffer.byteLength};
+    }finally{
+      if(session)try{await session.release()}catch{}
+      if(state.alexnetAbort===controller)state.alexnetAbort=null;
+    }
+  }
+
+  async function loadImageNetLabels(spec){
+    if(state.imagenetLabels)return state.imagenetLabels;
+    const response=await fetch(new URL(spec.model.labels,location.href),{cache:'default'});
+    if(!response.ok)throw new Error('ImageNet label list failed to load: HTTP '+response.status);
+    const buffer=await response.arrayBuffer(),digest=await window.crypto.subtle.digest('SHA-256',buffer),actual=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
+    if(actual!==spec.model.labelsSha256)throw new Error('ImageNet label list SHA-256 verification failed.');
+    const labels=JSON.parse(new TextDecoder().decode(buffer));
+    if(!Array.isArray(labels)||labels.length!==1000||labels.some(item=>typeof item?.label!=='string'||!item.label))throw new Error('ImageNet label list must contain exactly 1,000 named classes.');
+    state.imagenetLabels=labels;return labels;
+  }
+
+  function prepareAlexNetTensor(work,model){
+    const {width,height,mean}=model.input,canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+    const context=canvas.getContext('2d',{willReadFrequently:true});context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';
+    context.drawImage(work.canvas,0,0,width,height);
+    const rgba=context.getImageData(0,0,width,height).data,plane=width*height,tensor=new Float32Array(3*plane);
+    for(let i=0;i<plane;i++){
+      const offset=i*4;
+      tensor[i]=rgba[offset+2]-mean[0];
+      tensor[plane+i]=rgba[offset+1]-mean[1];
+      tensor[plane*2+i]=rgba[offset]-mean[2];
+    }
+    return tensor;
+  }
+
+  async function runAlexNet(spec,source,runId){
+    const work=workingImage(source),prepStart=performance.now(),input=prepareAlexNetTensor(work,spec.model),preprocessMs=performance.now()-prepStart;
+    setRuntime('Loading pinned AlexNet INT8 ONNX model · WASM');setStatus('Preparing the pinned AlexNet checkpoint and ImageNet labels…','loading');
+    const labelsPromise=loadImageNetLabels(spec),loadedPromise=state.alexnetSession?Promise.resolve({session:state.alexnetSession,elapsedMs:0,bytes:spec.model.bytes,reused:true}):loadAlexNetSession(spec,runId);
+    const [labels,loaded]=await Promise.all([labelsPromise,loadedPromise]);
+    if(runId!==state.runToken||!loaded)return;
+    setRuntime('AlexNet ONNX INT8 session ready · WASM');
+    const session=loaded.session,inferenceStart=performance.now(),outputs=await session.run({[session.inputNames[0]]:new window.ort.Tensor('float32',input,[1,3,224,224])}),scores=outputs[session.outputNames[0]]?.data;
+    const inferenceMs=performance.now()-inferenceStart;
+    if(runId!==state.runToken)return;
+    if(!scores||scores.length!==1000||Array.from(scores).some(value=>!Number.isFinite(Number(value))||Number(value)<0||Number(value)>1))throw new Error('AlexNet ONNX output did not contain 1,000 finite ImageNet probabilities.');
+    const probabilitySum=Array.from(scores).reduce((sum,value)=>sum+Number(value),0);
+    if(Math.abs(probabilitySum-1)>.01)throw new Error('AlexNet output did not match its pinned 1,000-class probability contract.');
+    const top=Array.from(scores,(score,index)=>({score:Number(score),index})).sort((a,b)=>b.score-a.score).slice(0,5);
+    const results=$('history-classification-results'),section=$('history-classification');results.replaceChildren();
+    for(const item of top){
+      const row=document.createElement('li'),label=document.createElement('span'),score=document.createElement('b');
+      label.textContent=labels[item.index].label;score.textContent=(item.score*100).toFixed(1)+'%';row.append(label,score);results.appendChild(row);
+    }
+    section.hidden=false;drawBase(source,work.width,work.height);state.result={kind:'classification',source,work,top};
+    setText('history-input-size',work.width+'×'+work.height+' → 224×224');setText('history-output-count','Top 5 · 1,000 ImageNet classes');
+    setText('history-preprocess',ms(preprocessMs)+' · direct resize + BGR means');setText('history-inference',ms(inferenceMs));
+    setText('history-load',loaded.reused?'cached session':ms(loaded.elapsedMs)+' · '+(loaded.bytes/1e6).toFixed(1)+' MB');
+    setStatus('AlexNet ranked the full image against 1,000 ImageNet classes. Scores are not calibrated confidence; no object boxes are produced.');
   }
 
   async function runDigits(spec,source,runId){
@@ -224,10 +305,11 @@
     setText('history-experiment-title',spec.year+' · '+spec.title);setText('history-experiment-description',spec.description||'This historical method runs on the selected Time Machine image.');
     setText('history-experiment-note',spec.note||'This method keeps its own task and output type.');
     setText('history-input-size','Preparing…');setText('history-output-count','—');setText('history-preprocess','—');setText('history-inference','—');setText('history-load','—');
+    $('history-classification').hidden=true;$('history-classification-results').replaceChildren();
     const initialWork=workingImage(source);drawBase(source,initialWork.width,initialWork.height);
     setRuntime('Releasing active model runtimes…');setStatus('Preparing the selected historical method on the current image…','loading');
     try{
-      await releaseDigitSession();
+      await Promise.all([releaseDigitSession(),releaseAlexNetSession()]);
       await runtimes.releaseAll();
       if(runId!==state.runToken)return;
       if(spec.runner==='pattern-response'){
@@ -251,10 +333,12 @@
         setStatus(result.boxes.length?result.boxes.length+' task-specific region'+(result.boxes.length===1?'':'s')+' found. This method does not detect general objects.':'Completed with 0 regions. This detector only searches for '+(spec.workerMethod==='face'?'frontal faces.':'pedestrians.'));
       }else if(spec.runner==='mnist-digit-cnn'){
         await runDigits(spec,source,runId);
+      }else if(spec.runner==='alexnet-image-classification'){
+        await runAlexNet(spec,source,runId);
       }else throw new Error('No browser runner is registered for this historical experiment.');
     }catch(error){
       if(runId!==state.runToken) return;
-      disposeWorker('after experiment failure');await releaseDigitSession();setRuntime('error');
+      disposeWorker('after experiment failure');await Promise.all([releaseDigitSession(),releaseAlexNetSession()]);setRuntime('error');
       setStatus(error?.message||String(error),'error');throw error;
     }finally{
       if(runId===state.runToken)state.running=false;
@@ -262,12 +346,12 @@
   }
 
   function clear(){
-    state.result=null;state.image=null;
+    state.result=null;state.image=null;clearClassification();
     return releaseAll({status:'released'});
   }
 
   function reset(){
-    state.result=null;state.image=null;
+    state.result=null;state.image=null;clearClassification();
     return releaseAll({status:'not loaded'});
   }
 

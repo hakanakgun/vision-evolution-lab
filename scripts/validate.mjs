@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import {createHash} from 'node:crypto';
 
 const root=process.cwd();
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
@@ -224,7 +225,8 @@ const expectedExperiments=[
   [1980,'neocognitron','Neocognitron'],
   [1998,'mnist-digits','LeNet-era MNIST CNN'],
   [2001,'viola-jones','Viola–Jones'],
-  [2005,'hog-pedestrians','HOG + SVM']
+  [2005,'hog-pedestrians','HOG + SVM'],
+  [2012,'alexnet-classification','AlexNet']
 ];
 check(experimentEntries.length===expectedExperiments.length,'Time Machine historical experiment count changed');
 check(Object.keys(historyExperiments).length===expectedExperiments.length,'historical experiment registry count changed');
@@ -241,16 +243,24 @@ check(historyExperiments['mnist-digits'].model?.file==='mnist-12.onnx'&&historyE
 check(historyExperiments['mnist-digits'].model?.sha256==='5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd','MNIST Model Zoo model checksum changed');
 check(historyExperiments['mnist-digits'].model?.url==='https://media.githubusercontent.com/media/onnx/models/4f43949841cb55a0b98dc8fcd045431ccafd9f96/validated/vision/classification/mnist/model/mnist-12.onnx','MNIST download must stay on the pinned Model Zoo artifact');
 check(historyExperiments['mnist-digits'].model?.provider==='wasm'&&historyExperiments['mnist-digits'].model?.licenseMetadata==='Apache-2.0'&&historyExperiments['mnist-digits'].model?.licenseCard==='MIT','MNIST model runtime or license ambiguity must remain disclosed');
+const alexnet=historyExperiments['alexnet-classification'];
+check(alexnet?.runner==='alexnet-image-classification'&&alexnet.task==='1000-class ImageNet image classification'&&alexnet.output==='top-5-labels','AlexNet must remain a same-image classifier outside detection semantics');
+check(alexnet.model?.repository==='onnxmodelzoo/bvlcalexnet-12-int8'&&alexnet.model?.revision==='99a443a03ecc3576ebd2d94aae33f8f5522b969c'&&alexnet.model?.bytes===60984008&&alexnet.model?.opset===12,'AlexNet ONNX checkpoint source/revision/size/opset pin changed');
+check(alexnet.model?.sha256==='d53bbedf100be79277cf55d78c72bdcb67d88786988561bf5d530f038e443c7b'&&alexnet.model?.provider==='wasm','AlexNet ONNX model integrity or browser provider pin changed');
+check(alexnet.model?.input?.width===224&&alexnet.model?.input?.height===224&&alexnet.model?.input?.layout==='NCHW'&&alexnet.model?.input?.channels==='BGR'&&alexnet.model?.input?.mean?.join(',')==='103.939,116.779,123.68','AlexNet input preprocessing contract changed');
+check(alexnet.model?.labels==='assets/models/imagenet-1k-labels.json'&&alexnet.model?.labelsSha256==='495a1f028e7b3b1878dbc4ec2e66f9a9a9c89c48abb007a9c954faa13571c33a','AlexNet ImageNet label map pin changed');
+check(exists(alexnet.model.labels)&&JSON.parse(read(alexnet.model.labels)).length===1000,'AlexNet must ship a complete 1,000-class label map');
+check(createHash('sha256').update(fs.readFileSync(path.join(root,alexnet.model.labels))).digest('hex')===alexnet.model.labelsSha256,'AlexNet bundled label map checksum changed');
 const historicalMilestones=(metadataRegistry.timeline||[]).filter(entry=>entry.kind==='historical');
-const expectedHistoricalMilestones=[[2012,'AlexNet'],[2014,'R-CNN'],[2015,'Faster R-CNN'],[2016,'YOLOv1']];
+const expectedHistoricalMilestones=[[2014,'R-CNN'],[2015,'Faster R-CNN'],[2016,'YOLOv1']];
 check(historicalMilestones.length===expectedHistoricalMilestones.length,'paper-only timeline milestone count changed');
 for(const [year,title] of expectedHistoricalMilestones)check(historicalMilestones.some(entry=>entry.year===year&&entry.title===title),'paper-only milestone missing: '+year+' '+title);
 check(historicalMilestones.every(entry=>!entry.model&&!entry.jump&&entry.note?.startsWith('history only ·')),'paper-only milestones must not select or load a runtime');
 check((metadataRegistry.timeline||[]).every((entry,index,entries)=>index===0||entries[index-1].year<=entry.year),'Time Machine timeline must remain chronologically sorted');
 check(files.app.includes("entry.kind==='historical'?'historical-only':''")&&files.styles.includes('.milestone.historical-only .dot'),'paper-only milestones must keep a distinct timeline treatment');
 check(files.app.includes('entry.experiment===state.historyExperiment')&&files.app.includes('data-history-experiment')&&files.app.includes('runnable&&!state.historyExperiment&&entry.model===state.activeModel'),'selected experiment timeline state is missing or also highlights a stale AI year');
-check(files.index.includes('Historical experiment · same image')&&historyExperiments['mnist-digits'].note.includes('isolated handwritten digits'),'Time Machine must explain shared-image and digit-task scope');
-check(files.catalog.includes('| 1980 | Neocognitron-inspired feature response | Runnable historical experiment |')&&files.catalog.includes('| 1998 | LeNet-era MNIST CNN reference | Runnable historical experiment |')&&files.catalog.includes('| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable historical experiment |')&&files.catalog.includes('| 2005 | HOG + linear SVM pedestrian detector | Runnable historical experiment |'),'catalog must distinguish runnable historical experiments');
+check(files.index.includes('Historical experiment · same image')&&historyExperiments['mnist-digits'].note.includes('isolated handwritten digits')&&alexnet.note.includes('does not locate objects'),'Time Machine must explain task-specific same-image classifier boundaries');
+check(files.catalog.includes('| 1980 | Neocognitron-inspired feature response | Runnable historical experiment |')&&files.catalog.includes('| 1998 | LeNet-era MNIST CNN reference | Runnable historical experiment |')&&files.catalog.includes('| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable historical experiment |')&&files.catalog.includes('| 2005 | HOG + linear SVM pedestrian detector | Runnable historical experiment |')&&files.catalog.includes('| 2012 | AlexNet · ImageNet classification | Runnable historical experiment |'),'catalog must distinguish runnable historical experiments');
 check(files.readme.includes('one image selected in Time Machine')&&files.docsIndex.includes('[Time Machine historical experiments](CLASSICAL_CV.md)'),'README/docs map must describe and link to same-image history experiments');
 for(const source of ['https://doi.org/10.1007/BF00344251','https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf','https://doi.org/10.1109/CVPR.2001.990517','https://doi.org/10.1109/CVPR.2005.177','https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2014/html/Girshick_Rich_Feature_Hierarchies_2014_CVPR_paper.html','https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html','https://research.google/pubs/ssd-single-shot-multibox-detector/','https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php'])check(files.history.includes(source),'historical primary-paper source missing: '+source);
 check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===7,'Time Machine registry should contain five race models and two historical detectors');
@@ -266,7 +276,7 @@ check(metadataRegistry.detr.revision==='8be7ab59ff663484ee9ba2e8d8f267330d5ad03e
 check(files.historicalDetectors.includes("runtimes.register('ssd2016'")&&files.historicalDetectors.includes("runtimes.register('detr'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("subtle.digest('SHA-256'"),'historical model adapters must register SSD, use WASM, and checksum SSD weights');
 check((files.index.match(/id="image-file"/g)||[]).length===1,'Time Machine must keep one shared image input');
 check(!files.index.includes('data-tab="classical-cv"')&&!files.index.includes('id="classical-cv"'),'separate Classical CV tab/panel must not return');
-for(const id of ['history-experiment-panel','history-experiment-title','history-experiment-description','history-experiment-note','history-runtime-state','history-input-size','history-output-count','history-preprocess','history-inference','history-load','history-run','history-release','history-status'])check(files.index.includes('id="'+id+'"'),'historical experiment DOM contract missing: '+id);
+for(const id of ['history-experiment-panel','history-experiment-title','history-experiment-description','history-experiment-note','history-runtime-state','history-input-size','history-output-count','history-preprocess','history-inference','history-load','history-classification','history-classification-results','history-run','history-release','history-status'])check(files.index.includes('id="'+id+'"'),'historical experiment DOM contract missing: '+id);
 check(files.index.includes('id="image-canvas"')&&files.historyExperiments.includes("getContext('2d')"),'historical experiments must render on the shared Time Machine canvas');
 check(files.app.includes("new CustomEvent('vision:tabchange'"),'generic tab lifecycle event missing');
 check(files.historyExperiments.includes("document.addEventListener('vision:tabchange'")&&files.historyExperiments.includes("event.detail?.tab!=='time-machine'"),'historical runtimes must release after leaving Time Machine');
@@ -282,6 +292,11 @@ check(files.app.includes('state.historyExperiment) return'),'AI benchmark must n
 check(files.historyExperiments.includes('await runtimes.releaseAll()'),'historical runtime must release AI adapters before its own execution');
 check(!files.historyExperiments.includes('adapter.run'),'historical experiment module must not construct a fake AI reference comparison');
 check(files.historyExperiments.includes('DIGIT_SCORE_FLOOR=.70'),'digit display-score floor changed');
+check(files.historyExperiments.includes("spec.runner==='alexnet-image-classification'")&&files.historyExperiments.includes("executionProviders:['wasm']")&&files.historyExperiments.includes("session.inputNames[0]!=='data_0'||session.outputNames[0]!=='prob_1'"),'AlexNet must use its pinned ONNX contract with WASM and validate graph I/O');
+check(files.historyExperiments.includes("tensor[i]=rgba[offset+2]-mean[0]")&&files.historyExperiments.includes("tensor[plane*2+i]=rgba[offset]-mean[2]")&&files.historyExperiments.includes('[1,3,224,224]'),'AlexNet preprocessing must match the pinned 224×224 BGR NCHW contract');
+check(files.historyExperiments.includes("subtle.digest('SHA-256',buffer)")&&files.historyExperiments.includes('model.bytes'),'AlexNet weights must be size- and checksum-verified before session creation');
+check(files.historyExperiments.includes("labels.length!==1000")&&files.historyExperiments.includes('labelsSha256')&&files.historyExperiments.includes('.slice(0,5)'),'AlexNet must verify 1,000 labels and display top five classes');
+check(files.historyExperiments.includes('releaseAlexNetSession()')&&files.historyExperiments.includes('state.alexnetAbort.abort()'),'AlexNet browser memory and in-flight download cleanup missing');
 check(files.historyExperiments.includes("score '+Math.round(item.score*100)+'%'"),'digit output must identify its raw model score separately from AI confidence');
 check(files.historyExperiments.includes('model.sha256')&&files.historyExperiments.includes("subtle.digest('SHA-256',buffer)"),'MNIST ONNX model must be checksum-verified before session creation');
 check(files.historyExperiments.includes('model.bytes&&buffer.byteLength!==model.bytes'),'MNIST ONNX model must match its pinned file size before session creation');

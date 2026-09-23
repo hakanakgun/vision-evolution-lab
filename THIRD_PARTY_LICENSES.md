@@ -46,6 +46,15 @@ Model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched fro
 - The checkpoint is fetched only when digit-like regions are found, then SHA-256 verified. It is not bundled in this repository.
 - It illustrates the handwritten MNIST digit task. It is not the original 1998 LeNet-5 weights and does not provide general-object detection.
 
+## AlexNet ImageNet classification checkpoint
+
+- Repository: `onnxmodelzoo/bvlcalexnet-12-int8` on Hugging Face, revision `99a443a03ecc3576ebd2d94aae33f8f5522b969c`.
+- File: `bvlcalexnet-12-int8.onnx`; size 60,984,008 bytes; SHA-256 `d53bbedf100be79277cf55d78c72bdcb67d88786988561bf5d530f038e443c7b`.
+- Hugging Face model repository metadata says Apache-2.0. The imported Model Zoo model-card body says BSD-3. The declarations are inconsistent; this app records both and does not claim a definitive checkpoint license.
+- The ONNX checkpoint is fetched at runtime, pinned to the revision above, and SHA-256 verified. It is not bundled in the repository.
+- The small ImageNet synset-label mapping is bundled in `assets/models/imagenet-1k-labels.json` from the ONNX Model Zoo's `synset.txt` sample asset. Its source does not publish a separate license statement; the file is used solely to map model output indices to the standard class names. SHA-256: `495a1f028e7b3b1878dbc4ec2e66f9a9a9c89c48abb007a9c954faa13571c33a`.
+- The in-app runner follows Intel Neural Compressor's pinned evaluation preprocessing and uses ONNX Runtime Web 1.30.0 under its existing MIT notice above.
+
 ## Tiny YOLOv2 upstream checkpoint
 
 - Repository: `onnxmodelzoo/tinyyolov2-8` on Hugging Face.

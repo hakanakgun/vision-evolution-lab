@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.23-v0.10.9">
+<html lang="en" data-build="2026.09.23-v0.11.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.23-v0.10.9';
+      const CURRENT_BUILD = '2026.09.23-v0.11.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.10.9">
+  <link rel="stylesheet" href="styles.css?v=0.11.0">
 </head>
 <body>
   <main class="shell">
@@ -120,6 +120,11 @@
               <div class="metric"><span>Inference</span><b id="history-inference">—</b></div>
               <div class="metric"><span>Runtime / model setup</span><b id="history-load">—</b></div>
             </div>
+            <section class="history-classification" id="history-classification" hidden aria-labelledby="history-classification-title">
+              <h4 id="history-classification-title">AlexNet top-5 ImageNet labels</h4>
+              <ol id="history-classification-results"></ol>
+              <p class="tiny">Scores are this checkpoint’s outputs, not calibrated confidence. The model classifies the full image and does not return object locations.</p>
+            </section>
             <div class="controls history-experiment-controls">
               <button class="btn secondary" id="history-run" disabled>Run selected experiment</button>
               <button class="btn secondary" id="history-release">Release historical runtime</button>
@@ -417,18 +422,18 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.10.9 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.11.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="runtime-bootstrap.js?v=0.10.9"></script>
-  <script src="preprocessing.js?v=0.10.9"></script>
-  <script src="models.js?v=0.10.9"></script>
-  <script src="detection-metrics.js?v=0.10.9"></script>
-  <script src="model-runtime.js?v=0.10.9"></script>
-  <script src="model-loader.js?v=0.10.9"></script>
-  <script src="app.js?v=0.10.9"></script>
-  <script src="historical-detectors.js?v=0.10.9"></script>
-  <script src="race.js?v=0.10.9"></script>
-  <script src="history-experiments.js?v=0.10.9"></script>
+  <script src="runtime-bootstrap.js?v=0.11.0"></script>
+  <script src="preprocessing.js?v=0.11.0"></script>
+  <script src="models.js?v=0.11.0"></script>
+  <script src="detection-metrics.js?v=0.11.0"></script>
+  <script src="model-runtime.js?v=0.11.0"></script>
+  <script src="model-loader.js?v=0.11.0"></script>
+  <script src="app.js?v=0.11.0"></script>
+  <script src="historical-detectors.js?v=0.11.0"></script>
+  <script src="race.js?v=0.11.0"></script>
+  <script src="history-experiments.js?v=0.11.0"></script>
 </body>
 </html>

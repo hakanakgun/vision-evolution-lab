@@ -6,7 +6,7 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.10.9',
+    version:'0.11.0',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),
@@ -15,7 +15,7 @@
       Object.freeze({year:1998,title:'LeNet-era MNIST CNN',note:'run · handwritten digits only',kind:'history-experiment',experiment:'mnist-digits'}),
       Object.freeze({year:2001,title:'Viola–Jones',note:'run · frontal-face cascade',kind:'history-experiment',experiment:'viola-jones'}),
       Object.freeze({year:2005,title:'HOG + SVM',note:'run · pedestrian detector',kind:'history-experiment',experiment:'hog-pedestrians'}),
-      Object.freeze({year:2012,title:'AlexNet',note:'history only · image classification',kind:'historical'}),
+      Object.freeze({year:2012,title:'AlexNet',note:'run · ImageNet top-5 classification',kind:'history-experiment',experiment:'alexnet-classification'}),
       Object.freeze({year:2014,title:'R-CNN',note:'history only · region proposals + CNN',kind:'historical'}),
       Object.freeze({year:2015,title:'Faster R-CNN',note:'history only · learned proposals',kind:'historical'}),
       Object.freeze({year:2016,title:'YOLOv1',note:'history only · single-stage detector',kind:'historical'}),
@@ -55,6 +55,18 @@
         id:'hog-pedestrians',year:2005,title:'HOG + linear SVM · pedestrian detector',runner:'opencv-hog',input:'image',task:'pedestrian-detection',output:'boxes',workerMethod:'hog',
         description:'Runs OpenCV HOG with its default 64×128 people detector on the same Time Machine image.',
         note:'Detects pedestrians only. OpenCV’s embedded coefficients are not claimed to be the exact original Dalal–Triggs training artifact.'
+      }),
+      'alexnet-classification':Object.freeze({
+        id:'alexnet-classification',year:2012,title:'AlexNet · ImageNet classification',runner:'alexnet-image-classification',input:'image',task:'1000-class ImageNet image classification',output:'top-5-labels',
+        description:'Resizes the selected image to AlexNet’s 224×224 input, then runs the pinned ONNX Model Zoo INT8 checkpoint in ONNX Runtime Web WASM.',
+        note:'This is a browser-runnable BVLC AlexNet-family checkpoint, not the exact 2012 paper weights. Top-5 values are model scores, not calibrated confidence. Image classification returns labels only; it does not locate objects or draw boxes.',
+        model:Object.freeze({
+          repository:'onnxmodelzoo/bvlcalexnet-12-int8',revision:'99a443a03ecc3576ebd2d94aae33f8f5522b969c',file:'bvlcalexnet-12-int8.onnx',bytes:60984008,opset:12,
+          url:'https://huggingface.co/onnxmodelzoo/bvlcalexnet-12-int8/resolve/99a443a03ecc3576ebd2d94aae33f8f5522b969c/bvlcalexnet-12-int8.onnx',
+          sha256:'d53bbedf100be79277cf55d78c72bdcb67d88786988561bf5d530f038e443c7b',
+          input:Object.freeze({width:224,height:224,layout:'NCHW',dtype:'float32',sourceResize:'direct stretch',channels:'BGR',mean:Object.freeze([103.939,116.779,123.68]),scale:1}),
+          labels:'assets/models/imagenet-1k-labels.json',labelsSha256:'495a1f028e7b3b1878dbc4ec2e66f9a9a9c89c48abb007a9c954faa13571c33a',provider:'wasm',licenseMetadata:'Apache-2.0',licenseCard:'BSD-3-Clause'
+        })
       })
     }),
     tinyyolo:Object.freeze({
