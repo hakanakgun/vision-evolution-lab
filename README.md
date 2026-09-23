@@ -8,7 +8,7 @@ Live: https://hakanakgun.github.io/vision-evolution-lab/
 
 Vision Evolution Lab lets you run and compare object-detection generations without an application backend.
 
-- **Vision Time Machine** switches the active runnable generation in place.
+- **Vision Time Machine** switches runnable generations in place and shows history-only milestones with their original task; those historical references do not load or benchmark a model.
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
 - **Live Camera** runs local browser inference through live-capable runtime adapters with rolling latency measurements; SSD-MobileNetV1 INT8 is currently the only live-enabled model.
