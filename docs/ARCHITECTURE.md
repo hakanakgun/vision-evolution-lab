@@ -9,7 +9,7 @@ The current runtime is intentionally client-side so users can compare computer-v
 ## Main modules
 
 - `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints.
-- `models.js` — model registry, provenance/runtime metadata, preprocessing contracts, capability declarations, pinned revisions, backend policy, and label sets.
+- `models.js` — runnable-model registry, history-only timeline references, provenance/runtime metadata, preprocessing contracts, capability declarations, pinned revisions, backend policy, and label sets. History-only entries are not runtime adapters.
 - `model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
 - `model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
 - `app.js` — Time Machine state, the SSD runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.

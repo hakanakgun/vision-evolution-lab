@@ -19,6 +19,10 @@ const files={
   race:read('race.js'),
   classical:read('classical-cv.js'),
   classicalWorker:read('classical-cv-worker.js'),
+  history:read('docs/MODEL_HISTORY.md'),
+  catalog:read('MODEL_CATALOG.md'),
+  readme:read('README.md'),
+  docsIndex:read('docs/README.md'),
   version:JSON.parse(read('version.json'))
 };
 
@@ -182,6 +186,17 @@ for(const item of timeMachineModels){
 const classicalTimeline=(metadataRegistry.timeline||[]).filter(entry=>entry.jump==='classical-cv');
 check(classicalTimeline.length===2&&classicalTimeline.some(entry=>entry.year===2001&&entry.title==='Viola–Jones')&&classicalTimeline.some(entry=>entry.year===2005&&entry.title==='HOG + SVM'),'classical timeline links missing or changed');
 check(classicalTimeline.every(entry=>!entry.model),'classical methods must not become Time Machine model keys');
+const historicalMilestones=(metadataRegistry.timeline||[]).filter(entry=>entry.kind==='historical');
+const expectedHistoricalMilestones=[[1980,'Neocognitron'],[1998,'LeNet-5'],[2012,'AlexNet'],[2014,'R-CNN'],[2015,'Faster R-CNN'],[2016,'YOLOv1'],[2016,'SSD'],[2020,'DETR']];
+check(historicalMilestones.length===expectedHistoricalMilestones.length,'history-only timeline milestone count changed');
+for(const [year,title] of expectedHistoricalMilestones)check(historicalMilestones.some(entry=>entry.year===year&&entry.title===title),`history-only milestone missing: ${year} ${title}`);
+check(historicalMilestones.every(entry=>!entry.model&&!entry.jump&&entry.note?.startsWith('history only ·')),'history-only milestones must not select or load a runtime');
+check((metadataRegistry.timeline||[]).every((entry,index,entries)=>index===0||entries[index-1].year<=entry.year),'Time Machine timeline must remain chronologically sorted');
+check(files.app.includes("entry.kind==='historical'?'historical-only':''")&&files.styles.includes('.milestone.historical-only .dot'),'history-only milestones must have a distinct non-runnable timeline treatment');
+check(files.index.includes('History-only milestones show their original task')&&files.index.includes('do not load or benchmark a model'),'Time Machine must explain the history-only task boundary');
+check(files.catalog.includes('| 1980 | Neocognitron | History only |')&&files.catalog.includes('| 2016 | YOLOv1 | History only |')&&files.catalog.includes('| 2020 | DETR | History only |'),'model catalog must distinguish historical-only entries');
+check(files.readme.includes('history-only milestones')&&files.docsIndex.includes('[Historical model milestones](MODEL_HISTORY.md)'),'README/docs map must explain and link to historical milestones');
+for(const source of ['https://doi.org/10.1007/BF00344251','https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf','https://doi.org/10.1109/CVPR.2001.990517','https://doi.org/10.1109/CVPR.2005.177','https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2014/html/Girshick_Rich_Feature_Hierarchies_2014_CVPR_paper.html','https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html','https://research.google/pubs/ssd-single-shot-multibox-detector/','https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php'])check(files.history.includes(source),`historical primary-paper source missing: ${source}`);
 check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===4,'classical methods must not enter the general runtime/model registry');
 check(timeMachineModels.length===4,'classical methods must not enter the Time Machine model set');
 check(files.index.includes('data-tab="classical-cv"')&&files.index.includes('id="classical-cv"'),'Classical CV tab/panel missing');
@@ -196,7 +211,7 @@ check(files.classical.includes("adapter.run(source,$('classical-ai-canvas'),{upd
 check(files.classical.includes("bestIou=.35"),'HOG/AI person overlap IoU threshold changed');
 check(files.classical.includes("d.label==='person'&&d.score>=confidence()"),'HOG/AI overlap must use retained AI person detections at current UI confidence');
 check(files.classical.includes("WORK_MAX=640"),'Classical CV browser working-image cap changed');
-check(files.classical.includes("classical-cv-worker.js?v=${VERSION}")&&files.classical.includes("VERSION='0.8.3'"),'Classical CV worker cache/version pin missing');
+check(files.classical.includes("classical-cv-worker.js?v=${VERSION}")&&files.classical.includes(`VERSION='${files.version.version}'`),'Classical CV worker cache version must match the release manifest');
 check(!files.index.includes('cdn.jsdelivr.net/npm/@techstark/opencv-js')&&!/<script[^>]+src=["'][^"']*opencv(?:\.min)?\.js/i.test(files.index),'OpenCV.js must remain lazy and worker-only');
 check(!/<script[^>]+src=["'][^"']*classical-cv-worker\.js/i.test(files.index),'Classical CV worker must not be loaded as a page script');
 check(files.classicalWorker.includes("@techstark/opencv-js@4.12.0-release.1/dist/opencv.js"),'OpenCV.js runtime pin changed');
