@@ -50,7 +50,7 @@ These experiments are registered under `models.js:historyExperiments`, outside `
 
 Before a history experiment runs, the registered AI adapters are released. The 2001 face cascade, 2005 HOG detector, and 1998 digit-region proposal stage use a dedicated worker that lazily imports pinned OpenCV.js. The worker receives an aspect-preserving image capped at 640 px on its longest side and returns only region boxes and timings. It deletes OpenCV objects within each run.
 
-For the digit experiment, the OpenCV worker is terminated after candidate extraction and before the pinned MNIST ONNX session is initialized. The digit model is SHA-256 checked and uses ONNX Runtime Web's WASM provider. This avoids intentionally keeping OpenCV WASM and the digit-model runtime resident together.
+For the digit experiment, the OpenCV worker is terminated after candidate extraction and before the pinned MNIST-12 ONNX opset-12 session is initialized. The model is SHA-256 checked and uses ONNX Runtime Web's WASM provider. This avoids intentionally keeping OpenCV WASM and the digit-model runtime resident together.
 
 Leaving Time Machine, pressing **Release historical runtime**, or navigating away terminates the OpenCV worker and releases the digit ONNX session. Worker termination defines the JavaScript ownership boundary; it does not prove the browser has already returned native/WASM pages to the operating system.
 
@@ -108,7 +108,7 @@ RT-DETR uses an aspect-preserving staging canvas capped at 640 px on the longest
 
 Time Machine owns the active runnable model. Selecting a generation does not navigate to Model Race.
 
-The timeline itself is registry-driven. `models.js` owns chronological entries, the default Time Machine AI model, and a separate `historyExperiments` table. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model. `app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
+The timeline itself is registry-driven. `models.js` owns chronological entries, the default Time Machine AI model, and a separate `historyExperiments` table. Time Machine opens with YOLOX-Nano as a lightweight fast-inference starting point; `defaults.live` remains SSD-MobileNetV1 INT8. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model. `app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
 
 Inside the Model follows the same active model through the `inspection` capability contract. The contract declares the native input/preprocessing presentation, tensor shape/layout, pipeline explanation, comparison-table values, preview strategy, intermediate-data policy, and result note. `app.js` renders these fields generically.
 
