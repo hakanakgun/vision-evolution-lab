@@ -81,16 +81,20 @@ async function runFace(cv,width,height,pixels){
 
 async function runHog(cv,width,height,pixels){
   const src=makeRgbaMat(cv,width,height,pixels),rgb=new cv.Mat(),rects=new cv.RectVector(),hog=new cv.HOGDescriptor();
-  let detector=null;
+  let detector=null,detectorMat=null;
   try{
     cv.cvtColor(src,rgb,cv.COLOR_RGBA2RGB,0);
     detector=cv.HOGDescriptor.getDefaultPeopleDetector();
-    hog.setSVMDetector(detector);
+    const detectorSize=detector.size();
+    if(detectorSize!==hog.getDescriptorSize()+1)throw new Error('OpenCV default people detector has an unexpected coefficient count.');
+    detectorMat=new cv.Mat(detectorSize,1,cv.CV_32FC1);
+    for(let index=0;index<detectorSize;index++)detectorMat.data32F[index]=detector.get(index);
+    hog.setSVMDetector(detectorMat);
     const started=performance.now();
     hog.detectMultiScale(rgb,rects,0,new cv.Size(8,8),new cv.Size(8,8),1.05,2,false);
     return{boxes:rectsToArray(rects),inferenceMs:performance.now()-started};
   }finally{
-    safeDelete(detector);safeDelete(hog);safeDelete(rects);safeDelete(rgb);safeDelete(src);
+    safeDelete(detectorMat);safeDelete(detector);safeDelete(hog);safeDelete(rects);safeDelete(rgb);safeDelete(src);
   }
 }
 

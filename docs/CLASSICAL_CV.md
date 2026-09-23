@@ -60,7 +60,7 @@ The worker converts RGBA to grayscale, applies histogram equalization, and calls
 The implementation uses:
 
 - `cv.HOGDescriptor`
-- `cv.HOGDescriptor.getDefaultPeopleDetector()`
+- `cv.HOGDescriptor.getDefaultPeopleDetector()`, whose `FloatVector` coefficients are copied to a `CV_32FC1` matrix before `setSVMDetector()` in the pinned OpenCV.js binding.
 - the default 64×128 detection window
 - multi-scale sliding-window detection
 
