@@ -6,10 +6,10 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.10.5',
+    version:'0.10.6',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
-    defaults:Object.freeze({timeMachine:'yolox',live:'ssd'}),
+    defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),
     timeline:Object.freeze([
       Object.freeze({year:1980,title:'Neocognitron',note:'run · early pattern-response demo',kind:'history-experiment',experiment:'neocognitron'}),
       Object.freeze({year:1998,title:'LeNet-era MNIST CNN',note:'run · handwritten digits only',kind:'history-experiment',experiment:'mnist-digits'}),
@@ -61,7 +61,7 @@
       id:'tiny-yolov2-voc-opset8',title:'Tiny YOLOv2',year:2016,status:'runnable',family:'Tiny YOLOv2',task:'object-detection',
       license:'upstream metadata Apache-2.0; model-card body MIT; see MODEL_SOURCES.md',bytes:66584576,sha256:'583fb7fdc948435ceac9fa82efc7708701efe8382a859a3dd46526b155f5f2ae',input:416,nms:0.40,
       revision:'869707e16e57006f97d98af54cfdc8a1d388ae61',anchors:Object.freeze([1.08,1.19,3.42,4.41,6.63,11.38,9.42,5.11,16.62,10.52]),
-      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:false,race:Object.freeze({
+      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:Object.freeze({enabled:true,order:20,summary:'Sequential inference · no frame queue'}),race:Object.freeze({
         enabled:true,group:'general-object',order:10,prefix:'tiny',workCanvasId:'race-tiny-work',timingBoundary:'ort-session',
         badge:'2016 · VOC20',badgeClass:'',cardClass:'',emptyText:'Pinned ONNX Model Zoo export · Pascal VOC 20 classes · ~63.5 MB.',progress:true,progressText:'Model not loaded.',
         architecture:'5 anchors · 13×13 grid · Pascal VOC 20-class CNN detector',
@@ -125,7 +125,7 @@
     }),
     yolox:Object.freeze({
       id:'yolox-nano-0.1.1rc0',title:'YOLOX-Nano',year:2021,status:'runnable',family:'YOLOX Nano',task:'object-detection',license:'Apache-2.0',bytes:3659407,input:416,nms:0.45,
-      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:false,race:Object.freeze({
+      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:Object.freeze({enabled:true,order:30,summary:'Sequential inference · no frame queue'}),race:Object.freeze({
         enabled:true,group:'general-object',order:30,prefix:'yolo',workCanvasId:'race-yolo-work',timingBoundary:'ort-session',
         badge:'2021 anchor-free',badgeClass:'generation',cardClass:'',emptyText:'Official Apache-2.0 project release · ONNX 3.49 MB.',progress:true,progressText:'Model not loaded.',
         architecture:'anchor-free head · decoupled classification/regression · modern real-time CNN detector',
@@ -161,7 +161,7 @@
     rtdetr:Object.freeze({
       id:'rtdetr-r18vd-transformersjs',title:'RT-DETR R18',year:2023,status:'runnable',family:'RT-DETR',task:'object-detection',license:'Apache-2.0 base model',
       modelId:'onnx-community/rtdetr_r18vd',baseModel:'PekingU/rtdetr_r18vd',revision:'ec641af14c7cc8f93cd641a1458f498abbbbb533',parameters:'20.2M',input:640,
-      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:false,race:Object.freeze({
+      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:Object.freeze({enabled:true,order:40,summary:'Sequential inference · no frame queue'}),race:Object.freeze({
         enabled:true,group:'general-object',order:40,prefix:'rt',workCanvasId:'race-rt-work',timingBoundary:'transformers-pipeline',
         badge:'2023 transformer',badgeClass:'transformer-pill',cardClass:'transformer-model',emptyText:'Hugging Face ONNX Community · Transformers.js-ready conversion of Apache-2.0 PekingU RT-DETR R18.',progress:true,progressText:'Transformers.js model not loaded.',
         architecture:'end-to-end set prediction · transformer detector · no page-side NMS',
@@ -194,7 +194,7 @@
     rtdetrv2:Object.freeze({
       id:'rtdetrv2-r18vd-transformersjs',title:'RT-DETRv2 R18',year:2024,status:'runnable',family:'RT-DETRv2',task:'object-detection',license:'Apache-2.0',
       modelId:'onnx-community/rtdetr_v2_r18vd-ONNX',baseModel:'PekingU/rtdetr_v2_r18vd',revision:'936f90b6a476c6da4dfe053fc521af55285976ba',parameters:'20M',input:640,
-      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:false,race:Object.freeze({
+      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:Object.freeze({enabled:true,order:50,summary:'Sequential inference · no frame queue'}),race:Object.freeze({
         enabled:true,group:'general-object',order:50,prefix:'rtv2',workCanvasId:'race-rtv2-work',timingBoundary:'transformers-pipeline',
         badge:'2024 research preview',badgeClass:'transformer-pill',cardClass:'transformer-model',emptyText:'Pinned ONNX Community conversion · RT-DETRv2 R18 · COCO.',progress:true,progressText:'Transformers.js model not loaded.',
         architecture:'end-to-end set prediction · improved DETR training · no page-side NMS',

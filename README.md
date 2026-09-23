@@ -8,10 +8,10 @@ Live: https://hakanakgun.github.io/vision-evolution-lab/
 
 Vision Evolution Lab lets you run and compare object-detection generations without an application backend.
 
-- **Vision Time Machine** opens with YOLOX-Nano as a lightweight fast-inference starting point; all runnable years remain selectable. One image stays selected while early task-specific experiments show pattern responses, handwritten digits, faces, or pedestrians. Live Camera remains SSD-MobileNetV1 INT8.
+- **Vision Time Machine** opens with YOLOX-Nano as a lightweight fast-inference starting point; all runnable years remain selectable. One image stays selected while early task-specific experiments show pattern responses, handwritten digits, faces, or pedestrians.
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
-- **Live Camera** runs local browser inference through live-capable runtime adapters with rolling latency measurements; SSD-MobileNetV1 INT8 is currently the only live-enabled model.
+- **Live Camera** runs the currently selected Time Machine detector locally, through its runtime adapter, with rolling latency measurements. It processes frames sequentially without a frame queue.
 - **Early history experiments** run inside Time Machine. Their task-specific outputs stay separate from the general-object models in Model Race.
 - **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
@@ -76,7 +76,9 @@ Current runtime versions are pinned in the repository. Release/cache behavior an
 
 The repeated four-model benchmark reload issue is mitigated by using the standard non-JSEP ONNX Runtime WASM bundle for Tiny YOLOv2, SSD-MobileNetV1 INT8, and YOLOX-Nano on iOS. Desktop keeps the WebGPU/JSEP-capable bundle, while RT-DETR remains on its independent Transformers.js runtime.
 
-On 2026-09-22, the updated iOS path completed five consecutive full four-model Benchmark ×20 runs on the user's physical iPhone/Brave session without an abrupt reload. This is strong device-level validation of the mitigation, but it does not prove the historical WebKit/JSEP root cause or universal stability across all iOS devices and versions.
+On 2026-09-22, the updated iOS path completed five consecutive full four-model Benchmark ×20 runs on the user's physical iPhone/Brave session without an abrupt reload. On 2026-09-23, the user also completed a five-model ×20 run and Model Race, including the RT-DETRv2 R18 research preview, on iOS 18.7 / Brave-WebKit. These results support the tested device path; they do not prove the historical WebKit/JSEP root cause or universal stability across iOS devices and versions.
+
+Live Camera now follows the Time Machine selection for all five detectors; sustained per-model camera testing on physical iOS devices is still pending. See [the iOS test checklist](docs/IOS_WEBKIT_DIAGNOSTICS.md#physical-ios-tests-still-pending).
 
 The normal 1 warm-up + 20 measured-run benchmark contract is unchanged. The diagnostic modes remain available for regression analysis.
 

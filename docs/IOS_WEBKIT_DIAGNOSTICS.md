@@ -6,6 +6,27 @@ Mitigation validated on the current physical-device test, while the historical r
 
 On a physical iPhone running an iOS browser, repeated sequential benchmarking of all four detector runtimes can silently recreate the page. Most observed failures do not include an orderly `pagehide` and do not produce a catchable JavaScript exception before the new page instance starts.
 
+On 2026-09-23, the user reported a five-model Benchmark ×20 and Model Race completing on iOS 18.7 / Brave-WebKit, including RT-DETRv2 R18. The measured warm inference results were:
+
+| Model | Backend | p50 | p90 | p50 end-to-end | Timing variation |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Tiny YOLOv2 | WASM | 176.5 ms | 179.0 ms | 179.0 ms | 1.6% |
+| SSD-MobileNetV1 INT8 | WASM | 87.0 ms | 89.0 ms | 88.0 ms | 1.6% |
+| YOLOX-Nano | WASM | 37.0 ms | 38.0 ms | 41.0 ms | 2.1% |
+| RT-DETR R18 | WebGPU fp16 | 171.0 ms | 182.0 ms | 171.0 ms | 4.0% |
+| RT-DETRv2 R18 | WebGPU fp16 | 178.0 ms | 183.0 ms | 178.5 ms | 3.2% |
+
+These are user-reported results from one iPhone session, not a cross-device performance guarantee. The Model Race image run is also a one-image comparison, not a dataset-level accuracy evaluation. The completed tests do not cover sustained Live Camera inference.
+
+## Physical iOS tests still pending
+
+- Start Live Camera separately with each of the five Time Machine models selected; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.
+- Stop and restart camera for each model; change the Time Machine selection while the camera runs and confirm the stream stops and the next start uses the newly selected model.
+- Run a 2–5 minute camera soak with RT-DETRv2 and YOLOX-Nano, then stop and restart; watch for page reload, frozen frames, thermal slowdown, or an unresponsive stop control.
+- Test camera permission denied/revoked, switching rear/front camera if offered by the UI, rotating the phone, and backgrounding/resuming the tab.
+- Repeat the Live Camera checks in iOS Safari as well as Brave; the benchmark screenshot establishes only the reported Brave/WebKit path.
+- Verify fallback on a configuration where WebGPU is unavailable or rejected, especially RT-DETR and RT-DETRv2 WASM fallback, if such an iOS/browser combination is available.
+
 The current working hypothesis is browser content-process termination under memory pressure or a related WebKit/runtime allocation problem. This remains a hypothesis, not a proven root cause.
 
 ## Symptom boundaries

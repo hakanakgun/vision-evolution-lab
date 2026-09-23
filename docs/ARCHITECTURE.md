@@ -24,7 +24,7 @@ Runnable model metadata lives in `models.js`. Each runnable model declares capab
 
 - `timeMachine` — boolean opt-in for Time Machine;
 - `benchmark` — boolean opt-in for the warm benchmark contract;
-- `live` — `false` or ordered live-camera metadata; SSD-MobileNetV1 INT8 is currently the only enabled live model;
+- `live` — `false` or ordered live-camera metadata; all five runnable general-object detectors are live-capable;
 - `inspection` — a truthful inspection descriptor, or `false` when no inspection surface is exposed;
 - `race` — comparison group, deterministic order, UI prefix/work-canvas ownership, and timing boundary.
 
@@ -40,7 +40,7 @@ SSD registers its adapter in `app.js`; Tiny YOLOv2, YOLOX-Nano, and RT-DETR regi
 
 Model Race presentation is also capability-driven. Each `race` capability declares deterministic order, DOM prefix, work-canvas ownership, timing boundary, card/metric presentation, and architecture summary. `race.js` generates result cards, benchmark rows, pairwise-overlap cells, unmatched counters, architecture cards, and hidden work canvases from that metadata. Adding another model to the `general-object` comparison group no longer requires adding another static result card or pairwise overlap cell to `index.html`.
 
-Live Camera resolves its model through the same runtime registry. The `live` capability provides deterministic ordering and presentation metadata, while `defaults.live` chooses the initial live model. Camera start calls the adapter's optional `prepare()` hook and each frame goes through `adapter.run(..., {live:true})`; the camera loop no longer calls SSD session/inference functions directly. The model-selector container appears only when more than one live-capable adapter exists. Current behavior remains SSD-only, while future YOLOX/RT-DETR live support becomes an explicit capability change instead of another camera-specific path.
+Live Camera resolves its model from the active Time Machine selection through the same runtime registry. The `live` capability marks eligible detectors and provides presentation metadata; the camera has no separate model choice. Camera start calls the selected adapter's optional `prepare()` hook before requesting camera access, and each frame goes through `adapter.run(..., {live:true})`. The loop processes one frame at a time without queuing; changing the Time Machine selection stops the current stream, and a selection change during model preparation cancels the pending camera start. Tiny YOLOv2, SSD-MobileNetV1 INT8, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 are enabled. Sustained physical-iOS camera testing is still pending.
 
 ## Historical experiments in Time Machine
 
@@ -110,7 +110,7 @@ RT-DETR uses an aspect-preserving staging canvas capped at 640 px on the longest
 
 Time Machine owns the active runnable model. Selecting a generation does not navigate to Model Race.
 
-The timeline itself is registry-driven. `models.js` owns chronological entries, the default Time Machine AI model, and a separate `historyExperiments` table. Time Machine opens with YOLOX-Nano as a lightweight fast-inference starting point; `defaults.live` remains SSD-MobileNetV1 INT8. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model. `app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
+The timeline itself is registry-driven. `models.js` owns chronological entries, the default Time Machine AI model, and a separate `historyExperiments` table. Time Machine opens with YOLOX-Nano as a lightweight fast-inference starting point; Live Camera follows this active selection. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model. `app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
 
 Inside the Model follows the same active model through the `inspection` capability contract. The contract declares the native input/preprocessing presentation, tensor shape/layout, pipeline explanation, comparison-table values, preview strategy, intermediate-data policy, and result note. `app.js` renders these fields generically.
 

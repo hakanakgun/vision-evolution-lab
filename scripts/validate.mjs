@@ -193,11 +193,15 @@ check(!files.race.includes('function renderHeadMaps')&&!files.race.includes('ren
 check(files.race.includes("runtimeRegistry.assertRegistered({capability:'timeMachine'})"),'Time Machine adapter completeness is not asserted at startup');
 check(files.race.includes("runtimeRegistry.assertRegistered({capability:'live'})"),'Live Camera adapter completeness is not asserted after runtime registration');
 const liveKeys=metadataWindow.VisionRuntimeRegistry.modelKeys.filter(key=>metadataWindow.VisionRuntimeRegistry.capabilityEnabled(metadataRegistry[key],'live'));
-check(JSON.stringify(liveKeys)==='["ssd"]','current Live Camera scope must remain SSD-only');
-check(metadataRegistry.defaults?.live==='ssd','default Live Camera model must remain SSD');
+check(JSON.stringify(liveKeys)==='["tinyyolo","ssd","yolox","rtdetr","rtdetrv2"]','all runnable Time Machine detectors must be eligible for Live Camera');
+check(metadataRegistry.defaults?.live===metadataRegistry.defaults?.timeMachine,'default Live Camera model must follow the Time Machine default');
 check(files.index.includes('id="live-model-name"')&&files.index.includes('id="live-model-controls"'),'Live Camera metadata/selector containers missing');
 check(files.app.includes("RuntimeRegistry.list({capability:'live'})")&&files.app.includes('adapter.run(video,canvas,{updateMain:false,live:true})'),'Live Camera is not runtime-adapter driven');
+check(files.app.includes('function currentLiveAdapter(){return RuntimeRegistry.get(state.activeModel)}'),'Live Camera must use the active Time Machine model');
+check(files.app.includes('selectActiveModel(key,{scroll:false})'),'Live Camera model choices must update Time Machine selection');
+check(files.app.includes('state.cameraStartToken++')&&files.app.includes('token!==state.cameraStartToken'),'Live Camera start must cancel when Time Machine selection changes');
 check(files.app.includes('prepare:()=>createSession()'),'SSD live adapter does not preserve pre-camera runtime preparation');
+for(const [key,needle] of [['tinyyolo','prepare:()=>createTinySession()'],['yolox','prepare:()=>createYoloSession()'],['rtdetr','prepare:()=>createRT()'],['rtdetrv2','prepare:()=>create()']])check(files.race.includes(needle),`${key}: Live Camera adapter does not prepare its runtime before camera access`);
 check(!files.app.includes('inferSource(video,canvas,{updateMain:false})'),'Live Camera still directly calls SSD inference');
 check(files.app.includes('refreshLiveModels:renderLiveModels')&&files.race.includes('api.refreshLiveModels?.()'),'Live Camera registry refresh contract missing');
 for(const item of timeMachineModels){

@@ -189,17 +189,19 @@ ${tail||'—'}`;}
       return{preMs:NaN,infMs,postMs,totalMs:infMs+postMs,detections,visible,width:model.input,height:model.input,timingBoundary:'transformers-pipeline',rawCount:list.length,retained:detections.length,retentionThreshold:retainThreshold()};
     }
     async function release(){const old=pipe;pipe=null;backend='';dtype='';if(old&&typeof old.dispose==='function')try{await old.dispose()}catch(error){console.warn(`${model.title} pipeline dispose failed`,error)}}
-    return{run,release,backend:()=>`${backend.toUpperCase()} ${dtype}`.trim(),runtimeInfo:()=>({backend,dtype,initMs:loadMs,bytes:model.runtime[backend]?.modelBytes,cacheState:pipe?'memory':'runtime released',source:`HF pinned ${model.revision}`}),diagnosticBackends:()=>[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU fp16',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM int8'}]};
+    return{run,prepare:()=>create(),release,backend:()=>`${backend.toUpperCase()} ${dtype}`.trim(),runtimeInfo:()=>({backend,dtype,initMs:loadMs,bytes:model.runtime[backend]?.modelBytes,cacheState:pipe?'memory':'runtime released',source:`HF pinned ${model.revision}`}),diagnosticBackends:()=>[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU fp16',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM int8'}]};
   }
   function registerRaceRuntimeAdapters(){
     if(!runtimeRegistry.get('tinyyolo'))runtimeRegistry.register('tinyyolo',{
       run:(source,canvas)=>runTiny(source,canvas),
+      prepare:()=>createTinySession(),
       release:releaseTinyRuntime,
       backend:()=>state.tinyProvider.toUpperCase(),
       runtimeInfo:()=>({backend:state.tinyProvider,downloadMs:state.tinyDownloadMs,initMs:state.tinyInitMs,bytes:TINY.bytes,cacheState:state.tinyCacheState,source:state.tinySource})
     });
     if(!runtimeRegistry.get('yolox'))runtimeRegistry.register('yolox',{
       run:(source,canvas,options={})=>{const {benchmarking,...runtimeOptions}=options;return runYolo(source,canvas,runtimeOptions)},
+      prepare:()=>createYoloSession(),
       release:releaseYoloRuntime,
       backend:()=>state.yoloProvider.toUpperCase(),
       runtimeInfo:()=>({backend:state.yoloProvider,downloadMs:state.yoloDownloadMs,initMs:state.yoloInitMs,bytes:YOLO.bytes,cacheState:state.yoloCacheState,source:state.yoloSource}),
@@ -208,6 +210,7 @@ ${tail||'—'}`;}
     });
     if(!runtimeRegistry.get('rtdetr'))runtimeRegistry.register('rtdetr',{
       run:(source,canvas,options={})=>runRT(source,canvas,options),
+      prepare:()=>createRT(),
       release:releaseRTRuntime,
       backend:()=>state.rtBackend.toUpperCase()+' '+state.rtDtype,
       runtimeInfo:()=>{const cfg=RT.runtime[state.rtBackend]||{};return{backend:state.rtBackend,dtype:state.rtDtype,initMs:state.rtLoadMs,bytes:cfg.modelBytes,cacheState:state.rtCacheState,source:`HF pinned ${RT.revision}`}},
