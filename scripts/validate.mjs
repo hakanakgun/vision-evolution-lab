@@ -161,8 +161,12 @@ const expectedTimeMachineKeys=metadataWindow.VisionRuntimeRegistry.modelKeys.fil
 const timelineKeys=timeMachineModels.map(item=>item.key);
 check(new Set(timelineKeys).size===timelineKeys.length,'Time Machine timeline contains duplicate runnable models');
 check(expectedTimeMachineKeys.every(key=>timelineKeys.includes(key))&&timelineKeys.every(key=>expectedTimeMachineKeys.includes(key)),'Time Machine timeline/model capability membership mismatch');
-check(metadataRegistry.defaults?.timeMachine&&expectedTimeMachineKeys.includes(metadataRegistry.defaults.timeMachine),'default Time Machine model invalid');
+check(metadataRegistry.defaults?.timeMachine==='yolox'&&expectedTimeMachineKeys.includes(metadataRegistry.defaults.timeMachine),'Time Machine must open on the lightweight YOLOX-Nano starting model');
 check(files.index.includes('id="timeline-track"')&&files.index.includes('id="preprocess-table"'),'dynamic Time Machine/inspection containers missing');
+check(files.index.includes('class="timeline-scroll" data-scroll-area role="region" tabindex="0"')&&files.index.includes('aria-describedby="timeline-help"')&&files.index.includes('id="timeline-selection"'),'timeline scroll region and selection label must be accessible');
+check(files.index.includes('id="active-model-title">YOLOX-Nano')&&files.index.includes('id="rerun" disabled>Run YOLOX-Nano')&&files.index.includes('id="inside-active-model">YOLOX-Nano'),'initial Time Machine and inspector labels must match the default model');
+check(files.app.includes("button.setAttribute('aria-pressed',String(selected))")&&files.app.includes("$('timeline-selection').textContent=")&&!files.app.includes('track.style.minWidth'),'timeline selection state must stay synchronized without page-width expansion');
+check(files.styles.includes('.timeline .milestone{appearance:none')&&files.styles.includes('.timeline .timeline-scroll{')&&files.styles.includes('scroll-snap-type:x proximity')&&files.styles.includes('prefers-reduced-motion:reduce'),'timeline controls must use the responsive, reduced-motion rail styles');
 check(!files.index.includes('data-runnable-model=')&&!files.index.includes('class="preprocess-row'),'static Time Machine timeline or preprocessing rows returned');
 check(files.app.includes('function renderTimeline()')&&files.app.includes('function renderPreprocessingComparison()'),'Time Machine presentation is not registry-driven');
 check(files.app.includes('function inspectionFor(modelKey)')&&!files.app.includes('INSIDE_SPECS'),'Inside the Model is not capability-driven');
@@ -206,9 +210,11 @@ for(const [year,key,title] of expectedExperiments){
   check(spec&&spec.year===year&&spec.input==='image'&&spec.task&&spec.output&&spec.runner,'historical experiment metadata incomplete: '+key);
   check(!entry.model&&!entry.jump,'historical experiment must stay outside model registry and tab navigation: '+key);
 }
-check(historyExperiments['mnist-digits'].model?.repository==='onnxmodelzoo/mnist-1','pinned MNIST model metadata missing');
-check(historyExperiments['mnist-digits'].model?.revision==='16c6d2bc15b28b69752d300bfdac5e91c1e19d4b','MNIST model revision changed');
-check(historyExperiments['mnist-digits'].model?.sha256==='22239f3fcc38f34d02eecd6869aed15b93f8e3e1125dda48990d244a5e113d49','MNIST model checksum changed');
+check(historyExperiments['mnist-digits'].model?.repository==='onnx/models','pinned MNIST Model Zoo source missing');
+check(historyExperiments['mnist-digits'].model?.revision==='4f43949841cb55a0b98dc8fcd045431ccafd9f96','MNIST Model Zoo source revision changed');
+check(historyExperiments['mnist-digits'].model?.file==='mnist-12.onnx'&&historyExperiments['mnist-digits'].model?.opset===12&&historyExperiments['mnist-digits'].model?.bytes===26143,'MNIST must use the pinned opset-12 compatible export');
+check(historyExperiments['mnist-digits'].model?.sha256==='5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd','MNIST Model Zoo model checksum changed');
+check(historyExperiments['mnist-digits'].model?.url==='https://media.githubusercontent.com/media/onnx/models/4f43949841cb55a0b98dc8fcd045431ccafd9f96/validated/vision/classification/mnist/model/mnist-12.onnx','MNIST download must stay on the pinned Model Zoo artifact');
 check(historyExperiments['mnist-digits'].model?.provider==='wasm'&&historyExperiments['mnist-digits'].model?.licenseMetadata==='Apache-2.0'&&historyExperiments['mnist-digits'].model?.licenseCard==='MIT','MNIST model runtime or license ambiguity must remain disclosed');
 const historicalMilestones=(metadataRegistry.timeline||[]).filter(entry=>entry.kind==='historical');
 const expectedHistoricalMilestones=[[2012,'AlexNet'],[2014,'R-CNN'],[2015,'Faster R-CNN'],[2016,'YOLOv1'],[2016,'SSD'],[2020,'DETR']];
@@ -244,6 +250,7 @@ check(!files.historyExperiments.includes('adapter.run'),'historical experiment m
 check(files.historyExperiments.includes('DIGIT_SCORE_FLOOR=.70'),'digit display-score floor changed');
 check(files.historyExperiments.includes("score '+Math.round(item.score*100)+'%'"),'digit output must identify its raw model score separately from AI confidence');
 check(files.historyExperiments.includes('model.sha256')&&files.historyExperiments.includes("subtle.digest('SHA-256',buffer)"),'MNIST ONNX model must be checksum-verified before session creation');
+check(files.historyExperiments.includes('model.bytes&&buffer.byteLength!==model.bytes'),'MNIST ONNX model must match its pinned file size before session creation');
 check(files.historyExperiments.includes("executionProviders:['wasm']"),'MNIST ONNX session must use the standard WASM provider');
 check(files.historyExperiments.includes('side=28')&&files.historyExperiments.includes('new Float32Array(side*side)')&&files.historyExperiments.includes('[1,1,28,28]'),'MNIST tensor must be grayscale float 28×28 NCHW');
 check(files.historyExperiments.includes('isolated handwritten digits only')&&files.historyExperiments.includes('arbitrary text')&&historyExperiments['mnist-digits'].note.includes('not calibrated confidence'),'digit task limitation and no-result explanation must be explicit');

@@ -167,6 +167,7 @@
     if(!response.ok)throw new Error('MNIST model download failed: HTTP '+response.status);
     const buffer=await response.arrayBuffer();
     if(buffer.byteLength<10000)throw new Error('MNIST model download was smaller than the expected ONNX asset.');
+    if(model.bytes&&buffer.byteLength!==model.bytes)throw new Error('MNIST model size did not match the pinned ONNX asset.');
     const digest=await window.crypto.subtle.digest('SHA-256',buffer),actual=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
     if(actual!==model.sha256)throw new Error('MNIST model SHA-256 verification failed; the unverified model was discarded.');
     const session=await window.ort.InferenceSession.create(new Uint8Array(buffer),{executionProviders:['wasm']});

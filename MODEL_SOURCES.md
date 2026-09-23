@@ -12,16 +12,16 @@
 ### 1998 era · MNIST digit CNN reference
 
 - Historical task: LeNet-5-era handwritten digit classification; LeNet-5 was introduced for document recognition.
-- Browser checkpoint: ONNX Model Zoo `onnxmodelzoo/mnist-1`, fetched only when digit-like image regions are proposed.
-- Pinned revision: `16c6d2bc15b28b69752d300bfdac5e91c1e19d4b`.
-- File: `mnist-1.onnx`.
-- File SHA-256 reported by Hugging Face/Xet: `22239f3fcc38f34d02eecd6869aed15b93f8e3e1125dda48990d244a5e113d49`.
-- File size: approximately 27.3 kB.
-- Upstream model card says it was trained with CNTK from the “CNTK 103D: Convolutional Neural Network with MNIST” tutorial; it is a later MNIST CNN reference, not original 1998 LeNet-5 trained weights.
-- Model-card input: float32 `1×1×28×28`; grayscale values scaled to [0,1]; black background with white digit strokes. The browser proposes regions with OpenCV, fits each crop inside a 28×28 input, normalizes grayscale to white strokes on black with values in [0,1], applies the model logits through softmax, and displays crops with a score of at least 0.70.
+- Browser checkpoint: ONNX Model Zoo MNIST-12, fetched only after digit-like image regions are proposed.
+- Pinned source commit: `4f43949841cb55a0b98dc8fcd045431ccafd9f96` in the official `onnx/models` repository.
+- Repository path: `validated/vision/classification/mnist/model/mnist-12.onnx`. ONNX Model Zoo lists ONNX 1.9, opset 12, and 1.1% top-1 error for this export.
+- Git LFS content SHA-256: `5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd`; file size: 26,143 bytes.
+- Source: trained with CNTK following the “CNTK 103D: Convolutional Neural Network with MNIST” tutorial. This later MNIST CNN reference is not original 1998 LeNet-5 trained weights.
+- Input and output: float32 `1×1×28×28` grayscale input scaled to [0,1], with a black background and white digit strokes; output is ten pre-softmax scores. The browser keeps the existing crop preparation, applies softmax, and displays crops scoring at least 0.70.
 - The 0.70 display cutoff is not calibrated confidence. Region proposals are a browser experiment and can miss digits or classify non-digits.
-- Repository metadata declares Apache-2.0 while the model-card body includes an MIT SPDX marker and License section. Both upstream declarations are recorded; this project does not present one as a definitive weights license.
-- The model file is fetched at runtime from a pinned Hugging Face URL and verified by SHA-256; it is not bundled in this repository.
+- The earlier Hugging Face representation declared Apache-2.0 in repository metadata and MIT in the model-card body. The direct ONNX Model Zoo source has an Apache-2.0 repository license and an MIT declaration in the MNIST README. Both source-level statements are recorded; this project does not present one as a definitive weights license.
+- The model is fetched at runtime from the pinned Git LFS URL and SHA-256 verified before session creation; it is not bundled in this repository.
+- The superseded `mnist-1.onnx` artifact is associated with ONNX Model Zoo issue [#439](https://github.com/onnx/models/issues/439), which records the same `Block386:Div(1)` not-implemented error. The active opset-12 model replaces that legacy graph.
 - This task is limited to isolated handwritten digits. It does not detect general objects or promise OCR of printed text.
 
 ### 2001 · Viola–Jones method family / OpenCV frontal-face cascade

@@ -10,7 +10,7 @@
     const COCO = Object.freeze({1:'person',2:'bicycle',3:'car',4:'motorcycle',5:'airplane',6:'bus',7:'train',8:'truck',9:'boat',10:'traffic light',11:'fire hydrant',13:'stop sign',14:'parking meter',15:'bench',16:'bird',17:'cat',18:'dog',19:'horse',20:'sheep',21:'cow',22:'elephant',23:'bear',24:'zebra',25:'giraffe',27:'backpack',28:'umbrella',31:'handbag',32:'tie',33:'suitcase',34:'frisbee',35:'skis',36:'snowboard',37:'sports ball',38:'kite',39:'baseball bat',40:'baseball glove',41:'skateboard',42:'surfboard',43:'tennis racket',44:'bottle',46:'wine glass',47:'cup',48:'fork',49:'knife',50:'spoon',51:'bowl',52:'banana',53:'apple',54:'sandwich',55:'orange',56:'broccoli',57:'carrot',58:'hot dog',59:'pizza',60:'donut',61:'cake',62:'chair',63:'couch',64:'potted plant',65:'bed',67:'dining table',70:'toilet',72:'tv',73:'laptop',74:'mouse',75:'remote',76:'keyboard',77:'cell phone',78:'microwave',79:'oven',80:'toaster',81:'sink',82:'refrigerator',84:'book',85:'clock',86:'vase',87:'scissors',88:'teddy bear',89:'hair drier',90:'toothbrush'});
 
     const $ = id => document.getElementById(id);
-    const DEFAULT_MODEL = REGISTRY.defaults?.timeMachine || Object.keys(REGISTRY).find(key=>REGISTRY[key]?.status==='runnable'&&RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine')) || 'ssd';
+    const DEFAULT_MODEL = REGISTRY.defaults?.timeMachine || Object.keys(REGISTRY).find(key=>REGISTRY[key]?.status==='runnable'&&RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine')) || 'yolox';
     const DEFAULT_LIVE_MODEL = REGISTRY.defaults?.live || RuntimeRegistry.modelKeys.find(key=>RuntimeRegistry.capabilityEnabled(REGISTRY[key],'live')) || '';
     const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve()};
 
@@ -35,7 +35,15 @@
     function renderProvenance(model){const ui=model.ui||{};$('active-provenance-title').textContent=model.title;$('active-provenance-text').textContent=ui.provenance||`${model.family} · ${model.license}`;const links=$('active-provenance-links');links.replaceChildren();for(const link of ui.links||[]){const a=document.createElement('a');a.href=link.url;a.textContent=link.label;a.target='_blank';a.rel='noreferrer';links.appendChild(a);}}
     function updateActiveModelUI(){const model=activeModel(),ui=model.ui||{},runtimeUi=ui.runtime||{},inspection=model.capabilities?.inspection;$('active-model-title').textContent=model.title;$('active-model-subtitle').textContent=ui.subtitle||`${model.task} · ${model.family}`;$('rerun').textContent=`Run ${model.title}`;$('m-transfer-label').textContent='Model transfer';$('m-init-label').textContent=runtimeUi.initLabel||'Session init';setMetric('m-bytes',runtimeUi.bytesText||bytes(model.bytes));setMetric('m-cache',runtimeUi.cacheInitial||'checking…');setMetric('d-input',inspection&&typeof inspection==='object'?inspection.input:(model.input?`${model.input}×${model.input}`:'dynamic'));$('input-size').textContent=state.image?'Source ready · not run':'No input';renderProvenance(model);updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}
     async function updateActiveCacheState(){const key=state.activeModel,model=activeModel();if(!Array.isArray(model.sources)||!model.sources.length)return;try{const info=await ModelLoader.status(model);if(state.activeModel===key)setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state);}catch(_){}}
-    function selectActiveModel(key,{scroll=true}={}){if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}if(!REGISTRY[key]||!RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine'))return;state.historyExperiment='';state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.clear?.());syncHistoryControls();state.activeModel=key;document.querySelectorAll('[data-runnable-model]').forEach(btn=>btn.classList.toggle('active',btn.dataset.runnableModel===key));resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();if(state.image){drawSourceOnly();setStatus(`${activeModel().title} selected. Run the current image when ready.`);}else setStatus(`${activeModel().title} selected. Choose an image to run this generation.`);if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});}
+    function selectActiveModel(key,{scroll=true}={}){
+      if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}
+      if(!REGISTRY[key]||!RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine'))return;
+      state.historyExperiment='';state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.clear?.());state.activeModel=key;syncHistoryControls();
+      resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();
+      if(state.image){drawSourceOnly();setStatus(activeModel().title+' selected. Run the current image when ready.');}
+      else setStatus(activeModel().title+' selected. Choose an image to run this generation.');
+      if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});
+    }
     function reportRuntimeEvent(model,event){if(model!==state.activeModel||!event)return;if(event.type==='progress')updateMainModelProgress(event.info||{});if(event.type==='cache')setMetric('m-cache',event.text||'checking…');if(event.type==='runtime'){if(event.backend)$('backend-badge').textContent=event.dtype?`${String(event.backend).toUpperCase()} · ${event.dtype}`:String(event.backend).toUpperCase();if(Number.isFinite(event.downloadMs))setMetric('m-download',ms(event.downloadMs));if(Number.isFinite(event.initMs))setMetric('m-init',ms(event.initMs));if(event.bytes)setMetric('m-bytes',bytes(event.bytes));if(event.source)setMetric('m-cache',event.cacheState?`${event.cacheState} · ${event.source}`:event.source);}}
     let diagnosticHook=null,baselineSessionRuns=0;
     function traceDiagnostic(event,meta={}){if(typeof diagnosticHook!=='function')return;try{diagnosticHook(event,meta)}catch(_){}}
@@ -64,13 +72,13 @@
     }
     function renderTimeline(){
       const track=$('timeline-track'),entries=timeMachineEntries();if(!track)return;
-      track.replaceChildren();track.style.setProperty('--timeline-count',String(Math.max(1,entries.length)));track.style.minWidth=Math.max(780,entries.length*78)+'px';
+      track.replaceChildren();
       for(const entry of entries){
         const runnable=Boolean(entry.model),experiment=Boolean(entry.experiment),jump=Boolean(entry.jump),item=document.createElement(runnable||experiment||jump?'button':'div');
         item.className=['milestone',runnable?'runnable runnable-launch':'',experiment?'historical-experiment':'',jump?'module-launch':'',entry.kind==='research'?'research-only':'',entry.kind==='historical'?'historical-only':'',entry.className||'',runnable&&!state.historyExperiment&&entry.model===state.activeModel?'active':'',experiment&&entry.experiment===state.historyExperiment?'active':''].filter(Boolean).join(' ');
-        if(runnable){item.type='button';item.dataset.runnableModel=entry.model;item.setAttribute('aria-label',`Run ${entry.title} ${entry.year}`)}
-        else if(experiment){item.type='button';item.dataset.historyExperiment=entry.experiment;item.setAttribute('aria-label',`Run ${entry.title} on the current Time Machine image`)}
-        else if(jump){item.type='button';item.dataset.jump=entry.jump;item.setAttribute('aria-label',`Open ${entry.title}`)}
+        if(runnable){item.type='button';item.dataset.runnableModel=entry.model;item.setAttribute('aria-label','Select '+entry.title+' '+entry.year);item.setAttribute('aria-pressed',String(!state.historyExperiment&&entry.model===state.activeModel))}
+        else if(experiment){item.type='button';item.dataset.historyExperiment=entry.experiment;item.setAttribute('aria-label','Run '+entry.title+' on the current Time Machine image');item.setAttribute('aria-pressed',String(entry.experiment===state.historyExperiment))}
+        else if(jump){item.type='button';item.dataset.jump=entry.jump;item.setAttribute('aria-label','Open '+entry.title)}
         const dot=document.createElement('div');dot.className='dot';const year=document.createElement('div');year.className='year';year.textContent=String(entry.year);
         const strong=document.createElement('strong');strong.textContent=entry.title;const note=document.createElement('span');note.textContent=entry.note||'';
         item.append(dot,year,strong,note);track.appendChild(item);
@@ -105,8 +113,9 @@
       $('history-experiment-panel').hidden=!active;$('rerun').hidden=active;$('benchmark').hidden=active;
       $('confidence').disabled=active||state.running||state.benchmarking;
       $('history-run').disabled=!state.image||state.running||state.benchmarking||!active;
-      document.querySelectorAll('[data-runnable-model]').forEach(button=>button.classList.toggle('active',!active&&button.dataset.runnableModel===state.activeModel));
-      document.querySelectorAll('[data-history-experiment]').forEach(button=>button.classList.toggle('active',button.dataset.historyExperiment===state.historyExperiment));
+      document.querySelectorAll('[data-runnable-model]').forEach(button=>{const selected=!active&&button.dataset.runnableModel===state.activeModel;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});
+      document.querySelectorAll('[data-history-experiment]').forEach(button=>{const selected=button.dataset.historyExperiment===state.historyExperiment;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});
+      $('timeline-selection').textContent=active&&spec?spec.year+' · '+spec.title:activeModel().year+' · '+activeModel().title;
       if(active&&spec){
         $('history-experiment-title').textContent=spec.year+' · '+spec.title;
         $('history-experiment-description').textContent=spec.description||'This historical method runs on the selected Time Machine image.';

@@ -6,10 +6,10 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.10.0',
+    version:'0.10.1',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
-    defaults:Object.freeze({timeMachine:'ssd',live:'ssd'}),
+    defaults:Object.freeze({timeMachine:'yolox',live:'ssd'}),
     timeline:Object.freeze([
       Object.freeze({year:1980,title:'Neocognitron',note:'run · early pattern-response demo',kind:'history-experiment',experiment:'neocognitron'}),
       Object.freeze({year:1998,title:'LeNet-era MNIST CNN',note:'run · handwritten digits only',kind:'history-experiment',experiment:'mnist-digits'}),
@@ -39,9 +39,9 @@
         description:'Searches for digit-like regions, then classifies each crop with an MNIST convolutional network.',
         note:'This later ONNX Model Zoo checkpoint illustrates the handwritten-digit task; it is not the original 1998 LeNet-5 weights. It only recognizes isolated handwritten digits, not general objects or arbitrary printed text. Region proposals may miss digits or include non-digits. The displayed softmax score is a filter, not calibrated confidence.',
         model:Object.freeze({
-          repository:'onnxmodelzoo/mnist-1',revision:'16c6d2bc15b28b69752d300bfdac5e91c1e19d4b',file:'mnist-1.onnx',
-          url:'https://huggingface.co/onnxmodelzoo/mnist-1/resolve/16c6d2bc15b28b69752d300bfdac5e91c1e19d4b/mnist-1.onnx?download=true',
-          sha256:'22239f3fcc38f34d02eecd6869aed15b93f8e3e1125dda48990d244a5e113d49',
+          repository:'onnx/models',revision:'4f43949841cb55a0b98dc8fcd045431ccafd9f96',file:'mnist-12.onnx',bytes:26143,opset:12,
+          url:'https://media.githubusercontent.com/media/onnx/models/4f43949841cb55a0b98dc8fcd045431ccafd9f96/validated/vision/classification/mnist/model/mnist-12.onnx',
+          sha256:'5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd',
           licenseMetadata:'Apache-2.0',licenseCard:'MIT',provider:'wasm'
         })
       }),

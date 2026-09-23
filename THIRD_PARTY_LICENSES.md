@@ -39,10 +39,10 @@ Model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched fro
 
 ## MNIST digit task-reference checkpoint
 
-- Repository: `onnxmodelzoo/mnist-1` on Hugging Face.
-- Pinned revision: `16c6d2bc15b28b69752d300bfdac5e91c1e19d4b`.
-- File SHA-256: `22239f3fcc38f34d02eecd6869aed15b93f8e3e1125dda48990d244a5e113d49`.
-- Repository metadata declares Apache-2.0; the imported model-card body includes `SPDX-License-Identifier: MIT` and a License section stating MIT. Both upstream statements are preserved in the provenance notes, without treating the metadata/body mismatch as one definitive weights-license claim.
+- Repository: `onnx/models`.
+- Pinned commit: `4f43949841cb55a0b98dc8fcd045431ccafd9f96`.
+- File: `validated/vision/classification/mnist/model/mnist-12.onnx`; Git LFS content SHA-256 `5c688690f8bacf667d4c2074af5ad0646ca328d7ab03eccf944a65b320171bdd`.
+- The repository root LICENSE is Apache-2.0. The MNIST README carries an MIT SPDX marker and states MIT in its License section. The prior Hugging Face representation likewise showed Apache-2.0 metadata and MIT in the model-card body. These declarations remain recorded without selecting one definitive weights-license claim.
 - The checkpoint is fetched only when digit-like regions are found, then SHA-256 verified. It is not bundled in this repository.
 - It illustrates the handwritten MNIST digit task. It is not the original 1998 LeNet-5 weights and does not provide general-object detection.
 

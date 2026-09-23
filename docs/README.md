@@ -9,6 +9,7 @@ This directory contains implementation and investigation notes that are too deta
 
 Repository-level reference documents remain at the root because they are stable project contracts:
 
+- [Design direction](../DESIGN.md)
 - [Benchmark methodology](../BENCHMARK_METHODOLOGY.md)
 - [Model catalog](../MODEL_CATALOG.md)
 - [Model sources and provenance](../MODEL_SOURCES.md)
