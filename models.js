@@ -6,15 +6,15 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.8.0',
+    version:'0.10.0',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'ssd',live:'ssd'}),
     timeline:Object.freeze([
-      Object.freeze({year:1980,title:'Neocognitron',note:'history only · visual pattern recognition',kind:'historical'}),
-      Object.freeze({year:1998,title:'LeNet-5',note:'history only · digit classification',kind:'historical'}),
-      Object.freeze({year:2001,title:'Viola–Jones',note:'runnable · Classical CV',kind:'classical',jump:'classical-cv'}),
-      Object.freeze({year:2005,title:'HOG + SVM',note:'runnable · Classical CV',kind:'classical',jump:'classical-cv'}),
+      Object.freeze({year:1980,title:'Neocognitron',note:'run · early pattern-response demo',kind:'history-experiment',experiment:'neocognitron'}),
+      Object.freeze({year:1998,title:'LeNet-era MNIST CNN',note:'run · handwritten digits only',kind:'history-experiment',experiment:'mnist-digits'}),
+      Object.freeze({year:2001,title:'Viola–Jones',note:'run · frontal-face cascade',kind:'history-experiment',experiment:'viola-jones'}),
+      Object.freeze({year:2005,title:'HOG + SVM',note:'run · pedestrian detector',kind:'history-experiment',experiment:'hog-pedestrians'}),
       Object.freeze({year:2012,title:'AlexNet',note:'history only · image classification',kind:'historical'}),
       Object.freeze({year:2014,title:'R-CNN',note:'history only · region proposals + CNN',kind:'historical'}),
       Object.freeze({year:2015,title:'Faster R-CNN',note:'history only · learned proposals',kind:'historical'}),
@@ -28,6 +28,34 @@
       Object.freeze({year:2024,title:'LW-DETR',note:'research',kind:'research'}),
       Object.freeze({year:2024,title:'D-FINE',note:'research',kind:'research'})
     ]),
+    historyExperiments:Object.freeze({
+      'neocognitron':Object.freeze({
+        id:'neocognitron',year:1980,title:'Neocognitron · pattern-response preview',runner:'pattern-response',input:'image',task:'hierarchical visual pattern response',output:'response-map',
+        description:'An early pattern-recognition idea explored on this image through oriented responses and local max pooling.',
+        note:'Educational approximation with fixed edge filters and pooling. It is not a trained Neocognitron checkpoint and does not return object labels.'
+      }),
+      'mnist-digits':Object.freeze({
+        id:'mnist-digits',year:1998,title:'LeNet-era · MNIST digit CNN reference',runner:'mnist-digit-cnn',input:'image',task:'handwritten-digit-recognition',output:'digit-boxes',
+        description:'Searches for digit-like regions, then classifies each crop with an MNIST convolutional network.',
+        note:'This later ONNX Model Zoo checkpoint illustrates the handwritten-digit task; it is not the original 1998 LeNet-5 weights. It only recognizes isolated handwritten digits, not general objects or arbitrary printed text. Region proposals may miss digits or include non-digits. The displayed softmax score is a filter, not calibrated confidence.',
+        model:Object.freeze({
+          repository:'onnxmodelzoo/mnist-1',revision:'16c6d2bc15b28b69752d300bfdac5e91c1e19d4b',file:'mnist-1.onnx',
+          url:'https://huggingface.co/onnxmodelzoo/mnist-1/resolve/16c6d2bc15b28b69752d300bfdac5e91c1e19d4b/mnist-1.onnx?download=true',
+          sha256:'22239f3fcc38f34d02eecd6869aed15b93f8e3e1125dda48990d244a5e113d49',
+          licenseMetadata:'Apache-2.0',licenseCard:'MIT',provider:'wasm'
+        })
+      }),
+      'viola-jones':Object.freeze({
+        id:'viola-jones',year:2001,title:'Viola–Jones method family · frontal-face cascade',runner:'opencv-face',input:'image',task:'frontal-face-detection',output:'boxes',workerMethod:'face',
+        description:'Runs the pinned OpenCV frontal-face cascade on the same Time Machine image.',
+        note:'A representative of the Viola–Jones method family. The later OpenCV cascade weights are not the original 2001 paper artifact.'
+      }),
+      'hog-pedestrians':Object.freeze({
+        id:'hog-pedestrians',year:2005,title:'HOG + linear SVM · pedestrian detector',runner:'opencv-hog',input:'image',task:'pedestrian-detection',output:'boxes',workerMethod:'hog',
+        description:'Runs OpenCV HOG with its default 64×128 people detector on the same Time Machine image.',
+        note:'Detects pedestrians only. OpenCV’s embedded coefficients are not claimed to be the exact original Dalal–Triggs training artifact.'
+      })
+    }),
     tinyyolo:Object.freeze({
       id:'tiny-yolov2-voc-opset8',title:'Tiny YOLOv2',year:2016,status:'runnable',family:'Tiny YOLOv2',task:'object-detection',
       license:'upstream metadata Apache-2.0; model-card body MIT; see MODEL_SOURCES.md',bytes:66584576,sha256:'583fb7fdc948435ceac9fa82efc7708701efe8382a859a3dd46526b155f5f2ae',input:416,nms:0.40,

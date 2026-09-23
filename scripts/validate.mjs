@@ -17,16 +17,21 @@ const files={
   loader:read('model-loader.js'),
   app:read('app.js'),
   race:read('race.js'),
-  classical:read('classical-cv.js'),
+  historyExperiments:read('history-experiments.js'),
   classicalWorker:read('classical-cv-worker.js'),
   history:read('docs/MODEL_HISTORY.md'),
+  historicalDocs:read('docs/CLASSICAL_CV.md'),
+  architecture:read('docs/ARCHITECTURE.md'),
+  methodology:read('BENCHMARK_METHODOLOGY.md'),
+  sources:read('MODEL_SOURCES.md'),
+  licenses:read('THIRD_PARTY_LICENSES.md'),
   catalog:read('MODEL_CATALOG.md'),
   readme:read('README.md'),
   docsIndex:read('docs/README.md'),
   version:JSON.parse(read('version.json'))
 };
 
-for(const [name,code] of Object.entries({bootstrap:files.bootstrap,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,race:files.race,classical:files.classical,classicalWorker:files.classicalWorker})){
+for(const [name,code] of Object.entries({bootstrap:files.bootstrap,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,race:files.race,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
 for(const [index,code] of [...files.index.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match=>match[1]).entries()){
@@ -70,7 +75,7 @@ for(let i=0;i<raceModels.length;i++)for(let j=i+1;j<raceModels.length;j++)genera
 const literalRefs=[...new Set([
   ...files.app.matchAll(/\$\('([^']+)'\)/g),
   ...files.race.matchAll(/\$\('([^']+)'\)/g),
-  ...files.classical.matchAll(/\$\('([^']+)'\)/g)
+  ...files.historyExperiments.matchAll(/\$\('([^']+)'\)/g)
 ].map(match=>match[1]))];
 const missingIds=literalRefs.filter(id=>!idSet.has(id)&&!generatedIds.has(id));
 check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
@@ -78,10 +83,10 @@ check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
 const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
 check(files.index.includes(`const CURRENT_BUILD = '${build}'`),'CURRENT_BUILD does not match version.json');
-for(const asset of ['styles.css','runtime-bootstrap.js','models.js','model-runtime.js','model-loader.js','app.js','race.js','classical-cv.js']){
+for(const asset of ['styles.css','runtime-bootstrap.js','models.js','model-runtime.js','model-loader.js','app.js','race.js','history-experiments.js']){
   check(files.index.includes(`${asset}?v=${version}`),`cache-busted asset missing or stale: ${asset}`);
 }
-const scriptOrder=['runtime-bootstrap.js','models.js','model-runtime.js','model-loader.js','app.js','race.js','classical-cv.js'];
+const scriptOrder=['runtime-bootstrap.js','models.js','model-runtime.js','model-loader.js','app.js','race.js','history-experiments.js'];
 let previous=-1;
 for(const script of scriptOrder){
   const current=files.index.indexOf(script);
@@ -183,46 +188,84 @@ for(const item of timeMachineModels){
   check(item.inspection&&item.inspection.preview&&item.inspection.pipeline&&item.inspection.comparison&&item.inspection.intermediate,`${item.key}: inspection presentation contract incomplete`);
 }
 
-const classicalTimeline=(metadataRegistry.timeline||[]).filter(entry=>entry.jump==='classical-cv');
-check(classicalTimeline.length===2&&classicalTimeline.some(entry=>entry.year===2001&&entry.title==='Viola–Jones')&&classicalTimeline.some(entry=>entry.year===2005&&entry.title==='HOG + SVM'),'classical timeline links missing or changed');
-check(classicalTimeline.every(entry=>!entry.model),'classical methods must not become Time Machine model keys');
+
+const historyExperiments=metadataRegistry.historyExperiments||{};
+const experimentEntries=(metadataRegistry.timeline||[]).filter(entry=>entry.kind==='history-experiment');
+const expectedExperiments=[
+  [1980,'neocognitron','Neocognitron'],
+  [1998,'mnist-digits','LeNet-era MNIST CNN'],
+  [2001,'viola-jones','Viola–Jones'],
+  [2005,'hog-pedestrians','HOG + SVM']
+];
+check(experimentEntries.length===expectedExperiments.length,'Time Machine historical experiment count changed');
+check(Object.keys(historyExperiments).length===expectedExperiments.length,'historical experiment registry count changed');
+for(const [year,key,title] of expectedExperiments){
+  const entry=experimentEntries.find(item=>item.year===year&&item.experiment===key);
+  const spec=historyExperiments[key];
+  check(entry&&entry.title===title,'historical experiment timeline entry missing: '+year+' '+title);
+  check(spec&&spec.year===year&&spec.input==='image'&&spec.task&&spec.output&&spec.runner,'historical experiment metadata incomplete: '+key);
+  check(!entry.model&&!entry.jump,'historical experiment must stay outside model registry and tab navigation: '+key);
+}
+check(historyExperiments['mnist-digits'].model?.repository==='onnxmodelzoo/mnist-1','pinned MNIST model metadata missing');
+check(historyExperiments['mnist-digits'].model?.revision==='16c6d2bc15b28b69752d300bfdac5e91c1e19d4b','MNIST model revision changed');
+check(historyExperiments['mnist-digits'].model?.sha256==='22239f3fcc38f34d02eecd6869aed15b93f8e3e1125dda48990d244a5e113d49','MNIST model checksum changed');
+check(historyExperiments['mnist-digits'].model?.provider==='wasm'&&historyExperiments['mnist-digits'].model?.licenseMetadata==='Apache-2.0'&&historyExperiments['mnist-digits'].model?.licenseCard==='MIT','MNIST model runtime or license ambiguity must remain disclosed');
 const historicalMilestones=(metadataRegistry.timeline||[]).filter(entry=>entry.kind==='historical');
-const expectedHistoricalMilestones=[[1980,'Neocognitron'],[1998,'LeNet-5'],[2012,'AlexNet'],[2014,'R-CNN'],[2015,'Faster R-CNN'],[2016,'YOLOv1'],[2016,'SSD'],[2020,'DETR']];
-check(historicalMilestones.length===expectedHistoricalMilestones.length,'history-only timeline milestone count changed');
-for(const [year,title] of expectedHistoricalMilestones)check(historicalMilestones.some(entry=>entry.year===year&&entry.title===title),`history-only milestone missing: ${year} ${title}`);
-check(historicalMilestones.every(entry=>!entry.model&&!entry.jump&&entry.note?.startsWith('history only ·')),'history-only milestones must not select or load a runtime');
+const expectedHistoricalMilestones=[[2012,'AlexNet'],[2014,'R-CNN'],[2015,'Faster R-CNN'],[2016,'YOLOv1'],[2016,'SSD'],[2020,'DETR']];
+check(historicalMilestones.length===expectedHistoricalMilestones.length,'paper-only timeline milestone count changed');
+for(const [year,title] of expectedHistoricalMilestones)check(historicalMilestones.some(entry=>entry.year===year&&entry.title===title),'paper-only milestone missing: '+year+' '+title);
+check(historicalMilestones.every(entry=>!entry.model&&!entry.jump&&entry.note?.startsWith('history only ·')),'paper-only milestones must not select or load a runtime');
 check((metadataRegistry.timeline||[]).every((entry,index,entries)=>index===0||entries[index-1].year<=entry.year),'Time Machine timeline must remain chronologically sorted');
-check(files.app.includes("entry.kind==='historical'?'historical-only':''")&&files.styles.includes('.milestone.historical-only .dot'),'history-only milestones must have a distinct non-runnable timeline treatment');
-check(files.index.includes('History-only milestones show their original task')&&files.index.includes('do not load or benchmark a model'),'Time Machine must explain the history-only task boundary');
-check(files.catalog.includes('| 1980 | Neocognitron | History only |')&&files.catalog.includes('| 2016 | YOLOv1 | History only |')&&files.catalog.includes('| 2020 | DETR | History only |'),'model catalog must distinguish historical-only entries');
-check(files.readme.includes('history-only milestones')&&files.docsIndex.includes('[Historical model milestones](MODEL_HISTORY.md)'),'README/docs map must explain and link to historical milestones');
-for(const source of ['https://doi.org/10.1007/BF00344251','https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf','https://doi.org/10.1109/CVPR.2001.990517','https://doi.org/10.1109/CVPR.2005.177','https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2014/html/Girshick_Rich_Feature_Hierarchies_2014_CVPR_paper.html','https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html','https://research.google/pubs/ssd-single-shot-multibox-detector/','https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php'])check(files.history.includes(source),`historical primary-paper source missing: ${source}`);
-check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===4,'classical methods must not enter the general runtime/model registry');
-check(timeMachineModels.length===4,'classical methods must not enter the Time Machine model set');
-check(files.index.includes('data-tab="classical-cv"')&&files.index.includes('id="classical-cv"'),'Classical CV tab/panel missing');
-for(const id of ['classical-image-file','classical-use-current','classical-run','classical-release','classical-status','classical-face-canvas','classical-hog-canvas','classical-ai-canvas','classical-person-overlap','classical-runtime-state'])check(files.index.includes(`id="${id}"`),`Classical CV DOM contract missing: ${id}`);
+check(files.app.includes("entry.kind==='historical'?'historical-only':''")&&files.styles.includes('.milestone.historical-only .dot'),'paper-only milestones must keep a distinct timeline treatment');
+check(files.app.includes('entry.experiment===state.historyExperiment')&&files.app.includes('data-history-experiment')&&files.app.includes('runnable&&!state.historyExperiment&&entry.model===state.activeModel'),'selected experiment timeline state is missing or also highlights a stale AI year');
+check(files.index.includes('Historical experiment · same image')&&historyExperiments['mnist-digits'].note.includes('isolated handwritten digits'),'Time Machine must explain shared-image and digit-task scope');
+check(files.catalog.includes('| 1980 | Neocognitron-inspired feature response | Runnable historical experiment |')&&files.catalog.includes('| 1998 | LeNet-era MNIST CNN reference | Runnable historical experiment |')&&files.catalog.includes('| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable historical experiment |')&&files.catalog.includes('| 2005 | HOG + linear SVM pedestrian detector | Runnable historical experiment |'),'catalog must distinguish runnable historical experiments');
+check(files.readme.includes('one image selected in Time Machine')&&files.docsIndex.includes('[Time Machine historical experiments](CLASSICAL_CV.md)'),'README/docs map must describe and link to same-image history experiments');
+for(const source of ['https://doi.org/10.1007/BF00344251','https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf','https://doi.org/10.1109/CVPR.2001.990517','https://doi.org/10.1109/CVPR.2005.177','https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2014/html/Girshick_Rich_Feature_Hierarchies_2014_CVPR_paper.html','https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html','https://research.google/pubs/ssd-single-shot-multibox-detector/','https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php'])check(files.history.includes(source),'historical primary-paper source missing: '+source);
+check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===4,'historical methods must not enter the general runtime/model registry');
+check(timeMachineModels.length===4,'historical methods must not enter the AI Time Machine model set');
+check((files.index.match(/id="image-file"/g)||[]).length===1,'Time Machine must keep one shared image input');
+check(!files.index.includes('data-tab="classical-cv"')&&!files.index.includes('id="classical-cv"'),'separate Classical CV tab/panel must not return');
+for(const id of ['history-experiment-panel','history-experiment-title','history-experiment-description','history-experiment-note','history-runtime-state','history-input-size','history-output-count','history-preprocess','history-inference','history-load','history-run','history-release','history-status'])check(files.index.includes('id="'+id+'"'),'historical experiment DOM contract missing: '+id);
+check(files.index.includes('id="image-canvas"')&&files.historyExperiments.includes("getContext('2d')"),'historical experiments must render on the shared Time Machine canvas');
 check(files.app.includes("new CustomEvent('vision:tabchange'"),'generic tab lifecycle event missing');
-check(files.classical.includes("document.addEventListener('vision:tabchange'")&&files.classical.includes("if(tab!=='classical-cv'&&state.worker)disposeWorker"),'Classical CV worker is not released on tab leave');
-check(files.classical.includes("window.addEventListener('pagehide'")&&files.classical.includes("state.worker.terminate()"),'Classical CV worker page-exit cleanup missing');
-check(files.classical.includes('await runtimes.releaseAll()')&&files.classical.includes('finally{await adapter.release()}'),'AI reference runtime ownership/release contract missing');
-const classicalRunStart=files.classical.indexOf('async function runComparison()'),classicalRunEnd=files.classical.indexOf("$('classical-image-file').addEventListener",classicalRunStart),classicalRunBody=files.classical.slice(classicalRunStart,classicalRunEnd);
-check(classicalRunStart>=0&&classicalRunBody.indexOf('await runAi(source)')>=0&&classicalRunBody.indexOf('await runAi(source)')<classicalRunBody.indexOf('await ensureWorker()'),'AI reference must run and release before OpenCV worker initialization');
-check(files.classical.includes("adapter.run(source,$('classical-ai-canvas'),{updateMain:false})"),'Classical AI reference must use the active runtime adapter outside benchmark semantics');
-check(files.classical.includes("bestIou=.35"),'HOG/AI person overlap IoU threshold changed');
-check(files.classical.includes("d.label==='person'&&d.score>=confidence()"),'HOG/AI overlap must use retained AI person detections at current UI confidence');
-check(files.classical.includes("WORK_MAX=640"),'Classical CV browser working-image cap changed');
-check(files.classical.includes("classical-cv-worker.js?v=${VERSION}")&&files.classical.includes(`VERSION='${files.version.version}'`),'Classical CV worker cache version must match the release manifest');
+check(files.historyExperiments.includes("document.addEventListener('vision:tabchange'")&&files.historyExperiments.includes("event.detail?.tab!=='time-machine'"),'historical runtimes must release after leaving Time Machine');
+check(files.historyExperiments.includes("window.addEventListener('pagehide'")&&files.historyExperiments.includes("state.worker.terminate()"),'historical worker page-exit cleanup missing');
+const historySelectStart=files.app.indexOf('function selectHistoryExperiment('),historySelectEnd=files.app.indexOf('function updateScrollCue(',historySelectStart),historySelectBody=files.app.slice(historySelectStart,historySelectEnd);
+check(historySelectStart>=0&&historySelectEnd>historySelectStart&&!historySelectBody.includes('state.activeModel='),'historical timeline selection must not change the active AI model');
+check(historySelectBody.includes('resetRunMetrics()')&&historySelectBody.includes('resetStartupMetrics()')&&historySelectBody.includes("$('active-model-title').textContent=spec.year+' · '+spec.title")&&historySelectBody.includes('updateInsideModelUI(state.activeModel,null,state.image)'),'historical experiment selection must clear stale AI measurements while preserving Inside the Model selection');
+const uploadedStart=files.app.indexOf('async function runUploaded()'),uploadedEnd=files.app.indexOf('function percentile(',uploadedStart),uploadedBody=files.app.slice(uploadedStart,uploadedEnd);
+check(uploadedStart>=0&&uploadedEnd>uploadedStart&&uploadedBody.includes('await state.historyTransition')&&uploadedBody.includes('VisionHistoryExperiments.run(state.historyExperiment,state.image)')&&uploadedBody.includes('Historical experiment complete'),'the selected historical experiment must run through the shared Time Machine image flow');
+check(files.app.includes("state.historyExperiment='';")&&files.app.includes('VisionHistoryExperiments?.clear?.()'),'switching back to an AI model must clear historical result state');
+check(files.app.includes('if(!state.historyExperiment)redrawUploaded()'),'AI confidence slider must not redraw historical outputs');
+check(files.app.includes('state.historyExperiment) return'),'AI benchmark must not route historical methods into Model Race');
+check(files.historyExperiments.includes('await runtimes.releaseAll()'),'historical runtime must release AI adapters before its own execution');
+check(!files.historyExperiments.includes('adapter.run'),'historical experiment module must not construct a fake AI reference comparison');
+check(files.historyExperiments.includes('DIGIT_SCORE_FLOOR=.70'),'digit display-score floor changed');
+check(files.historyExperiments.includes("score '+Math.round(item.score*100)+'%'"),'digit output must identify its raw model score separately from AI confidence');
+check(files.historyExperiments.includes('model.sha256')&&files.historyExperiments.includes("subtle.digest('SHA-256',buffer)"),'MNIST ONNX model must be checksum-verified before session creation');
+check(files.historyExperiments.includes("executionProviders:['wasm']"),'MNIST ONNX session must use the standard WASM provider');
+check(files.historyExperiments.includes('side=28')&&files.historyExperiments.includes('new Float32Array(side*side)')&&files.historyExperiments.includes('[1,1,28,28]'),'MNIST tensor must be grayscale float 28×28 NCHW');
+check(files.historyExperiments.includes('isolated handwritten digits only')&&files.historyExperiments.includes('arbitrary text')&&historyExperiments['mnist-digits'].note.includes('not calibrated confidence'),'digit task limitation and no-result explanation must be explicit');
+const digitStart=files.historyExperiments.indexOf('async function runDigits('),experimentStart=files.historyExperiments.indexOf('async function runExperiment('),digitBody=files.historyExperiments.slice(digitStart,experimentStart);
+check(digitStart>=0&&digitBody.indexOf("runWorker('digits'")>=0&&digitBody.indexOf("runWorker('digits'")<digitBody.indexOf('disposeWorker(')&&digitBody.indexOf('disposeWorker(')<digitBody.indexOf('loadDigitSession(spec)'),'digit region proposals must finish and release OpenCV before loading MNIST');
+check(files.historyExperiments.includes('function patternResponse(')&&files.historyExperiments.includes('max-pooling')&&historyExperiments.neocognitron.note.includes('not a trained Neocognitron checkpoint'),'1980 experiment must be a disclosed code preview without invented weights');
+check(historyExperiments.neocognitron.runner==='pattern-response'&&historyExperiments['mnist-digits'].runner==='mnist-digit-cnn'&&historyExperiments['viola-jones'].runner==='opencv-face'&&historyExperiments['hog-pedestrians'].runner==='opencv-hog'&&files.historyExperiments.includes("spec.runner==='pattern-response'")&&files.historyExperiments.includes("spec.runner==='mnist-digit-cnn'"),'historical runner adapters must dispatch through task metadata');
+check(files.historyExperiments.includes('classical-cv-worker.js?v=')&&files.historyExperiments.includes('VERSION=registry.version'),'worker cache version must match release metadata');
 check(!files.index.includes('cdn.jsdelivr.net/npm/@techstark/opencv-js')&&!/<script[^>]+src=["'][^"']*opencv(?:\.min)?\.js/i.test(files.index),'OpenCV.js must remain lazy and worker-only');
-check(!/<script[^>]+src=["'][^"']*classical-cv-worker\.js/i.test(files.index),'Classical CV worker must not be loaded as a page script');
+check(!/<script[^>]+src=["'][^"']*classical-cv-worker\.js/i.test(files.index),'OpenCV worker must not be loaded as a page script');
 check(files.classicalWorker.includes("@techstark/opencv-js@4.12.0-release.1/dist/opencv.js"),'OpenCV.js runtime pin changed');
 check(files.classicalWorker.includes("49486f61fb25722cbcf586b7f4320921d46fb38e/data/haarcascades/haarcascade_frontalface_default.xml"),'frontal-face cascade commit pin changed');
-check(files.classicalWorker.includes("new cv.CascadeClassifier()")&&files.classicalWorker.includes("classifier.detectMultiScale"),'frontal-face cascade execution missing');
-check(files.classicalWorker.includes("new cv.HOGDescriptor()")&&files.classicalWorker.includes("cv.HOGDescriptor.getDefaultPeopleDetector()")&&files.classicalWorker.includes("hog.setSVMDetector(detectorMat)")&&files.classicalWorker.includes("new cv.DoubleVector()")&&files.classicalWorker.includes("hog.detectMultiScale(rgb,rects,weights,0,"),'HOG + SVM detector execution missing');
+check(files.classicalWorker.includes("new cv.CascadeClassifier()")&&files.classicalWorker.includes('classifier.detectMultiScale'),'frontal-face cascade execution missing');
+check(files.classicalWorker.includes("new cv.HOGDescriptor()")&&files.classicalWorker.includes("cv.HOGDescriptor.getDefaultPeopleDetector()")&&files.classicalWorker.includes('hog.setSVMDetector(detectorMat)')&&files.classicalWorker.includes('hog.detectMultiScale'),'HOG + SVM detector execution missing');
+check(files.classicalWorker.includes('findContours')&&files.classicalWorker.includes('cv.RETR_EXTERNAL')&&files.classicalWorker.includes('runDigitCandidates')&&files.classicalWorker.includes('boxes'),'OpenCV digit region proposal operation missing');
 check(files.classicalWorker.includes("new cv.Mat(detectorSize,1,cv.CV_32FC1)")&&files.classicalWorker.includes("detectorMat.data32F[index]=detector.get(index)")&&files.classicalWorker.includes("safeDelete(detectorMat)"),'OpenCV FloatVector detector must be copied to and cleaned up as CV_32FC1 Mat');
 check(files.classicalWorker.includes("const detectorSize=detector.size()")&&files.classicalWorker.includes("if(!Number.isInteger(detectorSize)||detectorSize<1)"),'OpenCV HOG detector coefficients must be validated through their FloatVector size');
 check(files.classicalWorker.includes("cv.FS_createDataFile"),'cascade virtual-filesystem installation missing');
-check(files.classicalWorker.includes("finally{")&&files.classicalWorker.includes("safeDelete(weights)")&&files.classicalWorker.includes("safeDelete(detectorMat)"),'OpenCV.js explicit cleanup contract missing');
-check(files.classical.includes("disposeWorker('after leaving Classical CV')"),'Classical worker lifecycle label missing');
+check(files.classicalWorker.includes('finally{')&&files.classicalWorker.includes('safeDelete(weights)')&&files.classicalWorker.includes('safeDelete(detectorMat)'),'OpenCV.js explicit cleanup contract missing');
+check(files.historyExperiments.includes('disposeWorker()')&&files.historyExperiments.includes('state.worker.terminate()'),'historical OpenCV worker cleanup missing');
+check(!files.index.includes('Classical CV vs AI')&&!files.index.includes('classical-face-canvas'),'obsolete separate comparison UI must remain removed');
+
 
 check(files.index.includes('id="race-results"')&&files.index.includes('id="race-benchmark-body"')&&files.index.includes('id="race-diff-grid"')&&files.index.includes('id="race-architecture"'),'dynamic Model Race containers missing');
 check(!files.index.includes('id="race-tiny-canvas"')&&!files.index.includes('id="rb-tiny-backend"')&&!files.index.includes('id="race-match-tiny-ssd"'),'static four-model Model Race markup returned');
@@ -268,4 +311,4 @@ for(const file of markdown){
 }
 check(broken.length===0,`broken local markdown links: ${broken.join(' | ')}`);
 
-console.log(`validate: PASS · ${files.version.version} · ${timeMachineModels.length} Time Machine models · ${liveKeys.length} live models · ${raceModels.length} race models · Classical CV worker · dynamic UI`);
+console.log(`validate: PASS · ${files.version.version} · ${timeMachineModels.length} AI Time Machine models · ${Object.keys(historyExperiments).length} historical experiments · ${liveKeys.length} live models · ${raceModels.length} race models · shared-image UI`);

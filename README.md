@@ -8,11 +8,11 @@ Live: https://hakanakgun.github.io/vision-evolution-lab/
 
 Vision Evolution Lab lets you run and compare object-detection generations without an application backend.
 
-- **Vision Time Machine** switches runnable generations in place and shows history-only milestones with their original task; those historical references do not load or benchmark a model.
+- **Vision Time Machine** keeps one selected image while you move through runnable years. Early task-specific experiments can show a pattern-response map, handwritten digits, faces, or pedestrians on that same image.
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
 - **Live Camera** runs local browser inference through live-capable runtime adapters with rolling latency measurements; SSD-MobileNetV1 INT8 is currently the only live-enabled model.
-- **Classical CV vs AI** runs a Viola–Jones-era frontal-face cascade and HOG + linear SVM pedestrian detector in an isolated OpenCV.js worker, alongside the active AI model as task-aware context.
+- **Early history experiments** run inside Time Machine. Their task-specific outputs stay separate from the four general-object models in Model Race.
 - **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
 Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model.
@@ -27,6 +27,19 @@ Selecting a model in Time Machine stays in Time Machine. Inside the Model follow
 | 2023 | RT-DETR R18 | COCO | Transformers.js / WebGPU fp16 or WASM q8 |
 
 Exact model revisions, licenses, provenance, preprocessing, and fallback rules are maintained in [MODEL_SOURCES.md](MODEL_SOURCES.md), [MODEL_CATALOG.md](MODEL_CATALOG.md), and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+
+## Earlier task-specific experiments
+
+These experiments use the one image selected in Time Machine. They illustrate different tasks over time; their outputs are not a shared accuracy leaderboard.
+
+| Year | Experiment | What appears on the image | Boundary |
+| --- | --- | --- | --- |
+| 1980 | Neocognitron-inspired feature hierarchy | Orientation response map with local max pooling | Educational approximation; no original trained weights or object labels |
+| 1998 | LeNet-era MNIST CNN reference | Digit-like crop boxes with handwritten digit labels | A later MNIST CNN checkpoint, not original LeNet-5 weights; digits only |
+| 2001 | Viola–Jones method family | Frontal-face cascade boxes | OpenCV cascade representative, not the paper's original trained weights |
+| 2005 | HOG + linear SVM | Pedestrian boxes | OpenCV default people detector, not the paper's original checkpoint |
+
+The source stays in the browser. The 1998 digit experiment only classifies isolated handwritten digit crops; it does not detect general objects or arbitrary text. The historical methods stay outside Model Race because their tasks and outputs differ.
 
 ## Benchmark contract
 
@@ -76,7 +89,7 @@ Stable repository references:
 - [Model catalog](MODEL_CATALOG.md)
 - [Model sources and provenance](MODEL_SOURCES.md)
 - [Third-party licenses](THIRD_PARTY_LICENSES.md)
-- [Classical CV vs AI notes](docs/CLASSICAL_CV.md)
+- [Time Machine historical experiments](docs/CLASSICAL_CV.md)
 
 ## Roadmap
 
@@ -88,7 +101,7 @@ Current priority order:
 4. Live Camera
 5. Failure Gallery
 6. Efficiency Lab
-7. Classical CV vs AI — runnable
+7. Older task-specific Time Machine experiments
 8. Resolution Microscope
 9. Architecture Explorer
 

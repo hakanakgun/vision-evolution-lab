@@ -2,7 +2,7 @@
 
 ## How to read the timeline
 
-The Time Machine separates runnable models from history-only paper milestones. A history-only entry is displayed to explain a method's role and original task; it has no bundled or downloaded checkpoint, does not change the active model, and does not enter Model Race. The 2001 Viola–Jones and 2005 HOG + SVM rows are the exceptions: the app runs representative versions in the separate Classical CV lab, not as general-object models.
+The Time Machine keeps one selected image while users move through its history. The 1980 pattern-response preview, 1998 MNIST digit task, 2001 face cascade, and 2005 pedestrian detector run on that same image, each with its native task and output. Historical experiments do not change the selected general-object AI model or enter Model Race.
 
 The year shown is the peer-reviewed publication year where available. YOLOv1 is dated 2016 for its CVPR paper; its arXiv preprint appeared in 2015. These entries are a selected lineage, not a claim that computer vision followed a single path.
 
@@ -10,10 +10,10 @@ The year shown is the peer-reviewed publication year where available. YOLOv1 is 
 
 | Year | Model or method | Original task / contribution | In-app treatment | What it should not be confused with |
 | --- | --- | --- | --- | --- |
-| 1980 | Neocognitron | Self-organizing hierarchical visual-pattern recognition with tolerance to position shifts. | History only | Not a general-object detector and not identical to a modern supervised CNN. |
-| 1998 | LeNet-5 | Gradient-trained convolutional network for document and handwritten-digit recognition. | History only | Digit classification, not object localization. |
-| 2001 | Viola–Jones | Boosted cascade family for rapid face detection; the runnable app uses a later OpenCV cascade representative. | Runnable · Classical CV | The app does not claim the OpenCV XML contains the original paper's trained weights. |
-| 2005 | HOG + linear SVM | Hand-crafted gradient descriptor with a sliding-window pedestrian classifier; the app uses OpenCV's default people detector. | Runnable · Classical CV | Pedestrian detection, not general-object detection or the exact original paper weights. |
+| 1980 | Neocognitron-inspired preview | Orientation responses followed by local max pooling. | Runnable · feature map | Educational approximation with fixed filters; no original trained weights or object labels. |
+| 1998 | LeNet-era MNIST CNN reference | Handwritten-digit classification on candidate image crops. | Runnable · digits only | Later ONNX Model Zoo checkpoint, not original LeNet-5 weights; it does not detect general objects or arbitrary printed text. |
+| 2001 | Viola–Jones | Boosted cascade family for rapid frontal-face detection; the app uses a later OpenCV cascade representative. | Runnable · face boxes | The OpenCV XML is not the original paper's trained weights. |
+| 2005 | HOG + linear SVM | Hand-crafted gradient descriptor with a sliding-window pedestrian classifier; the app uses OpenCV's default people detector. | Runnable · pedestrian boxes | Pedestrian detection, not general-object detection or the exact original paper weights. |
 | 2012 | AlexNet | Deep CNN for 1,000-class ImageNet classification. | History only | Image classification, not bounding-box detection. |
 | 2014 | R-CNN | Selective-search region proposals classified with CNN features and class-specific SVMs. | History only | A region-based detector, not a one-pass detector or a runnable app model. |
 | 2015 | Faster R-CNN | A learned Region Proposal Network shares convolutional features with a two-stage detection network. | History only | A distinct two-stage design, not a directly comparable speed/accuracy result to the current browser models. |
@@ -34,4 +34,4 @@ The year shown is the peer-reviewed publication year where available. YOLOv1 is 
 - Liu et al., “SSD: Single Shot MultiBox Detector,” ECCV (2016), [Google Research publication record](https://research.google/pubs/ssd-single-shot-multibox-detector/).
 - Carion et al., “End-to-End Object Detection with Transformers,” ECCV (2020), [ECVA paper](https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php).
 
-These are bibliographic links only. No paper text, source code, model weights, or additional runtime dependency is redistributed by these timeline entries.
+These are bibliographic links. The Time Machine fetches the separately documented MNIST and OpenCV runtime assets only when their historical experiment is selected; it does not bundle the original LeNet or Neocognitron weights.

@@ -12,7 +12,7 @@
     const $ = id => document.getElementById(id);
     const DEFAULT_MODEL = REGISTRY.defaults?.timeMachine || Object.keys(REGISTRY).find(key=>REGISTRY[key]?.status==='runnable'&&RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine')) || 'ssd';
     const DEFAULT_LIVE_MODEL = REGISTRY.defaults?.live || RuntimeRegistry.modelKeys.find(key=>RuntimeRegistry.capabilityEnabled(REGISTRY[key],'live')) || '';
-    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false};
+    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve()};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -35,7 +35,7 @@
     function renderProvenance(model){const ui=model.ui||{};$('active-provenance-title').textContent=model.title;$('active-provenance-text').textContent=ui.provenance||`${model.family} · ${model.license}`;const links=$('active-provenance-links');links.replaceChildren();for(const link of ui.links||[]){const a=document.createElement('a');a.href=link.url;a.textContent=link.label;a.target='_blank';a.rel='noreferrer';links.appendChild(a);}}
     function updateActiveModelUI(){const model=activeModel(),ui=model.ui||{},runtimeUi=ui.runtime||{},inspection=model.capabilities?.inspection;$('active-model-title').textContent=model.title;$('active-model-subtitle').textContent=ui.subtitle||`${model.task} · ${model.family}`;$('rerun').textContent=`Run ${model.title}`;$('m-transfer-label').textContent='Model transfer';$('m-init-label').textContent=runtimeUi.initLabel||'Session init';setMetric('m-bytes',runtimeUi.bytesText||bytes(model.bytes));setMetric('m-cache',runtimeUi.cacheInitial||'checking…');setMetric('d-input',inspection&&typeof inspection==='object'?inspection.input:(model.input?`${model.input}×${model.input}`:'dynamic'));$('input-size').textContent=state.image?'Source ready · not run':'No input';renderProvenance(model);updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}
     async function updateActiveCacheState(){const key=state.activeModel,model=activeModel();if(!Array.isArray(model.sources)||!model.sources.length)return;try{const info=await ModelLoader.status(model);if(state.activeModel===key)setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state);}catch(_){}}
-    function selectActiveModel(key,{scroll=true}={}){if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}if(!REGISTRY[key]||!RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine'))return;state.activeModel=key;document.querySelectorAll('[data-runnable-model]').forEach(btn=>btn.classList.toggle('active',btn.dataset.runnableModel===key));resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();if(state.image){drawSourceOnly();setStatus(`${activeModel().title} selected. Run the current image when ready.`);}else setStatus(`${activeModel().title} selected. Choose an image to run this generation.`);if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});}
+    function selectActiveModel(key,{scroll=true}={}){if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}if(!REGISTRY[key]||!RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine'))return;state.historyExperiment='';state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.clear?.());syncHistoryControls();state.activeModel=key;document.querySelectorAll('[data-runnable-model]').forEach(btn=>btn.classList.toggle('active',btn.dataset.runnableModel===key));resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();if(state.image){drawSourceOnly();setStatus(`${activeModel().title} selected. Run the current image when ready.`);}else setStatus(`${activeModel().title} selected. Choose an image to run this generation.`);if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});}
     function reportRuntimeEvent(model,event){if(model!==state.activeModel||!event)return;if(event.type==='progress')updateMainModelProgress(event.info||{});if(event.type==='cache')setMetric('m-cache',event.text||'checking…');if(event.type==='runtime'){if(event.backend)$('backend-badge').textContent=event.dtype?`${String(event.backend).toUpperCase()} · ${event.dtype}`:String(event.backend).toUpperCase();if(Number.isFinite(event.downloadMs))setMetric('m-download',ms(event.downloadMs));if(Number.isFinite(event.initMs))setMetric('m-init',ms(event.initMs));if(event.bytes)setMetric('m-bytes',bytes(event.bytes));if(event.source)setMetric('m-cache',event.cacheState?`${event.cacheState} · ${event.source}`:event.source);}}
     let diagnosticHook=null,baselineSessionRuns=0;
     function traceDiagnostic(event,meta={}){if(typeof diagnosticHook!=='function')return;try{diagnosticHook(event,meta)}catch(_){}}
@@ -66,10 +66,11 @@
       const track=$('timeline-track'),entries=timeMachineEntries();if(!track)return;
       track.replaceChildren();track.style.setProperty('--timeline-count',String(Math.max(1,entries.length)));track.style.minWidth=Math.max(780,entries.length*78)+'px';
       for(const entry of entries){
-        const runnable=Boolean(entry.model),jump=Boolean(entry.jump),item=document.createElement(runnable||jump?'button':'div');
-        item.className=['milestone',runnable?'runnable runnable-launch':'',jump?'module-launch':'',entry.kind==='research'?'research-only':'',entry.kind==='historical'?'historical-only':'',entry.className||'',runnable&&entry.model===state.activeModel?'active':''].filter(Boolean).join(' ');
+        const runnable=Boolean(entry.model),experiment=Boolean(entry.experiment),jump=Boolean(entry.jump),item=document.createElement(runnable||experiment||jump?'button':'div');
+        item.className=['milestone',runnable?'runnable runnable-launch':'',experiment?'historical-experiment':'',jump?'module-launch':'',entry.kind==='research'?'research-only':'',entry.kind==='historical'?'historical-only':'',entry.className||'',runnable&&!state.historyExperiment&&entry.model===state.activeModel?'active':'',experiment&&entry.experiment===state.historyExperiment?'active':''].filter(Boolean).join(' ');
         if(runnable){item.type='button';item.dataset.runnableModel=entry.model;item.setAttribute('aria-label',`Run ${entry.title} ${entry.year}`)}
-        else if(jump){item.type='button';item.dataset.jump=entry.jump;item.setAttribute('aria-label',`Open ${entry.title} in Classical CV vs AI`)}
+        else if(experiment){item.type='button';item.dataset.historyExperiment=entry.experiment;item.setAttribute('aria-label',`Run ${entry.title} on the current Time Machine image`)}
+        else if(jump){item.type='button';item.dataset.jump=entry.jump;item.setAttribute('aria-label',`Open ${entry.title}`)}
         const dot=document.createElement('div');dot.className='dot';const year=document.createElement('div');year.className='year';year.textContent=String(entry.year);
         const strong=document.createElement('strong');strong.textContent=entry.title;const note=document.createElement('span');note.textContent=entry.note||'';
         item.append(dot,year,strong,note);track.appendChild(item);
@@ -96,6 +97,37 @@
     }
     document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.tab)));
     document.querySelectorAll('[data-jump]').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.jump)));
+    document.querySelectorAll('[data-history-experiment]').forEach(btn=>btn.addEventListener('click',()=>selectHistoryExperiment(btn.dataset.historyExperiment)));
+    $('history-run').addEventListener('click',()=>void runUploaded());
+    $('history-release').addEventListener('click',()=>void window.VisionHistoryExperiments?.release());
+    function syncHistoryControls(){
+      const active=Boolean(state.historyExperiment),spec=REGISTRY.historyExperiments?.[state.historyExperiment];
+      $('history-experiment-panel').hidden=!active;$('rerun').hidden=active;$('benchmark').hidden=active;
+      $('confidence').disabled=active||state.running||state.benchmarking;
+      $('history-run').disabled=!state.image||state.running||state.benchmarking||!active;
+      document.querySelectorAll('[data-runnable-model]').forEach(button=>button.classList.toggle('active',!active&&button.dataset.runnableModel===state.activeModel));
+      document.querySelectorAll('[data-history-experiment]').forEach(button=>button.classList.toggle('active',button.dataset.historyExperiment===state.historyExperiment));
+      if(active&&spec){
+        $('history-experiment-title').textContent=spec.year+' · '+spec.title;
+        $('history-experiment-description').textContent=spec.description||'This historical method runs on the selected Time Machine image.';
+        $('history-experiment-note').textContent=spec.note||'This method keeps its native task and output type.';
+        if(!state.image)$('history-status').textContent='Choose an image above, then run this experiment on the same image.';
+      }
+    }
+    function selectHistoryExperiment(key,{scroll=true}={}){
+      if(state.running||state.benchmarking)return;
+      if(!REGISTRY.historyExperiments?.[key])return;
+      state.historyExperiment=key;syncHistoryControls();
+      const spec=REGISTRY.historyExperiments[key];
+      resetRunMetrics();resetBenchmark();resetStartupMetrics();updateInsideModelUI(state.activeModel,null,state.image);
+      $('active-model-title').textContent=spec.year+' · '+spec.title;
+      $('active-model-subtitle').textContent=spec.task+' · historical experiment';
+      $('input-size').textContent=state.image?'Same source image · historical experiment':'No input';
+      if(state.image){setStatus('Running '+spec.title+' on the current Time Machine image…','loading');void runUploaded();}
+      else setStatus(spec.title+' selected. Choose one image above to run this historical method.');
+      if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    syncHistoryControls();
 
     function updateScrollCue(shell){
       const area=shell.querySelector('[data-scroll-area]');
@@ -328,7 +360,22 @@
     function redrawUploaded(){if(!state.image||!state.lastResults)return;const canvas=$('image-canvas');drawSourceOnly();const count=drawDetections(canvas,state.lastResults);setMetric('m-count',String(count));if(state.lastRunResult){state.lastRunResult.visible=count;updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}setStatus(`${count} detection${count===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}. Retained outputs were re-filtered without new inference.`);}
     function applyExternalRun(model,result,targetCanvas){const runtime=RuntimeRegistry.get(model)?.runtimeInfo?.()||{},modelMeta=REGISTRY[model]||{},runtimeUi=modelMeta.ui?.runtime||{},size=sourceSize(state.image),w=size.w,h=size.h;state.lastResults=result.detections;state.lastRunResult=Object.assign({},result);state.lastDims={sourceW:w,sourceH:h,width:targetCanvas.width,height:targetCanvas.height};state.inferenceCount++;setMetric('m-run-label',state.inferenceCount===1?'first inference':'warm run #'+state.inferenceCount);setMetric('m-pre',ms(result.preMs));setMetric('m-inf',ms(result.infMs));setMetric('m-post',ms(result.postMs));setMetric('m-total',ms(result.totalMs));setMetric('m-count',String(result.visible));$('input-size').textContent=result.width+' × '+result.height+' model input';setMetric('d-input',result.width+'×'+result.height);if(runtime.backend)$('backend-badge').textContent=runtime.dtype?runtime.backend.toUpperCase()+' · '+runtime.dtype:runtime.backend.toUpperCase();if(Number.isFinite(runtime.downloadMs))setMetric('m-download',ms(runtime.downloadMs));else if(runtimeUi.managedTransferWhenMissing)setMetric('m-download','managed by pipeline');if(Number.isFinite(runtime.initMs))setMetric('m-init',ms(runtime.initMs));if(runtime.bytes)setMetric('m-bytes',bytes(runtime.bytes));if(runtime.cacheState)setMetric('m-cache',runtime.source?runtime.cacheState+' · '+runtime.source:runtime.cacheState);updateInsideModelUI(model,state.lastRunResult,state.image);const boundary=runtimeUi.inferenceBoundaryNote?' '+runtimeUi.inferenceBoundaryNote:'';setStatus(result.visible+' detection'+(result.visible===1?'':'s')+' above confidence '+Number($('confidence').value).toFixed(2)+'.'+boundary);}
     async function runActiveModel(source,targetCanvas,{updateMain=true,benchmarking=false}={}){const model=state.activeModel,adapter=RuntimeRegistry.get(model);if(!adapter)throw new Error('Active model runtime is not ready. Reload the page and try again.');const result=await adapter.run(source,targetCanvas,{benchmarking,updateMain});if(updateMain&&!adapter.handlesMainUi&&model===state.activeModel)applyExternalRun(model,result,targetCanvas);return result;}
-    async function runUploaded(){if(!state.image||state.running||state.benchmarking)return;state.running=true;$('image-file').disabled=true;$('confidence').disabled=true;$('rerun').disabled=true;$('benchmark').disabled=true;try{await runActiveModel(state.image,$('image-canvas'));}catch(err){console.error(err);setStatus(err.message||String(err),'error');}finally{state.running=false;$('image-file').disabled=false;$('confidence').disabled=false;$('rerun').disabled=false;$('benchmark').disabled=!state.image;}}
+    async function runUploaded(){
+      if(!state.image||state.running||state.benchmarking)return;
+      state.running=true;$('image-file').disabled=true;$('confidence').disabled=true;$('rerun').disabled=true;$('benchmark').disabled=true;$('history-run').disabled=true;
+      try{
+        await state.historyTransition;
+        if(state.historyExperiment){
+          if(!window.VisionHistoryExperiments)throw new Error('Historical experiment runtime is unavailable.');
+          await window.VisionHistoryExperiments.run(state.historyExperiment,state.image);
+          setStatus('Historical experiment complete. See its task-specific result above.');
+        }else await runActiveModel(state.image,$('image-canvas'));
+      }catch(err){console.error(err);setStatus(err.message||String(err),'error');}
+      finally{
+        state.running=false;$('image-file').disabled=false;$('rerun').disabled=!state.image;$('benchmark').disabled=!state.image;
+        syncHistoryControls();
+      }
+    }
 
     function percentile(values,p){
       if(!values.length) return NaN;
@@ -347,7 +394,7 @@
       $('benchmark-note').textContent='Run one image first, then Benchmark ×20. Startup time is excluded.';
     }
     async function runBenchmark(){
-      if(!state.image || state.benchmarking) return;
+      if(!state.image || state.benchmarking || state.historyExperiment) return;
       state.benchmarking=true;
       $('image-file').disabled=true;
       $('confidence').disabled=true;
@@ -397,14 +444,14 @@
       const file=event.target.files && event.target.files[0]; if(!file) return;
       if(!file.type.startsWith('image/')){setStatus('Please choose an image file.','error');return;}
       const url=URL.createObjectURL(file); const img=new Image();
-      img.onload=async()=>{URL.revokeObjectURL(url);state.image=img;resetBenchmark();$('image-empty').hidden=true;$('image-canvas').hidden=false;await runUploaded();};
+      img.onload=async()=>{URL.revokeObjectURL(url);state.image=img;state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.reset?.());resetBenchmark();$('image-empty').hidden=true;$('image-canvas').hidden=false;await runUploaded();};
       img.onerror=()=>{URL.revokeObjectURL(url);setStatus('The selected image could not be decoded.','error');};
       img.src=url;
     });
     document.querySelectorAll('[data-runnable-model]').forEach(btn=>btn.addEventListener('click',()=>selectActiveModel(btn.dataset.runnableModel)));
     $('rerun').addEventListener('click',runUploaded);
     $('benchmark').addEventListener('click',runBenchmark);
-    $('confidence').addEventListener('input',()=>{$('confidence-value').textContent=Number($('confidence').value).toFixed(2);redrawUploaded();});
+    $('confidence').addEventListener('input',()=>{$('confidence-value').textContent=Number($('confidence').value).toFixed(2);if(!state.historyExperiment)redrawUploaded();});
 
     function liveAdapters(){return RuntimeRegistry.list({capability:'live'})}
     function currentLiveAdapter(){return state.liveModel?RuntimeRegistry.get(state.liveModel):null}
