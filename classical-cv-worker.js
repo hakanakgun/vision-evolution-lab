@@ -86,7 +86,7 @@ async function runHog(cv,width,height,pixels){
     cv.cvtColor(src,rgb,cv.COLOR_RGBA2RGB,0);
     detector=cv.HOGDescriptor.getDefaultPeopleDetector();
     const detectorSize=detector.size();
-    if(detectorSize!==hog.getDescriptorSize()+1)throw new Error('OpenCV default people detector has an unexpected coefficient count.');
+    if(!Number.isInteger(detectorSize)||detectorSize<1)throw new Error('OpenCV default people detector is empty.');
     detectorMat=new cv.Mat(detectorSize,1,cv.CV_32FC1);
     for(let index=0;index<detectorSize;index++)detectorMat.data32F[index]=detector.get(index);
     hog.setSVMDetector(detectorMat);
