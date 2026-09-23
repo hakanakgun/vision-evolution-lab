@@ -84,11 +84,11 @@ This policy is an iOS memory-safety mitigation based on upstream ONNX Runtime ev
 
 RT-DETR R18 is loaded through pinned Transformers.js 4.3.0 using the pinned `onnx-community/rtdetr_r18vd` revision declared in `models.js`.
 
-RT-DETRv2 R18 uses the same pipeline contract with its separate pinned ONNX Community revision. It is marked as a research preview pending live-device validation.
+RT-DETRv2 R18 uses the same pipeline contract with its separate pinned ONNX Community revision. A user-reported iOS/WebKit WebGPU fp16 run succeeded; it remains a research preview while repeat-run, multi-image and broader device validation are pending.
 
 The production preference is WebGPU fp16 with WASM q8 fallback where supported. Diagnostic runs can explicitly lock the requested device.
 
-Both RT-DETR variants have a broader timing boundary than the direct ORT models: the measured pipeline call includes Transformers.js processor/model/postprocessor work. RT-DETRv2 remains a research preview pending live-device validation.
+Both RT-DETR variants have a broader timing boundary than the direct ORT models: the measured pipeline call includes Transformers.js processor/model/postprocessor work. RT-DETRv2's iOS screenshot reports one 1.216 s inference; its 20-run warm benchmark has not yet been recorded.
 
 ## Runtime ownership
 
