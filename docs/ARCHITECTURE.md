@@ -15,7 +15,7 @@ The current runtime is intentionally client-side so users can compare computer-v
 - `app.js` — Time Machine state, SSD-MobileNet runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
 - `historical-detectors.js` — checksum-verified SSD 2016 ONNX and pinned DETR q8 Transformers.js adapters, both limited to Time Machine.
 - `race.js` — Tiny YOLOv2, YOLOX-Nano, and RT-DETR runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
-- `history-experiments.js` — Time Machine historical experiment runners for a pattern-response preview, MNIST digit crops, frontal-face cascade, and HOG pedestrian detection.
+- `history-experiments.js` — Time Machine historical experiment runners for a pattern-response preview, MNIST digit crops, frontal-face cascade, HOG pedestrian detection, and AlexNet ImageNet classification.
 - `classical-cv-worker.js` — lazy OpenCV.js WASM runtime, frontal-face cascade, HOG pedestrian detection, and explicit OpenCV object cleanup.
 - `scripts/validate.mjs` — dependency-free repository contract checks used locally and by pull-request CI.
 
@@ -55,7 +55,7 @@ For the digit experiment, the OpenCV worker is terminated after candidate extrac
 
 Leaving Time Machine, pressing **Release historical runtime**, or navigating away terminates the OpenCV worker and releases the digit ONNX session. Worker termination defines the JavaScript ownership boundary; it does not prove the browser has already returned native/WASM pages to the operating system.
 
-The 1980 feature response is an educational approximation using fixed orientation filters and local max pooling. It is not a trained Neocognitron checkpoint. The 1998 checkpoint illustrates the handwritten-digit task from the LeNet era; it is not original 1998 LeNet-5 weights. Face and pedestrian outputs retain their own tasks and are not compared to each other as accuracy evidence.
+The 1980 feature response is an educational approximation using fixed orientation filters and local max pooling. It is not a trained Neocognitron checkpoint. The 1998 checkpoint illustrates the handwritten-digit task from the LeNet era; it is not original 1998 LeNet-5 weights. The 2012 checkpoint illustrates ImageNet classification through a BVLC AlexNet-family export, not the exact original paper weights. It returns class labels and scores, never object boxes. Face and pedestrian outputs retain their own tasks and are not compared to each other as accuracy evidence.
 
 See [CLASSICAL_CV.md](CLASSICAL_CV.md) for method details and provenance.
 

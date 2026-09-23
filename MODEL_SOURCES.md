@@ -41,11 +41,23 @@
 - Default detector window: 64×128; 8×8 stride, 8×8 padding, scale 1.05, group threshold 2.
 - OpenCV supplies the detector coefficients; this repository does not redistribute a separate SVM weights file or claim the embedded coefficients are the exact original paper checkpoint.
 
+### 2012 · AlexNet ImageNet classifier
+
+- Historical reference: Krizhevsky, Sutskever & Hinton, *ImageNet Classification with Deep Convolutional Neural Networks*, NeurIPS 2012. This entry illustrates the AlexNet classification milestone; it is not an object detector.
+- Browser checkpoint: `onnxmodelzoo/bvlcalexnet-12-int8`, pinned revision `99a443a03ecc3576ebd2d94aae33f8f5522b969c`, file `bvlcalexnet-12-int8.onnx`.
+- Exact URL: `https://huggingface.co/onnxmodelzoo/bvlcalexnet-12-int8/resolve/99a443a03ecc3576ebd2d94aae33f8f5522b969c/bvlcalexnet-12-int8.onnx`.
+- File size: 60,984,008 bytes (58.2 MiB / 61.0 MB); Git LFS SHA-256: `d53bbedf100be79277cf55d78c72bdcb67d88786988561bf5d530f038e443c7b`.
+- ONNX Model Zoo reports ONNX 1.9, opset 12, float32 input `data_0: 1×3×224×224`, and float32 output `prob_1: 1×1000`. This INT8 checkpoint returns 1,000 ImageNet scores. Published validation is 54.68% top-1 and 78.23% top-5; these are upstream figures, not results measured by this app.
+- Input preprocessing follows the [Intel Neural Compressor AlexNet evaluation script](https://github.com/intel/neural-compressor/blob/36442dbd1354e0d9012b1dcc78de1a9601f69ede/examples/onnxrt/image_recognition/onnx_model_zoo/alexnet/quantization/ptq/main.py): resize directly to 224×224, subtract RGB channel means 123.68 / 116.779 / 103.939, reverse RGB to BGR, and pack float32 NCHW. In this browser implementation, canvas performs the resize; its interpolation kernel can differ from Pillow's, so the on-page scores are not a reproduction of the published ImageNet validation benchmark.
+- The top five model scores are mapped to the 1,000 ImageNet synsets from the ONNX Model Zoo's `synset.txt`. The compact generated JSON mapping is bundled at `assets/models/imagenet-1k-labels.json`, SHA-256 `495a1f028e7b3b1878dbc4ec2e66f9a9a9c89c48abb007a9c954faa13571c33a`.
+- The Hugging Face model repository metadata labels the checkpoint Apache-2.0 while its imported model-card body says BSD-3. This project records both declarations without choosing one as definitive. The checkpoint is not redistributed; the browser fetches and SHA-256 verifies it at runtime. Confirm upstream terms before mirroring or redistributing the weights.
+- This is a BVLC AlexNet-family checkpoint from Caffe BVLC → Caffe2 → ONNX, not the exact original 2012 paper weights. The ONNX Model Zoo card notes the training differences and warns that reported accuracy depends on preprocessing.
+
 ### Task and runtime boundary
 
-All four early experiments operate on the same Time Machine source image but retain different tasks and output types. They remain outside the general-object Model Race. There is no accuracy leaderboard or cross-task box overlap.
+All five early experiments operate on the same Time Machine source image but retain different tasks and output types. They remain outside the general-object Model Race. There is no accuracy leaderboard or cross-task box overlap.
 
-OpenCV.js loads on demand in `classical-cv-worker.js`; the worker receives an aspect-preserving copy capped at 640 px on its longest side and returns only boxes/timings or digit-region proposals. Before a history experiment runs, registered AI adapters are released. For digit classification, the OpenCV worker is terminated before the ONNX Runtime WASM session is loaded.
+OpenCV.js loads on demand in `classical-cv-worker.js`; the worker receives an aspect-preserving copy capped at 640 px on its longest side and returns only boxes/timings or digit-region proposals. Before a history experiment runs, registered AI adapters are released. For digit classification, the OpenCV worker is terminated before the ONNX Runtime WASM session is loaded. AlexNet also runs through ONNX Runtime WASM and releases its session when leaving Time Machine.
 
 ## Tiny YOLOv2
 

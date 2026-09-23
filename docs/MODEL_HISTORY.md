@@ -2,7 +2,7 @@
 
 ## How to read the timeline
 
-The Time Machine keeps one selected image while users move through its history. The 1980 pattern-response preview, 1998 MNIST digit task, 2001 face cascade, and 2005 pedestrian detector run on that same image, each with its native task and output. Historical experiments do not change the selected general-object AI model or enter Model Race.
+The Time Machine keeps one selected image while users move through its history. The 1980 pattern-response preview, 1998 MNIST digit task, 2001 face cascade, 2005 pedestrian detector, and 2012 AlexNet classifier run on that same image, each with its native task and output. Historical experiments do not change the selected general-object AI model or enter Model Race.
 
 The year shown is the peer-reviewed publication year where available. YOLOv1 is dated 2016 for its CVPR paper; its arXiv preprint appeared in 2015. These entries are a selected lineage, not a claim that computer vision followed a single path.
 
@@ -14,7 +14,7 @@ The year shown is the peer-reviewed publication year where available. YOLOv1 is 
 | 1998 | LeNet-era MNIST CNN reference | Handwritten-digit classification on candidate image crops. | Runnable · digits only | Later ONNX Model Zoo checkpoint, not original LeNet-5 weights; it does not detect general objects or arbitrary printed text. |
 | 2001 | Viola–Jones | Boosted cascade family for rapid frontal-face detection; the app uses a later OpenCV cascade representative. | Runnable · face boxes | The OpenCV XML is not the original paper's trained weights. |
 | 2005 | HOG + linear SVM | Hand-crafted gradient descriptor with a sliding-window pedestrian classifier; the app uses OpenCV's default people detector. | Runnable · pedestrian boxes | Pedestrian detection, not general-object detection or the exact original paper weights. |
-| 2012 | AlexNet | Deep CNN for 1,000-class ImageNet classification. | History only | Image classification, not bounding-box detection. |
+| 2012 | AlexNet | Deep CNN for 1,000-class ImageNet classification. | Runnable · top-five class labels | BVLC AlexNet-family INT8 checkpoint, not the exact 2012 paper weights; full-image classification, no object boxes. |
 | 2014 | R-CNN | Selective-search region proposals classified with CNN features and class-specific SVMs. | History only | A region-based detector, not a one-pass detector or a runnable app model. |
 | 2015 | Faster R-CNN | A learned Region Proposal Network shares convolutional features with a two-stage detection network. | History only | A distinct two-stage design, not a directly comparable speed/accuracy result to the current browser models. |
 | 2016 | YOLOv1 | Unified grid-based, single-stage object detection. | History only | The timeline reference is paper-only; the runnable 2016 model in this app is Tiny YOLOv2. |

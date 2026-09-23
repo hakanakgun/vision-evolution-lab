@@ -39,6 +39,7 @@ These experiments use the one image selected in Time Machine. They illustrate di
 | 1998 | LeNet-era MNIST CNN reference | Digit-like crop boxes with handwritten digit labels | A later MNIST CNN checkpoint, not original LeNet-5 weights; digits only |
 | 2001 | Viola–Jones method family | Frontal-face cascade boxes | OpenCV cascade representative, not the paper's original trained weights |
 | 2005 | HOG + linear SVM | Pedestrian boxes | OpenCV default people detector, not the paper's original checkpoint |
+| 2012 | AlexNet | Top-five ImageNet class labels | Pinned ONNX Model Zoo INT8 checkpoint, 224×224 WASM classification; not the exact paper weights or an object detector |
 
 The source stays in the browser. The 1998 digit experiment only classifies isolated handwritten digit crops; it does not detect general objects or arbitrary text. The historical methods stay outside Model Race because their tasks and outputs differ.
 

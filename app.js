@@ -130,6 +130,7 @@
     function selectHistoryExperiment(key,{scroll=true}={}){
       if(state.running||state.benchmarking)return;
       if(!REGISTRY.historyExperiments?.[key])return;
+      if(key!=='alexnet-classification'){$('history-classification').hidden=true;$('history-classification-results').replaceChildren()}
       state.historyExperiment=key;syncHistoryControls();
       const spec=REGISTRY.historyExperiments[key];
       resetRunMetrics();resetBenchmark();resetStartupMetrics();updateInsideModelUI(state.activeModel,null,state.image);
