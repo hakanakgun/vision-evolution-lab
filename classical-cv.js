@@ -2,7 +2,7 @@
   'use strict';
   const api=window.VisionLab,registry=window.VisionModels,runtimes=window.VisionRuntimeRegistry;
   if(!api||!registry||!runtimes)return;
-  const $=id=>document.getElementById(id),VERSION='0.8.0',WORK_MAX=640;
+  const $=id=>document.getElementById(id),VERSION='0.8.1',WORK_MAX=640;
   const state={image:null,running:false,worker:null,workerReady:null,pending:new Map(),seq:0,aiResult:null,aiModel:'',workerInitMs:NaN};
 
   const ms=value=>Number.isFinite(value)?value.toFixed(1)+' ms':'—';
