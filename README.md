@@ -51,7 +51,7 @@ Each model performs:
 2. 20 measured warm runs,
 3. runtime release before the next model in the normal race path.
 
-The benchmark reports p50, p90, min-max, coefficient of variation, p50 end-to-end time, and approximate inference FPS.
+The benchmark reports p50, p90, min-max, run-to-run timing variation, p50 end-to-end time, and approximate inference FPS. Timing variation is the coefficient of variation: lower values mean more consistent inference times, not higher accuracy.
 
 Pairwise same-class IoU overlap is a disagreement/overlap diagnostic, not an accuracy metric.
 
