@@ -12,7 +12,7 @@
     const $ = id => document.getElementById(id);
     const DEFAULT_MODEL = REGISTRY.defaults?.timeMachine || Object.keys(REGISTRY).find(key=>REGISTRY[key]?.status==='runnable'&&RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine')) || 'yolox';
     const DEFAULT_LIVE_MODEL = REGISTRY.defaults?.live || RuntimeRegistry.modelKeys.find(key=>RuntimeRegistry.capabilityEnabled(REGISTRY[key],'live')) || '';
-    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve()};
+    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve()};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -38,8 +38,10 @@
     function selectActiveModel(key,{scroll=true}={}){
       if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}
       if(!REGISTRY[key]||!RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine'))return;
-      state.historyExperiment='';state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.clear?.());state.activeModel=key;syncHistoryControls();
-      resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();
+      if(state.live)stopCamera();
+      state.cameraStartToken++;
+      state.historyExperiment='';state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.clear?.());state.activeModel=key;state.liveModel=key;syncHistoryControls();
+      resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();renderLiveModels();
       if(state.image){drawSourceOnly();setStatus(activeModel().title+' selected. Run the current image when ready.');}
       else setStatus(activeModel().title+' selected. Choose an image to run this generation.');
       if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});
@@ -437,6 +439,7 @@
         $('benchmark-note').textContent=REGISTRY[benchmarkModel]?.ui?.runtime?.benchmarkBoundary||'p50, p90, min–max and run-to-run timing variation from 20 sequential warm runs; model transfer and session init excluded.';
         setStatus(`Warm benchmark complete: p50 inference ${ms(infMed)}, p90 ${ms(infP90)}, CV ${cv.toFixed(1)}%.`);
       }catch(err){
+        if(token!==state.cameraStartToken)return;
         console.error(err);
         setStatus(err.message || String(err),'error');
         $('benchmark-note').textContent='Benchmark failed; current-run metrics were left unchanged.';
@@ -463,31 +466,25 @@
     $('confidence').addEventListener('input',()=>{$('confidence-value').textContent=Number($('confidence').value).toFixed(2);if(!state.historyExperiment)redrawUploaded();});
 
     function liveAdapters(){return RuntimeRegistry.list({capability:'live'})}
-    function currentLiveAdapter(){return state.liveModel?RuntimeRegistry.get(state.liveModel):null}
+    function currentLiveAdapter(){return RuntimeRegistry.get(state.activeModel)}
     function resetLiveMetrics(){for(const id of ['live-inf','live-total','live-fps','live-count'])$(id).textContent='—';$('live-frames').textContent='0';state.liveSamples=[];state.liveFrameCount=0}
     function renderLiveModels(){
       const adapters=liveAdapters(),controls=$('live-model-controls'),label=$('live-model-name');
-      controls.replaceChildren();
+      controls.replaceChildren();controls.hidden=true;
       if(!adapters.length){
         state.liveModel='';label.textContent='No live-capable runtime registered';controls.hidden=true;$('camera-start').disabled=true;$('live-backend').textContent='Not available';return;
       }
-      if(!adapters.some(adapter=>adapter.key===state.liveModel))state.liveModel=(REGISTRY.defaults?.live&&adapters.some(adapter=>adapter.key===REGISTRY.defaults.live)?REGISTRY.defaults.live:adapters[0].key);
+      state.liveModel=state.activeModel;
+      if(!adapters.some(adapter=>adapter.key===state.activeModel)){state.liveModel='';label.textContent=activeModel().title+' · Live Camera is not supported';controls.hidden=true;$('camera-start').disabled=true;$('live-backend').textContent='Not available';return;}
       const active=RuntimeRegistry.get(state.liveModel),meta=RuntimeRegistry.liveMeta(active.model);
       label.textContent=active.model.title+' · '+(meta?.summary||'Sequential inference');
-      if(adapters.length>1){
-        controls.hidden=false;
-        for(const adapter of adapters){
-          const button=document.createElement('button');
-          button.type='button';button.className='btn secondary';button.dataset.liveModel=adapter.key;button.textContent=adapter.model.title;button.disabled=state.live;button.setAttribute('aria-pressed',String(adapter.key===state.liveModel));button.addEventListener('click',()=>selectLiveModel(adapter.key));controls.appendChild(button);
-        }
-      }else controls.hidden=true;
       $('camera-start').disabled=state.live;
     }
     function selectLiveModel(key){
       if(state.live)return;
       const adapter=RuntimeRegistry.get(key);
       if(!adapter||!RuntimeRegistry.capabilityEnabled(adapter.model,'live'))return;
-      state.liveModel=key;resetLiveMetrics();$('live-backend').textContent='Not loaded';renderLiveModels();
+      selectActiveModel(key,{scroll:false});resetLiveMetrics();$('live-backend').textContent='Not loaded';renderLiveModels();
     }
     function setLiveBackend(adapter){
       const runtime=adapter?.runtimeInfo?.()||{},backend=runtime.backend||'';
@@ -496,20 +493,22 @@
     }
     async function startCamera(){
       if(state.live)return;
-      const adapter=currentLiveAdapter();
+      const modelKey=state.activeModel,token=++state.cameraStartToken,adapter=currentLiveAdapter();
       if(!adapter){renderLiveModels();return}
       $('camera-start').disabled=true;
       try{
-        await adapter.prepare();
+        await adapter.prepare?.();
+        if(token!==state.cameraStartToken||state.activeModel!==modelKey)return;
         setLiveBackend(adapter);
         const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
+        if(token!==state.cameraStartToken||state.activeModel!==modelKey){stream.getTracks().forEach(track=>track.stop());return;}
         state.stream=stream;
         const video=$('camera-video');video.srcObject=stream;await video.play();
         state.live=true;resetLiveMetrics();
         $('camera-empty').hidden=true;$('camera-canvas').hidden=false;$('live-badge').classList.add('on');$('camera-stop').disabled=false;
         $('live-size').textContent=`${video.videoWidth} × ${video.videoHeight} camera`;
         renderLiveModels();
-        liveLoop(adapter,state.liveModel);
+        liveLoop(adapter,modelKey);
       }catch(err){
         console.error(err);
         if(state.stream){state.stream.getTracks().forEach(track=>track.stop());state.stream=null}
@@ -519,9 +518,9 @@
 
     async function liveLoop(adapter,modelKey){
       const video=$('camera-video'),canvas=$('camera-canvas');
-      while(state.live&&state.liveModel===modelKey){
+      while(state.live&&state.activeModel===modelKey){
         await new Promise(requestAnimationFrame);
-        if(!state.live||state.liveModel!==modelKey||video.readyState<2)continue;
+        if(!state.live||state.activeModel!==modelKey||video.readyState<2)continue;
         try{
           const r=await adapter.run(video,canvas,{updateMain:false,live:true});
           state.liveFrameCount++;
