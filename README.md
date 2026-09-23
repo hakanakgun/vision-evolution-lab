@@ -8,7 +8,7 @@ Live: https://hakanakgun.github.io/vision-evolution-lab/
 
 Vision Evolution Lab lets you run and compare object-detection generations without an application backend.
 
-- **Vision Time Machine** opens with YOLOX-Nano as a lightweight fast-inference starting point; all runnable years remain selectable. One image stays selected while early task-specific experiments show pattern responses, handwritten digits, faces, or pedestrians.
+- **Vision Time Machine** opens with YOLOX-Nano as a lightweight fast-inference starting point; all runnable years remain selectable, including SSD 2016 and DETR 2020 reference checkpoints. One image stays selected while early task-specific experiments show pattern responses, handwritten digits, faces, or pedestrians.
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
 - **Live Camera** runs the currently selected Time Machine detector locally, through its runtime adapter, with rolling latency measurements. It processes frames sequentially without a frame queue.
@@ -78,7 +78,7 @@ The repeated four-model benchmark reload issue is mitigated by using the standar
 
 On 2026-09-22, the updated iOS path completed five consecutive full four-model Benchmark ×20 runs on the user's physical iPhone/Brave session without an abrupt reload. On 2026-09-23, the user also completed a five-model ×20 run and Model Race, including the RT-DETRv2 R18 research preview, on iOS 18.7 / Brave-WebKit. These results support the tested device path; they do not prove the historical WebKit/JSEP root cause or universal stability across iOS devices and versions.
 
-Live Camera now follows the Time Machine selection for all five detectors; sustained per-model camera testing on physical iOS devices is still pending. See [the iOS test checklist](docs/IOS_WEBKIT_DIAGNOSTICS.md#physical-ios-tests-still-pending).
+Live Camera follows the Time Machine selection for its five eligible detectors. SSD 2016 and DETR are intentionally Time Machine-only; their mobile-device latency and memory behavior have not yet been tested. Sustained per-model camera testing on physical iOS devices is still pending. See [the iOS test checklist](docs/IOS_WEBKIT_DIAGNOSTICS.md#physical-ios-tests-still-pending).
 
 The normal 1 warm-up + 20 measured-run benchmark contract is unchanged. The diagnostic modes remain available for regression analysis.
 

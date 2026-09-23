@@ -150,6 +150,24 @@ RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS/WebKit We
 
 The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Community repository is a Hugging Face Staff conversion whose model card identifies `PekingU/rtdetr_r18vd` as the base model and marks it for Transformers.js. The browser references the pinned Hub conversion at runtime; the binary is not redistributed by this repository.
 
+### DETR 2020 reference
+
+- Purpose: runnable Time Machine reference for the original DETR set-prediction generation; excluded from Model Race and Live Camera.
+- Base checkpoint: `facebook/detr-resnet-50`, Apache-2.0, COCO 2017.
+- Transformers.js conversion: `Xenova/detr-resnet-50`, pinned revision `8be7ab59ff663484ee9ba2e8d8f267330d5ad03e`.
+- Runtime asset: `onnx/model_quantized.onnx`, 43,102,531 bytes (q8); SHA-256 `cae09a307ed9247da7e2ce8bcf81522a6817f1ea2e82b9c4dde59f5964b62b4f`.
+- Runtime: Transformers.js 4.3.0 object-detection pipeline, WASM q8 only. The source image is staged at a maximum side of 640 px; Transformers.js owns processor resizing and output postprocessing.
+- Provenance qualification: this is a later COCO 2017 reference conversion, not the exact paper checkpoint. The base repository states Apache-2.0; the conversion repository does not independently declare a license. The browser fetches it at runtime; this project does not redistribute the binary.
+
+### SSD 2016 reference
+
+- Purpose: runnable Time Machine reference for the 2016 SSD architecture; excluded from Model Race and Live Camera.
+- Source: `onnxmodelzoo/ssd-12-int8`, pinned revision `bf6cc24948f7cf6c50127798c33d900813678b4e`.
+- File: `ssd-12-int8.onnx`, 20,485,276 bytes; SHA-256 `56d2c03a8c74c03f704509ccfcd91763991c6e1b92f63da730fb2b3d07565453`.
+- Provenance: ResNet-34-derived SSD, INT8, reported trained/evaluated on COCO 2017; ONNX conversion from the MLPerf model lineage. Upstream repository metadata declares Apache-2.0.
+- Input contract: direct stretch to 1200×1200, float32 NCHW RGB, `/255`, then ImageNet mean/std normalization. ONNX outputs normalized xyxy boxes, one-based COCO class IDs and scores.
+- Historical qualification: it represents the 2016 SSD design, but its ResNet-34 INT8 checkpoint is a later COCO 2017 reference model, not the original ECCV paper's weights. It is fetched and SHA-256 checked in the browser; this project does not redistribute the binary.
+
 ### RT-DETRv2 R18
 
 - Status: integrated research preview; one iOS/WebKit inference run reported by the user, broader validation pending.

@@ -18,8 +18,8 @@ The year shown is the peer-reviewed publication year where available. YOLOv1 is 
 | 2014 | R-CNN | Selective-search region proposals classified with CNN features and class-specific SVMs. | History only | A region-based detector, not a one-pass detector or a runnable app model. |
 | 2015 | Faster R-CNN | A learned Region Proposal Network shares convolutional features with a two-stage detection network. | History only | A distinct two-stage design, not a directly comparable speed/accuracy result to the current browser models. |
 | 2016 | YOLOv1 | Unified grid-based, single-stage object detection. | History only | The timeline reference is paper-only; the runnable 2016 model in this app is Tiny YOLOv2. |
-| 2016 | SSD | Single-shot multi-scale object detection. | History only | The history marker is not the 2017 runnable SSD-MobileNetV1 INT8 export. |
-| 2020 | DETR | Transformer-based set prediction for object detection. | History only | The history marker is not the later runnable RT-DETR R18 model. |
+| 2016 | SSD · ResNet-34 INT8 | Single-shot multi-scale object detection. | Runnable · COCO reference checkpoint | Later ONNX Model Zoo COCO 2017 ResNet-34 export, not the original paper weights; Time Machine only. |
+| 2020 | DETR · ResNet-50 | Transformer-based set prediction for object detection. | Runnable · q8/WASM reference checkpoint | Pinned Xenova conversion of the Apache-2.0 Facebook base, not asserted to be the exact paper weights; Time Machine only. |
 
 ## Primary papers
 
@@ -34,4 +34,4 @@ The year shown is the peer-reviewed publication year where available. YOLOv1 is 
 - Liu et al., “SSD: Single Shot MultiBox Detector,” ECCV (2016), [Google Research publication record](https://research.google/pubs/ssd-single-shot-multibox-detector/).
 - Carion et al., “End-to-End Object Detection with Transformers,” ECCV (2020), [ECVA paper](https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php).
 
-These are bibliographic links. The Time Machine fetches the separately documented MNIST and OpenCV runtime assets only when their historical experiment is selected; it does not bundle the original LeNet or Neocognitron weights.
+These are bibliographic links. Historical detector references fetch their separately pinned ONNX/Transformers.js assets only when selected; the SSD and DETR references are later checkpoints, not the original paper weights. Task-specific MNIST and OpenCV assets are likewise loaded only when their experiment is selected.
