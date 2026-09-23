@@ -434,7 +434,7 @@
         setMetric('b-cv',Number.isFinite(cv)?`${cv.toFixed(1)}%`:'—');
         setMetric('b-total-med',ms(median(total)));
         setMetric('b-fps',infMed>0?(1000/infMed).toFixed(1):'—');
-        $('benchmark-note').textContent=REGISTRY[benchmarkModel]?.ui?.runtime?.benchmarkBoundary||'p50, p90, min–max and CV from 20 sequential warm runs; model transfer and session init excluded.';
+        $('benchmark-note').textContent=REGISTRY[benchmarkModel]?.ui?.runtime?.benchmarkBoundary||'p50, p90, min–max and run-to-run timing variation from 20 sequential warm runs; model transfer and session init excluded.';
         setStatus(`Warm benchmark complete: p50 inference ${ms(infMed)}, p90 ${ms(infP90)}, CV ${cv.toFixed(1)}%.`);
       }catch(err){
         console.error(err);

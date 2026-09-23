@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.23-v0.10.2">
+<html lang="en" data-build="2026.09.23-v0.10.3">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.23-v0.10.2';
+      const CURRENT_BUILD = '2026.09.23-v0.10.3';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.10.2">
+  <link rel="stylesheet" href="styles.css?v=0.10.3">
 </head>
 <body>
   <main class="shell">
@@ -158,7 +158,7 @@
               <div class="metric"><span>p50 / median inference</span><b id="b-inf-med">—</b></div>
               <div class="metric"><span>p90 inference</span><b id="b-inf-p90">—</b></div>
               <div class="metric"><span>Inference min–max</span><b id="b-inf-range">—</b></div>
-              <div class="metric"><span>Stability (CV)</span><b id="b-cv">—</b></div>
+              <div class="metric"><span title="Shows how much inference times vary from run to run; lower means more consistent timing.">Timing variation</span><b id="b-cv">—</b></div>
               <div class="metric"><span>p50 end-to-end</span><b id="b-total-med">—</b></div>
               <div class="metric"><span>Approx. inference FPS</span><b id="b-fps">—</b></div>
             </div>
@@ -296,9 +296,10 @@
           <div class="tiny">Run the race once before benchmarking. Each adapter declares its timing boundary; startup remains excluded.</div>
         </div>
         <div class="race-benchmark-table">
-          <div class="race-benchmark-row head"><span>Model</span><b>Backend</b><b>p50</b><b>p90</b><b>p50 E2E</b><b>CV</b></div>
+          <div class="race-benchmark-row head"><span>Model</span><b>Backend</b><b>p50</b><b>p90</b><b>p50 E2E</b><b title="Variation in inference times across the 20 runs; lower means more consistent timing, not better accuracy.">Timing variation</b></div>
           <div id="race-benchmark-body"></div>
         </div>
+        <div class="note">Timing variation shows how much the 20 inference times differ relative to their average. A lower percentage means more consistent timing; it does not measure detection accuracy.</div>
         <div class="note" id="race-benchmark-note">Not benchmarked yet.</div>
       </div>
 
@@ -397,15 +398,15 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.10.2 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.10.3 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="runtime-bootstrap.js?v=0.10.2"></script>
-  <script src="models.js?v=0.10.2"></script>
-  <script src="model-runtime.js?v=0.10.2"></script>
-  <script src="model-loader.js?v=0.10.2"></script>
-  <script src="app.js?v=0.10.2"></script>
-  <script src="race.js?v=0.10.2"></script>
-  <script src="history-experiments.js?v=0.10.2"></script>
+  <script src="runtime-bootstrap.js?v=0.10.3"></script>
+  <script src="models.js?v=0.10.3"></script>
+  <script src="model-runtime.js?v=0.10.3"></script>
+  <script src="model-loader.js?v=0.10.3"></script>
+  <script src="app.js?v=0.10.3"></script>
+  <script src="race.js?v=0.10.3"></script>
+  <script src="history-experiments.js?v=0.10.3"></script>
 </body>
 </html>

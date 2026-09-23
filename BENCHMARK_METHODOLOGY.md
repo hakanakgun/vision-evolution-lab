@@ -28,7 +28,7 @@ Reported values:
 - p50 / median inference
 - p90 inference
 - inference min–max
-- coefficient of variation (CV)
+- **Timing variation**: the coefficient of variation (population standard deviation ÷ mean) across the 20 inference runs, shown as a percentage. Lower values mean more consistent run times; this says nothing about detection accuracy.
 - p50 end-to-end
 - approximate inference FPS = 1000 / p50 inference milliseconds
 
