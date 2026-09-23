@@ -211,7 +211,7 @@ check(files.classical.includes("adapter.run(source,$('classical-ai-canvas'),{upd
 check(files.classical.includes("bestIou=.35"),'HOG/AI person overlap IoU threshold changed');
 check(files.classical.includes("d.label==='person'&&d.score>=confidence()"),'HOG/AI overlap must use retained AI person detections at current UI confidence');
 check(files.classical.includes("WORK_MAX=640"),'Classical CV browser working-image cap changed');
-check(files.classical.includes("classical-cv-worker.js?v=${VERSION}")&&files.classical.includes("VERSION='0.8.3'"),'Classical CV worker cache/version pin missing');
+check(files.classical.includes("classical-cv-worker.js?v=${VERSION}")&&files.classical.includes(`VERSION='${files.version.version}'`),'Classical CV worker cache version must match the release manifest');
 check(!files.index.includes('cdn.jsdelivr.net/npm/@techstark/opencv-js')&&!/<script[^>]+src=["'][^"']*opencv(?:\.min)?\.js/i.test(files.index),'OpenCV.js must remain lazy and worker-only');
 check(!/<script[^>]+src=["'][^"']*classical-cv-worker\.js/i.test(files.index),'Classical CV worker must not be loaded as a page script');
 check(files.classicalWorker.includes("@techstark/opencv-js@4.12.0-release.1/dist/opencv.js"),'OpenCV.js runtime pin changed');
