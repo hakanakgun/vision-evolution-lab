@@ -67,6 +67,15 @@ Model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched fro
 
 The original Vision Evolution Lab source code is licensed under the repository's [MIT License](LICENSE).
 
+## COCO validation benchmark sample
+
+- File: `assets/benchmark/coco-val-000000397133.jpg` (COCO 2017 validation image 397133, 640 × 427).
+- Original title: “Kitchen”; photographer: Maggie W (`maggiew` on Flickr).
+- Original source: [Flickr photo page](https://www.flickr.com/photos/maggiew/6255196340/); dataset image URL: [COCO val2017](https://images.cocodataset.org/val2017/000000397133.jpg).
+- License: [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). Attribution: “Kitchen” by Maggie W, used under CC BY 2.0.
+- SHA-256: `09e1d25c75f7879bdaa69c327fece5cabacd53939c8c2ef9e87f1c97a2e478c4`.
+- This is a single shared smoke-test input, not a representative validation set or an accuracy benchmark. Pascal VOC test images are not included because their individual Flickr reuse terms must be checked separately.
+
 
 ## Hugging Face Transformers.js 4.3.0
 

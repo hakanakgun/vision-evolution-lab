@@ -55,6 +55,8 @@ The benchmark reports p50, p90, min-max, coefficient of variation, p50 end-to-en
 
 Pairwise same-class IoU overlap is a disagreement/overlap diagnostic, not an accuracy metric.
 
+Model Race includes one licensed COCO 2017 validation image for repeatable smoke tests. It covers the shared COCO models; Tiny YOLOv2 can also be tried on its `person` category, but the image is not from Pascal VOC. This single image is not a dataset-level benchmark. See [Benchmark samples](BENCHMARK_SAMPLES.md) for attribution and scope.
+
 See [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md).
 
 ## Browser runtime
@@ -86,6 +88,7 @@ See [docs/README.md](docs/README.md) for the documentation map.
 Stable repository references:
 
 - [Benchmark methodology](BENCHMARK_METHODOLOGY.md)
+- [Benchmark samples](BENCHMARK_SAMPLES.md)
 - [Model catalog](MODEL_CATALOG.md)
 - [Model sources and provenance](MODEL_SOURCES.md)
 - [Third-party licenses](THIRD_PARTY_LICENSES.md)
