@@ -63,17 +63,17 @@ OpenCV.js loads on demand in `classical-cv-worker.js`; the worker receives an as
 - Output: `1×125×13×13`, representing 5 anchors × (4 box values + objectness + 20 class logits) for each 13×13 grid cell.
 - Anchors: `1.08,1.19`, `3.42,4.41`, `6.63,11.38`, `9.42,5.11`, `16.62,10.52`.
 - Conversion lineage reported upstream: Darknet → Keras → Core ML → ONNX through ONNXMLTools.
-- Browser runtime policy: ONNX Runtime Web WASM initially. This historical opset-8 export has not yet completed physical iPhone/WebKit runtime validation in this project.
+- Browser runtime policy: ONNX Runtime Web WASM. The user reported physical iPhone/Brave detections and five consecutive four-model ×20 benchmarks on 2026-09-22; that validates the tested device path, not all browsers or devices.
 
 ### Preprocessing note
 
-The upstream ONNX Model Zoo card leaves its `Preprocessing` subsection empty. The Core ML conversion source says YOLO expects input pixels in 0–1 and used `image_scale=1/255`; the migrated ONNX file instead exposes a float32 NCHW tensor interface. A contemporary independent implementation reports matching ONNX Runtime outputs while directly packing resized image bytes into NCHW floats. Vision Evolution Lab currently follows that exact-export convention: direct 416×416 resize, RGB float32 NCHW, raw 0–255 browser pixel values. Because the upstream ONNX preprocessing contract is incomplete, this remains an explicit implementation assumption until physical-browser detections validate it.
+The upstream ONNX Model Zoo card leaves its `Preprocessing` subsection empty. The Core ML conversion source says YOLO expects input pixels in 0–1 and used `image_scale=1/255`; the migrated ONNX file exposes a float32 NCHW tensor interface. A contemporary independent implementation reports matching ONNX Runtime outputs while directly packing resized image bytes into NCHW floats. Vision Evolution Lab follows that raw-byte convention: direct 416×416 stretch, RGB float32 NCHW, pixel values 0–255, no padding. A deterministic test verifies this exact browser tensor packing, and the user-reported iPhone inference confirms that the path executes on the tested device. The official model card does not define which pixel scale is correct; raw 0–255 therefore remains an empirically exercised convention, not an upstream-confirmed normalization rule.
 
 ### Postprocessing
 
 The page decodes the 13×13 grid with the upstream VOC anchors, sigmoid box/objectness transforms, softmax over the 20 class logits, and class-aware NMS at IoU 0.40. Detections are retained down to the UI slider minimum (0.10), then the current UI confidence is applied during drawing/comparison so threshold changes can redraw without rerunning inference.
 
-For four-model overlap only, legacy VOC label synonyms such as `aeroplane`, `motorbike`, `diningtable`, `pottedplant`, `sofa`, and `tvmonitor` are mapped to equivalent COCO-style display names. This does not make the training label spaces equivalent; Tiny YOLOv2 still cannot predict COCO-only classes.
+For Model Race overlap only, legacy VOC label synonyms such as `aeroplane`, `motorbike`, `diningtable`, `pottedplant`, `sofa`, and `tvmonitor` are mapped to equivalent COCO-style display names. This does not make the training label spaces equivalent; Tiny YOLOv2 still cannot predict COCO-only classes.
 
 ### License note
 
@@ -129,7 +129,7 @@ If this project later redistributes or modifies YOLOX weights instead of referen
 
 ## Transformer-era model sources
 
-RT-DETR R18 is runnable. LW-DETR and D-FINE remain research-only candidates and are not downloaded or executed by the current site.
+RT-DETR R18 is device-validated. RT-DETRv2 R18 is integrated as a research preview pending a live browser inference run. LW-DETR and D-FINE remain research-only candidates and are not downloaded or executed by the current site.
 
 ### RT-DETR R18
 
@@ -149,6 +149,19 @@ RT-DETR R18 is runnable. LW-DETR and D-FINE remain research-only candidates and 
 #### RT-DETR license/provenance note
 
 The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Community repository is a Hugging Face Staff conversion whose model card identifies `PekingU/rtdetr_r18vd` as the base model and marks it for Transformers.js. The browser references the pinned Hub conversion at runtime; the binary is not redistributed by this repository.
+
+### RT-DETRv2 R18
+
+- Status: integrated research preview; live browser inference not yet validated.
+- Base model: `PekingU/rtdetr_v2_r18vd`, Apache-2.0, trained on COCO train2017 and validated on COCO val2017.
+- ONNX Community conversion: `onnx-community/rtdetr_v2_r18vd-ONNX`, explicitly tagged for Transformers.js object detection and based on the PekingU checkpoint.
+- Pinned conversion revision: `936f90b6a476c6da4dfe053fc521af55285976ba`.
+- fp16 WebGPU ONNX asset: `onnx/model_fp16.onnx`, 40,750,249 bytes, SHA-256 `2922e7137689ac648cd99f0aa33b885d681fd981302ac5c77ed9a4ee946eaa36`.
+- Quantized WASM ONNX asset: `onnx/model_quantized.onnx`, 20,991,219 bytes, SHA-256 `4b839c46187b77fc620c770de0be6790637b98afde9b386232b0fcf74382eb3`.
+- Preprocessor: 640×640 resize, RGB, rescale by 1/255, no mean/std normalization, no padding.
+- Runtime: Transformers.js 4.3.0 object-detection pipeline; WebGPU fp16 first and WASM q8/int8 fallback. Browser does not reimplement the RT-DETRv2 decoder or add page-side NMS.
+- The upstream project reports 48.1 COCO AP for RT-DETRv2-S. This is model-card/paper context only; this project does not reproduce it.
+- Model file terms follow the Apache-2.0 ONNX Community/base model declarations. The repository downloads the pinned asset at runtime and does not redistribute it.
 
 ### LW-DETR-tiny
 

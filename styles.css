@@ -31,6 +31,8 @@
 
 /* Hidden must win over layout declarations on every browser, including iOS WebKit. */
 [hidden]{display:none!important}
+.accuracy-row{grid-template-columns:minmax(160px,1.5fr) repeat(3,minmax(78px,.8fr)) minmax(125px,1.2fr);min-width:650px}
+.accuracy-row b{text-align:right}
 .race-diag-actions,.race-diag-copy-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .race-diag-actions{margin-top:8px}
 .race-diag-copy-row{margin:6px 0 2px}
@@ -118,3 +120,4 @@
 @media(prefers-reduced-motion:reduce){
   .timeline .milestone,.timeline .milestone .dot{transition:none}
 }
+[hidden]{display:none!important}

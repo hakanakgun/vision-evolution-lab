@@ -68,7 +68,7 @@ ${tail||'—'}`;}
   function boundedError(value){const err=value instanceof Error?value:null;return{name:String(err?.name||value?.name||'Error').slice(0,120),message:String(err?.message||value?.message||value||'unknown').slice(0,600),stack:String(err?.stack||value?.stack||'').slice(0,1800),currentStage:bbStage}}
   function markDiagExit(event){if(!DIAG)return;bbOrderlyExit=true;bbLastLifecycle='pagehide';bbJournal('pagehide',{persisted:Boolean(event?.persisted),visibility:document.visibilityState,readyState:document.readyState});try{const prev=readDiag()||{};sessionStorage.setItem(DIAG_KEY,JSON.stringify({...prev,orderlyExit:true,exitAt:new Date().toISOString(),persisted:Boolean(event?.persisted)}))}catch(_){}if(BLACKBOX){const snapshot=bbSnapshot();writeLocal(BB_KEY,snapshot);writeLocal(BB_JOURNAL_KEY,bbEvents);if(!DEEP)writeLocal(BB_DURABLE_KEY,snapshot)}}
   window.addEventListener('pagehide',markDiagExit);
-  const state={image:null,running:false,benchmarking:false,tinyBuffer:null,tinySession:null,tinyProvider:'',tinyDownloadMs:NaN,tinyInitMs:NaN,tinyCacheState:'',tinySource:'',tinySessionRuns:0,yoloBuffer:null,yoloSession:null,yoloProvider:'',yoloDownloadMs:NaN,yoloInitMs:NaN,yoloCacheState:'',yoloSource:'',yoloSessionRuns:0,rtPipe:null,rtBackend:'',rtDtype:'',rtLoadMs:NaN,rtCacheState:'',rtModule:null,rtPipeRuns:0,rtProgressKey:'',lastHeadMaps:null,lastRun:{}};
+  const state={image:null,sampleId:'',running:false,benchmarking:false,tinyBuffer:null,tinySession:null,tinyProvider:'',tinyDownloadMs:NaN,tinyInitMs:NaN,tinyCacheState:'',tinySource:'',tinySessionRuns:0,yoloBuffer:null,yoloSession:null,yoloProvider:'',yoloDownloadMs:NaN,yoloInitMs:NaN,yoloCacheState:'',yoloSource:'',yoloSessionRuns:0,rtPipe:null,rtBackend:'',rtDtype:'',rtLoadMs:NaN,rtCacheState:'',rtModule:null,rtPipeRuns:0,rtProgressKey:'',lastHeadMaps:null,lastRun:{}};
   if(DIAG){const previous=readDiag(),diagnostics=$('race-diagnostics'),diagButton=$('race-benchmark-diag'),disposeButton=$('race-dispose-diag');if(diagnostics)diagnostics.hidden=false;if(diagButton)diagButton.hidden=false;if(disposeButton)disposeButton.hidden=false;if(previous)showDiag(`Diagnostic · previous stage: ${previous.stage||'unknown'} · orderly pagehide: ${previous.orderlyExit?'yes':'no'}`);else showDiag('Diagnostic mode ready · no previous breadcrumb.');try{sessionStorage.setItem(DIAG_KEY,JSON.stringify({stage:'page-ready',at:new Date().toISOString(),orderlyExit:false}))}catch(_){}}
   if(BLACKBOX){const periodic=readLocal(BB_KEY),durable=readLocal(BB_DURABLE_KEY),critical=readLocal(BB_CRITICAL_KEY);bbCritical=critical||bbCritical;bbPrevious=durable?{...(periodic||{}),...durable}:periodic;if(DEEP&&critical)bbPrevious={...(bbPrevious||{}),stage:critical.stage||bbPrevious?.stage,attempt:critical.attempt??bbPrevious?.attempt,matrix:bbPrevious?.matrix||bbMatrix,critical};bbEvents=readLocal(BB_JOURNAL_KEY,[]).slice(-(DEEP?200:40));bbCrash=bbCrash||bbMatrixCrash(bbMatrix);bbJournal('page-init',{navigation:bbNavType(),readyState:document.readyState,visibility:document.visibilityState});renderBlackbox();window.addEventListener('pageshow',event=>{bbLastLifecycle='pageshow';bbJournal('pageshow',{persisted:Boolean(event.persisted),readyState:document.readyState,visibility:document.visibilityState});renderBlackbox()});window.addEventListener('beforeunload',()=>{bbLastLifecycle='beforeunload';bbJournal('beforeunload',{readyState:document.readyState,visibility:document.visibilityState});writeLocal(BB_KEY,bbSnapshot())});document.addEventListener('visibilitychange',()=>{bbLastLifecycle='visibility:'+document.visibilityState;bbJournal(bbLastLifecycle,{readyState:document.readyState,visibility:document.visibilityState});writeLocal(BB_KEY,bbSnapshot());renderBlackbox()});document.addEventListener('freeze',()=>{bbLastLifecycle='freeze';bbJournal('freeze',{readyState:document.readyState,visibility:document.visibilityState});writeLocal(BB_KEY,bbSnapshot())});document.addEventListener('resume',()=>{bbLastLifecycle='resume';bbJournal('resume',{readyState:document.readyState,visibility:document.visibilityState});writeLocal(BB_KEY,bbSnapshot());renderBlackbox()});if(DEEP){window.addEventListener('error',event=>writeDiag('window-error',{model:bbCurrentModel,error:boundedError(event.error||{name:'ErrorEvent',message:event.message})}));window.addEventListener('unhandledrejection',event=>writeDiag('unhandledrejection',{model:bbCurrentModel,error:boundedError(event.reason)}));if(api.setDiagnosticHook)api.setDiagnosticHook((event,meta)=>deepStage(event,{model:'ssd',phase:event,...(meta||{})}))}setInterval(()=>{const now=performance.now(),gap=Math.max(0,now-bbLastBeat-1000);bbLastBeat=now;if(gap>bbMaxGap)bbMaxGap=gap;if(gap>=1500)bbJournal('event-loop-gap',{ms:Math.round(gap)});writeLocal(BB_KEY,bbSnapshot());if(DEEP&&bbEventSeq%8===0)writeLocal(BB_JOURNAL_KEY,bbEvents);renderBlackbox()},1000)}
   const report=(model,event)=>api.reportRuntimeEvent?.(model,event);
@@ -105,7 +105,7 @@ ${tail||'—'}`;}
     evictYoloRawBuffer();throw lastError||new Error('No compatible YOLOX execution provider.')
   }
   function prepareDisplay(source,canvas){const {w,h}=sourceDims(source),scale=Math.min(1,640/Math.max(w,h));canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));canvas.getContext('2d').drawImage(source,0,0,canvas.width,canvas.height)}
-  function prepareTiny(source,canvas){const {w,h}=sourceDims(source),size=TINY.input;if(!w||!h)throw new Error('Race image has no readable dimensions.');const work=$('race-tiny-work');work.width=size;work.height=size;const ctx=work.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,size,size);const rgba=ctx.getImageData(0,0,size,size).data,plane=size*size,chw=new Float32Array(plane*3);for(let p=0,s=0;p<plane;p++,s+=4){chw[p]=rgba[s];chw[plane+p]=rgba[s+1];chw[plane*2+p]=rgba[s+2]}prepareDisplay(source,canvas);return{tensor:new ort.Tensor('float32',chw,[1,3,size,size]),w,h}}
+  function prepareTiny(source,canvas){const {w,h}=sourceDims(source),size=TINY.input;if(!w||!h)throw new Error('Race image has no readable dimensions.');const work=$('race-tiny-work');work.width=size;work.height=size;const ctx=work.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,size,size);const chw=window.VisionPreprocessing.packTinyRgbNchw(ctx.getImageData(0,0,size,size).data,size,size);prepareDisplay(source,canvas);return{tensor:new ort.Tensor('float32',chw,[1,3,size,size]),w,h}}
   async function runTinySession(session,tensor){const run=s=>s.run({[s.inputNames[0]]:tensor});try{return await run(session)}catch(err){if(state.tinyProvider!=='webgpu')throw err;console.warn('Tiny YOLOv2 WebGPU run failed; retrying WASM',err);const old=state.tinySession;state.tinySession=null;state.tinyProvider='';if(old&&typeof old.release==='function')try{await old.release()}catch(_){}return run(await createTinySession('wasm'))}}
   function prepareYolo(source,canvas){const {w,h}=sourceDims(source),size=YOLO.input;if(!w||!h)throw new Error('Race image has no readable dimensions.');const ratio=Math.min(size/h,size/w),rw=Math.max(1,Math.floor(w*ratio)),rh=Math.max(1,Math.floor(h*ratio)),work=$('race-yolo-work');work.width=size;work.height=size;const ctx=work.getContext('2d',{willReadFrequently:true});ctx.fillStyle='rgb(114,114,114)';ctx.fillRect(0,0,size,size);ctx.drawImage(source,0,0,rw,rh);const rgba=ctx.getImageData(0,0,size,size).data,plane=size*size,chw=new Float32Array(plane*3);for(let p=0,s=0;p<plane;p++,s+=4){chw[p]=rgba[s+2];chw[plane+p]=rgba[s+1];chw[plane*2+p]=rgba[s]}prepareDisplay(source,canvas);return{tensor:new ort.Tensor('float32',chw,[1,3,size,size]),ratio,w,h}}
   async function runYoloSession(session,tensor,{forceBackend='',allowFallback=true}={}){const run=s=>s.run({[s.inputNames[0]]:tensor});try{return await run(session)}catch(err){if(state.yoloProvider!=='webgpu'||!allowFallback||forceBackend)throw err;console.warn('YOLOX WebGPU run failed; retrying WASM',err);const old=state.yoloSession;state.yoloSession=null;state.yoloProvider='';if(old&&typeof old.release==='function')try{await old.release()}catch(_){}return run(await createYoloSession('wasm'))}}
@@ -157,6 +157,40 @@ ${tail||'—'}`;}
   async function releaseTinyRuntime(){const session=state.tinySession,rawBytes=state.tinyBuffer?.byteLength||0,methodPresent=Boolean(session&&typeof session.release==='function'),provider=state.tinyProvider||'';state.tinySession=null;state.tinySessionRuns=0;evictTinyRawBuffer();if(!session){if(DEEP&&rawBytes)deepStage('tiny-raw-buffer-reference-release',{model:'tinyyolo',bytes:rawBytes,referencePresent:false});return}const start=performance.now();if(DEEP)deepStage('tiny-release-start',{model:'tinyyolo',actualBackend:provider,methodPresent,jsReferenceNull:true});try{if(methodPresent)await session.release();if(DEEP)deepStage('tiny-release-complete',{model:'tinyyolo',actualBackend:provider,methodPresent,jsReferenceNull:true,durationMs:performance.now()-start})}catch(err){if(DEEP)deepStage('tiny-release-error',{model:'tinyyolo',actualBackend:provider,methodPresent,error:boundedError(err),durationMs:performance.now()-start});console.warn('Tiny YOLOv2 session release failed',err)}}
   async function releaseYoloRuntime(){const session=state.yoloSession,rawBytes=state.yoloBuffer?.byteLength||0,methodPresent=Boolean(session&&typeof session.release==='function'),provider=state.yoloProvider||'';state.yoloSession=null;state.yoloSessionRuns=0;evictYoloRawBuffer();if(!session){if(DEEP&&rawBytes)deepStage('yolox-raw-buffer-reference-release',{model:'yolox',bytes:rawBytes,referencePresent:false});return}const start=performance.now();if(DEEP)deepStage('yolox-release-start',{model:'yolox',actualBackend:provider,methodPresent,jsReferenceNull:true});try{if(methodPresent)await session.release();if(DEEP)deepStage('yolox-release-complete',{model:'yolox',actualBackend:provider,methodPresent,jsReferenceNull:true,durationMs:performance.now()-start})}catch(err){if(DEEP)deepStage('yolox-release-error',{model:'yolox',actualBackend:provider,methodPresent,error:boundedError(err),durationMs:performance.now()-start});console.warn('YOLOX session release failed',err)}}
   async function releaseRTRuntime(){const pipe=state.rtPipe,methodPresent=Boolean(pipe&&typeof pipe.dispose==='function'),backend=state.rtBackend||'',dtype=state.rtDtype||'';state.rtPipe=null;state.rtPipeRuns=0;if(!pipe)return;const start=performance.now();if(DEEP)deepStage('rtdetr-release-start',{model:'rtdetr',actualBackend:backend,dtype,methodPresent,jsReferenceNull:true});try{if(methodPresent)await pipe.dispose();if(DEEP)deepStage('rtdetr-release-complete',{model:'rtdetr',actualBackend:backend,dtype,methodPresent,jsReferenceNull:true,durationMs:performance.now()-start})}catch(err){if(DEEP)deepStage('rtdetr-release-error',{model:'rtdetr',actualBackend:backend,dtype,methodPresent,error:boundedError(err),durationMs:performance.now()-start});console.warn('RT-DETR pipeline dispose failed',err)}}
+  function createRtResearchAdapter(modelKey){
+    const model=registry[modelKey],meta=model.capabilities.race;let pipe=null,backend='',dtype='',loadMs=NaN;
+    async function create(force=''){
+      if(pipe&&(!force||backend===force))return pipe;
+      const module=await importTransformers(),choices=force?[model.runtime[force]]:(navigator.gpu?[model.runtime.webgpu,model.runtime.wasm]:[model.runtime.wasm]);let lastError;
+      for(const cfg of choices){if(!cfg)continue;try{
+        $(`race-${meta.prefix}-backend`).textContent=cfg.device.toUpperCase();$(`race-${meta.prefix}-asset`).textContent=`${cfg.dtype} · ~${loader.formatBytes(cfg.modelBytes)}`;
+        setStatus(`Loading ${model.title} on ${cfg.device.toUpperCase()} (${cfg.dtype})…`,'loading');
+        const started=performance.now();pipe=await module.pipeline(model.task,model.modelId,{device:cfg.device,dtype:cfg.dtype,revision:model.revision,progress_callback:progress=>{
+          const value=Number(progress?.progress),status=String(progress?.status||'').replaceAll('_',' ');
+          if(Number.isFinite(value))$(`race-${meta.prefix}-progress-bar`).style.width=`${Math.max(0,Math.min(100,value))}%`;
+          if(status)$(`race-${meta.prefix}-progress-text`).textContent=status;
+        }});
+        loadMs=performance.now()-started;backend=cfg.device;dtype=cfg.dtype;
+        $(`race-${meta.prefix}-load`).textContent=ms(loadMs);$(`race-${meta.prefix}-cache`).textContent='pipeline loaded';
+        $(`race-${meta.prefix}-progress-bar`).style.width='100%';$(`race-${meta.prefix}-progress-text`).textContent='Ready';return pipe;
+      }catch(error){lastError=error;pipe=null;console.warn(`${model.title} pipeline load failed`,cfg,error)}}
+      throw lastError||new Error(`${model.title} could not be loaded.`);
+    }
+    async function run(source,canvas,{forceBackend='',allowFallback=true}={}){
+      let active=await create(forceBackend);const {w,h}=sourceDims(source),scale=Math.min(1,model.input/Math.max(w,h)),width=Math.max(1,Math.round(w*scale)),height=Math.max(1,Math.round(h*scale)),work=$(meta.workCanvasId);
+      work.width=width;work.height=height;work.getContext('2d').drawImage(source,0,0,width,height);
+      let output,infMs;const started=performance.now();
+      try{output=await active(work,{threshold:retainThreshold()});infMs=performance.now()-started}
+      catch(error){if(backend!=='webgpu'||!allowFallback||forceBackend)throw error;console.warn(`${model.title} WebGPU inference failed; retrying WASM q8`,error);if(pipe&&typeof pipe.dispose==='function')try{await pipe.dispose()}catch(_){}pipe=null;backend='';dtype='';active=await create('wasm');const retryStarted=performance.now();output=await active(work,{threshold:retainThreshold()});infMs=performance.now()-retryStarted}
+      const raw=Array.isArray(output)&&Array.isArray(output[0])?output[0]:output,list=Array.isArray(raw)?raw:[],clamp=value=>Math.max(0,Math.min(1,value));
+      const detections=list.map(item=>({score:Number(item.score),label:String(item.label),classId:-1,box:[Number(item.box?.ymin)/height,Number(item.box?.xmin)/width,Number(item.box?.ymax)/height,Number(item.box?.xmax)/width]}))
+        .filter(item=>Number.isFinite(item.score)&&item.box.every(Number.isFinite)).map(item=>({...item,box:item.box.map(clamp)})).filter(item=>item.box[2]>item.box[0]&&item.box[3]>item.box[1]);
+      prepareDisplay(source,canvas);const drawStarted=performance.now(),visible=api.drawDetections(canvas,detections),postMs=performance.now()-drawStarted;
+      return{preMs:NaN,infMs,postMs,totalMs:infMs+postMs,detections,visible,width:model.input,height:model.input,timingBoundary:'transformers-pipeline',rawCount:list.length,retained:detections.length,retentionThreshold:retainThreshold()};
+    }
+    async function release(){const old=pipe;pipe=null;backend='';dtype='';if(old&&typeof old.dispose==='function')try{await old.dispose()}catch(error){console.warn(`${model.title} pipeline dispose failed`,error)}}
+    return{run,release,backend:()=>`${backend.toUpperCase()} ${dtype}`.trim(),runtimeInfo:()=>({backend,dtype,initMs:loadMs,bytes:model.runtime[backend]?.modelBytes,cacheState:pipe?'memory':'runtime released',source:`HF pinned ${model.revision}`}),diagnosticBackends:()=>[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU fp16',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM int8'}]};
+  }
   function registerRaceRuntimeAdapters(){
     if(!runtimeRegistry.get('tinyyolo'))runtimeRegistry.register('tinyyolo',{
       run:(source,canvas)=>runTiny(source,canvas),
@@ -179,6 +213,7 @@ ${tail||'—'}`;}
       runtimeInfo:()=>{const cfg=RT.runtime[state.rtBackend]||{};return{backend:state.rtBackend,dtype:state.rtDtype,initMs:state.rtLoadMs,bytes:cfg.modelBytes,cacheState:state.rtCacheState,source:`HF pinned ${RT.revision}`}},
       diagnosticBackends:()=>[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU fp16',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM q8'}]
     });
+    if(!runtimeRegistry.get('rtdetrv2'))runtimeRegistry.register('rtdetrv2',createRtResearchAdapter('rtdetrv2'));
     runtimeRegistry.assertRegistered({capability:'race',group:'general-object'});
     runtimeRegistry.assertRegistered({capability:'timeMachine'});
     runtimeRegistry.assertRegistered({capability:'live'});
@@ -286,6 +321,21 @@ ${tail||'—'}`;}
   function compare(a,b){const aa=visible(a),bb=visible(b),used=new Set();let both=0;for(const old of aa){let best=-1,bi=0;for(let i=0;i<bb.length;i++){if(used.has(i)||bb[i].label!==old.label)continue;const v=iou(old.box,bb[i].box);if(v>=.35&&v>bi){best=i;bi=v}}if(best>=0){used.add(best);both++}}return{both,aOnly:aa.length-both,bOnly:bb.length-both}}
   function hasMatch(det,list){return list.some(other=>other.label===det.label&&iou(det.box,other.box)>=.35)}
   function currentRaceSpecs(){return getRaceSpecs(null,null,{benchmarking:false})}
+  async function updateAccuracy(){
+    const body=$('race-accuracy-body'),note=$('race-accuracy-note');if(!body||!note)return;
+    if(state.sampleId!=='coco397133'){body.replaceChildren();note.textContent='Ground-truth scoring is available for the bundled COCO validation image only. Other inputs remain a visual/runtime comparison.';return}
+    const specs=currentRaceSpecs(),completed=specs.filter(spec=>Array.isArray(state.lastRun[spec.key]?.detections));
+    if(!completed.length){body.replaceChildren();note.textContent='Run the Model Race to populate this same-image ground-truth check.';return}
+    let data;try{const response=await fetch('assets/benchmark/coco-val-000000397133.annotations.json',{cache:'no-store'});if(!response.ok)throw new Error(`HTTP ${response.status}`);data=await response.json()}catch(error){note.textContent='COCO sample annotations could not be loaded: '+String(error.message||error);return}
+    const allTargets=data.instances.map(item=>({label:item.label,box:[item.bbox[1]/data.height,item.bbox[0]/data.width,(item.bbox[1]+item.bbox[3])/data.height,(item.bbox[0]+item.bbox[2])/data.width]}));
+    body.replaceChildren();for(const spec of completed){
+      const targets=spec.key==='tinyyolo'?allTargets.filter(item=>registry.labels.vocCanonical.includes(item.label)):allTargets;
+      const result=window.VisionDetectionMetrics.evaluate(state.lastRun[spec.key].detections,targets,{confidence:threshold(),iouThreshold:.5}),row=document.createElement('div');row.className='race-benchmark-row accuracy-row';
+      for(const text of [spec.label,`${(result.precision*100).toFixed(1)}%`,`${(result.recall*100).toFixed(1)}%`,`${(result.f1*100).toFixed(1)}%`,`${result.truePositives} / ${result.falsePositives} / ${result.falseNegatives}`]){const cell=document.createElement(text===spec.label?'span':'b');cell.textContent=text;row.appendChild(cell)}body.appendChild(row);
+    }
+    const partial=completed.length<specs.length?` Showing ${completed.length}/${specs.length} models; failed or not-yet-run models are omitted.`:'';
+    note.textContent=`COCO val 397133 · confidence ≥ ${threshold().toFixed(2)} · same class and IoU ≥ 0.50. Tiny YOLOv2 is scored only on the ${allTargets.filter(item=>registry.labels.vocCanonical.includes(item.label)).length} ground-truth boxes whose classes overlap Pascal VOC; other models use all ${allTargets.length}. Single-image precision / recall / F1 is not COCO AP or a general model ranking.${partial}`;
+  }
   function updateOverlap(){
     const specs=currentRaceSpecs();
     if(!specs.length||!specs.every(spec=>Array.isArray(state.lastRun[spec.key]?.detections)))return;
@@ -316,7 +366,7 @@ ${tail||'—'}`;}
       const canvas=$(`race-${spec.prefix}-canvas`);if(!canvas)continue;
       prepareDisplay(state.image,canvas);run.visible=api.drawDetections(canvas,run.detections);const count=$(`race-${spec.prefix}-count`);if(count)count.textContent=String(run.visible);redrawn=true;
     }
-    if(redrawn){updateOverlap();setStatus('Confidence '+threshold().toFixed(2)+' applied to retained race outputs without new inference.')}
+    if(redrawn){updateOverlap();updateAccuracy();setStatus('Confidence '+threshold().toFixed(2)+' applied to retained race outputs without new inference.')}
   }
   function resetRaceUi(){
     for(const spec of currentRaceSpecs()){
@@ -327,16 +377,17 @@ ${tail||'—'}`;}
     }
     document.querySelectorAll('#race-benchmark-body b,#race-diff-grid b').forEach(el=>{el.textContent='—'});
     $('race-benchmark-note').textContent='Not benchmarked yet.';
+    $('race-accuracy-body').replaceChildren();$('race-accuracy-note').textContent='Load the bundled COCO validation image and run the race to compare detections with its 19 official ground-truth boxes. This single image is a smoke test, not a dataset benchmark or model ranking.';
   }
-  function useImage(img,label){
-    const specs=currentRaceSpecs();state.image=img;state.lastRun={};$('race-run').disabled=false;$('race-benchmark').disabled=true;
+  function useImage(img,label,sampleId=''){
+    const specs=currentRaceSpecs();state.image=img;state.sampleId=sampleId;state.lastRun={};$('race-run').disabled=false;$('race-benchmark').disabled=true;
     if(DIAG){$('race-benchmark-diag').disabled=false;$('race-dispose-diag').disabled=true}
     resetRaceUi();setStatus(label+' ready. Run '+specs.length+' detector generation'+(specs.length===1?'':'s')+' with confidence '+threshold().toFixed(2)+'.');updateMatrixControls();
   }
   $('race-image-file').addEventListener('change',e=>{const file=e.target.files&&e.target.files[0];if(!file)return;if(!file.type.startsWith('image/')){setStatus('Please choose an image file.','error');return}const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);useImage(img,file.name||'Race image')};img.onerror=()=>{URL.revokeObjectURL(url);setStatus('The selected race image could not be decoded.','error')};img.src=url});
   $('race-use-coco-sample').addEventListener('click',()=>{
     const button=$('race-use-coco-sample'),img=new Image();button.disabled=true;
-    img.onload=()=>{button.disabled=false;useImage(img,'COCO 2017 val image 397133')};
+    img.onload=()=>{button.disabled=false;useImage(img,'COCO 2017 val image 397133','coco397133')};
     img.onerror=()=>{button.disabled=false;setStatus('The bundled COCO validation sample could not be loaded.','error')};
     img.src='assets/benchmark/coco-val-000000397133.jpg';
   });
@@ -353,10 +404,10 @@ ${tail||'—'}`;}
         try{const result=await spec.run({},canvas);state.lastRun[spec.key]=result;updateRaceCard(spec,result)}
         finally{await spec.release();if(BLACKBOX)bbResident[spec.key]=false}
       }
-      updateOverlap();
+      updateOverlap();await updateAccuracy();
       const summary=specs.map(spec=>spec.label+' '+(state.lastRun[spec.key]?.visible??0)).join(', ');
       setStatus('Race complete: '+summary+'. Pairwise overlap is shown below.');$('race-benchmark').disabled=false;if(DIAG)$('race-benchmark-diag').disabled=false;
-    }catch(err){console.error(err);setStatus(err&&err.message?err.message:String(err),'error')}
+    }catch(err){console.error(err);await updateAccuracy();setStatus(err&&err.message?err.message:String(err),'error')}
     finally{state.running=false;$('race-image-file').disabled=false;$('confidence').disabled=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false;$('race-use-coco-sample').disabled=false}
   }
   $('race-run').addEventListener('click',runRace);

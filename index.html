@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.23-v0.10.3">
+<html lang="en" data-build="2026.09.23-v0.10.4">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.23-v0.10.3';
+      const CURRENT_BUILD = '2026.09.23-v0.10.4';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.10.3">
+  <link rel="stylesheet" href="styles.css?v=0.10.4">
 </head>
 <body>
   <main class="shell">
@@ -88,7 +88,7 @@
         <div class="timeline-scroll" data-scroll-area role="region" tabindex="0" aria-label="Computer vision timeline, 1980 through 2024" aria-describedby="timeline-help">
           <div class="timeline-track" id="timeline-track"></div>
         </div>
-        <p class="timeline-help" id="timeline-help">Choose a local image, then select a year. Each early experiment keeps its own task and output on that image; only the four general-object models belong to Model Race.</p>
+        <p class="timeline-help" id="timeline-help">Choose a local image, then select a year. Each early experiment keeps its own task and output on that image; compatible general-object models run together in Model Race.</p>
       </div>
 
       <div class="grid">
@@ -223,7 +223,7 @@
             <div class="links"><a href="#" data-jump="model-race">Race ↗</a><a href="https://github.com/Megvii-BaseDetection/YOLOX" target="_blank" rel="noreferrer">Official repo ↗</a></div>
           </article>
 
-          <article class="card evolution-card research-card">
+          <article class="card evolution-card runnable-card">
             <div class="evolution-top"><span class="pill transformer-pill">2023 · runnable</span><span class="license-chip apache">Apache-2.0 base</span></div>
             <h3>RT-DETR R18</h3>
             <p>Real-time DETR brought end-to-end set prediction into practical detector latency regimes and removed conventional NMS from the core design.</p>
@@ -246,8 +246,15 @@
             <div class="change-line"><b>Reported</b><span>4M params · 42.8 COCO AP</span></div>
             <div class="links"><a href="https://arxiv.org/abs/2410.13842" target="_blank" rel="noreferrer">Paper ↗</a><a href="https://github.com/Peterande/D-FINE" target="_blank" rel="noreferrer">Official repo ↗</a></div>
           </article>
+          <article class="card evolution-card runnable-card">
+            <div class="evolution-top"><span class="pill transformer-pill">2024 · research preview</span><span class="license-chip apache">Apache-2.0</span></div>
+            <h3>RT-DETRv2 R18</h3>
+            <p>RT-DETRv2 improves the end-to-end DETR training recipe while keeping the R18 real-time model family.</p>
+            <div class="change-line"><b>Browser now</b><span>Transformers.js · ONNX · ~20M params</span></div>
+            <div class="links"><a href="#" data-jump="model-race">Run ↗</a><a href="https://huggingface.co/onnx-community/rtdetr_v2_r18vd-ONNX/tree/936f90b6a476c6da4dfe053fc521af55285976ba" target="_blank" rel="noreferrer">Pinned conversion ↗</a><a href="MODEL_SOURCES.md#rt-detrv2-r18" target="_blank">Provenance ↗</a></div>
+          </article>
         </div>
-        <div class="note evolution-note">Research cards are references only. They are not downloaded or executed by this site yet. A permissive code license alone is not treated as sufficient evidence to redistribute model weights; runnable promotion requires checkpoint and dataset provenance review.</div>
+        <div class="note evolution-note">RT-DETRv2 is wired into Model Race as a research preview; live browser inference still needs device validation. Its reported paper metric is upstream context. LW-DETR-tiny and D-FINE-N remain reference candidates.</div>
       </section>
     </section>
 
@@ -311,6 +318,17 @@
         <div class="race-diff-grid" id="race-diff-grid"></div>
         <div class="note">Pairwise matches require the same canonical class label and IoU ≥ 0.35. Models with different label spaces can only match classes that map to the same canonical label. These counts are comparison evidence, not accuracy or correctness labels.</div>
         <div class="architecture-diff race-architecture" id="race-architecture"></div>
+      </div>
+      <div class="card race-summary accuracy-summary">
+        <div class="race-summary-head">
+          <div><div class="eyebrow">Limited ground-truth check</div><h2>Detection quality on the bundled image</h2></div>
+          <div class="tiny">COCO val 397133 · same class · IoU ≥ 0.50 · current confidence</div>
+        </div>
+        <div class="race-benchmark-table">
+          <div class="race-benchmark-row accuracy-row head"><span>Model</span><b>Precision</b><b>Recall</b><b>F1</b><b>TP / FP / FN</b></div>
+          <div id="race-accuracy-body"></div>
+        </div>
+        <div class="note" id="race-accuracy-note">Load the bundled COCO validation image and run the race to compare detections with its 19 official ground-truth boxes. This single image is a smoke test, not a dataset benchmark or model ranking.</div>
       </div>
       <div id="race-work-canvases" hidden></div>
     </section>
@@ -398,15 +416,17 @@
 
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
-    <footer class="footer"><span>v0.10.3 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.10.4 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="runtime-bootstrap.js?v=0.10.3"></script>
-  <script src="models.js?v=0.10.3"></script>
-  <script src="model-runtime.js?v=0.10.3"></script>
-  <script src="model-loader.js?v=0.10.3"></script>
-  <script src="app.js?v=0.10.3"></script>
-  <script src="race.js?v=0.10.3"></script>
-  <script src="history-experiments.js?v=0.10.3"></script>
+  <script src="runtime-bootstrap.js?v=0.10.4"></script>
+  <script src="preprocessing.js?v=0.10.4"></script>
+  <script src="models.js?v=0.10.4"></script>
+  <script src="detection-metrics.js?v=0.10.4"></script>
+  <script src="model-runtime.js?v=0.10.4"></script>
+  <script src="model-loader.js?v=0.10.4"></script>
+  <script src="app.js?v=0.10.4"></script>
+  <script src="race.js?v=0.10.4"></script>
+  <script src="history-experiments.js?v=0.10.4"></script>
 </body>
 </html>

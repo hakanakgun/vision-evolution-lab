@@ -12,7 +12,7 @@ Vision Evolution Lab lets you run and compare object-detection generations witho
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
 - **Live Camera** runs local browser inference through live-capable runtime adapters with rolling latency measurements; SSD-MobileNetV1 INT8 is currently the only live-enabled model.
-- **Early history experiments** run inside Time Machine. Their task-specific outputs stay separate from the four general-object models in Model Race.
+- **Early history experiments** run inside Time Machine. Their task-specific outputs stay separate from the general-object models in Model Race.
 - **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
 Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model.
@@ -25,6 +25,7 @@ Selecting a model in Time Machine stays in Time Machine. Inside the Model follow
 | 2017 | SSD-MobileNetV1 INT8 | COCO | ONNX Runtime Web / intentional WASM |
 | 2021 | YOLOX-Nano | COCO | ONNX Runtime Web / standard WASM on iOS; WebGPU-first on desktop |
 | 2023 | RT-DETR R18 | COCO | Transformers.js / WebGPU fp16 or WASM q8 |
+| 2024 | RT-DETRv2 R18 · research preview | COCO | Transformers.js / WebGPU fp16 or WASM int8 |
 
 Exact model revisions, licenses, provenance, preprocessing, and fallback rules are maintained in [MODEL_SOURCES.md](MODEL_SOURCES.md), [MODEL_CATALOG.md](MODEL_CATALOG.md), and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
@@ -55,7 +56,7 @@ The benchmark reports p50, p90, min-max, run-to-run timing variation, p50 end-to
 
 Pairwise same-class IoU overlap is a disagreement/overlap diagnostic, not an accuracy metric.
 
-Model Race includes one licensed COCO 2017 validation image for repeatable smoke tests. It covers the shared COCO models; Tiny YOLOv2 can also be tried on its `person` category, but the image is not from Pascal VOC. This single image is not a dataset-level benchmark. See [Benchmark samples](BENCHMARK_SAMPLES.md) for attribution and scope.
+Model Race includes one licensed COCO 2017 validation image for repeatable smoke tests. It reports per-image precision, recall and F1 against 19 official boxes at IoU ≥ 0.50 and the current confidence. Tiny YOLOv2 is scored only on the four boxes from classes shared with Pascal VOC. This is not COCO AP or a dataset-level benchmark. See [Benchmark samples](BENCHMARK_SAMPLES.md) for attribution and scope.
 
 See [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md).
 
@@ -102,11 +103,11 @@ Current priority order:
 2. Model Race
 3. Inside the Model
 4. Live Camera
-5. Failure Gallery
-6. Efficiency Lab
-7. Older task-specific Time Machine experiments
-8. Resolution Microscope
-9. Architecture Explorer
+5. Efficiency Lab
+6. Resolution Microscope
+7. Architecture Explorer
+
+Failure Gallery is deferred until a broader, rights-reviewed ground-truth set is available and the user wants to evaluate it.
 
 The iOS/WebKit reload mitigation has passed the current physical-device regression test. Further diagnostic work is only needed if the issue recurs; the roadmap can return to feature work.
 

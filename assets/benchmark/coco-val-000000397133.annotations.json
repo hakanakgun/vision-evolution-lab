@@ -1,0 +1,29 @@
+{
+  "source": "COCO 2017 val instances_val2017.json, image_id 397133",
+  "annotationLicense": "CC BY 4.0",
+  "imageId": 397133,
+  "width": 640,
+  "height": 427,
+  "bboxFormat": "COCO xywh pixels",
+  "instances": [
+    {"label":"bottle","bbox":[217.62,240.54,38.99,57.75]},
+    {"label":"dining table","bbox":[1.0,240.24,346.63,186.76]},
+    {"label":"person","bbox":[388.66,69.92,109.41,277.62]},
+    {"label":"knife","bbox":[135.57,249.43,22.32,28.79]},
+    {"label":"bowl","bbox":[31.28,344.0,68.12,40.83]},
+    {"label":"bowl","bbox":[59.63,287.36,76.07,41.3]},
+    {"label":"oven","bbox":[1.36,164.33,192.56,98.37]},
+    {"label":"person","bbox":[0.0,262.81,62.16,36.77]},
+    {"label":"cup","bbox":[119.4,272.51,24.82,34.25]},
+    {"label":"cup","bbox":[141.47,267.91,32.19,35.86]},
+    {"label":"bowl","bbox":[155.97,168.95,26.03,17.13]},
+    {"label":"bowl","bbox":[157.2,114.15,17.86,15.82]},
+    {"label":"broccoli","bbox":[98.75,304.78,10.78,5.57]},
+    {"label":"spoon","bbox":[166.03,256.36,8.82,18.58]},
+    {"label":"broccoli","bbox":[86.41,293.97,23.96,11.18]},
+    {"label":"broccoli","bbox":[70.14,296.16,9.28,4.58]},
+    {"label":"oven","bbox":[0.0,210.9,191.36,98.98]},
+    {"label":"carrot","bbox":[96.69,297.09,7.84,4.86]},
+    {"label":"sink","bbox":[497.25,203.4,122.01,28.61]}
+  ]
+}
