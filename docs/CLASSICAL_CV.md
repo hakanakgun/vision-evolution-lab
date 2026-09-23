@@ -29,15 +29,15 @@ Primary reference: Fukushima, “Neocognitron: A Self-Organizing Neural Network 
 
 ## 1998 · handwritten-digit experiment
 
-The digit experiment uses the pinned `onnxmodelzoo/mnist-1` ONNX model as a runnable MNIST task reference. The model card documents a float32 `1×1×28×28` grayscale input with black background/white foreground and a ten-logit output; the browser applies softmax to get digit scores.
+The digit experiment uses the pinned ONNX Model Zoo MNIST-12 opset-12 export as a runnable MNIST task reference. Its README documents a float32 `1×1×28×28` grayscale input with black background/white foreground and ten pre-softmax scores; the browser applies softmax to get digit scores.
 
-This model is not original LeNet-5 trained weights. Its model card says it was trained in CNTK from the “CNTK 103D: Convolutional Neural Network with MNIST” tutorial and describes alternating convolution and max-pooling layers. The UI therefore calls it a **LeNet-era MNIST CNN reference**, not the original 1998 checkpoint.
+This model is not original LeNet-5 trained weights. The ONNX Model Zoo README says it was trained in CNTK from the “CNTK 103D: Convolutional Neural Network with MNIST” tutorial. The UI therefore calls it a **LeNet-era MNIST CNN reference**, not the original 1998 checkpoint.
 
 Before classification, the isolated OpenCV worker uses Otsu thresholding in both polarities and external contours to propose small digit-like regions. The ONNX model classifies each proposed crop. Display boxes require a 0.70 softmax score; that display cutoff is an illustration filter, not calibrated confidence. The displayed softmax score is not calibrated confidence. Crop proposals may miss digits in photos or produce non-digit regions with a high score.
 
 If no crop candidate is found, the model is not downloaded. If no candidate reaches the display cutoff, the panel says that this model recognizes isolated handwritten digits only and is not a general-object detector. Printed text, signs, serial numbers, and digits inside natural scenes may not match MNIST preprocessing.
 
-Pinned asset and preprocessing details are in [MODEL_SOURCES.md](../MODEL_SOURCES.md). The model file is fetched on demand from the pinned Hugging Face revision and verified against its SHA-256 before ONNX Runtime opens it.
+The previous `mnist-1.onnx` export was replaced after matching its `Block386:Div(1)` session-creation error to [ONNX Model Zoo issue #439](https://github.com/onnx/models/issues/439). The active opset-12 export is pinned by source commit and SHA-256; [MODEL_SOURCES.md](../MODEL_SOURCES.md) records the exact Git LFS asset, input contract, and both upstream license statements.
 
 ## 2001 · Viola–Jones method family / frontal-face cascade
 
