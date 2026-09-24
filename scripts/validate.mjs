@@ -210,7 +210,7 @@ check(!files.race.includes('function renderHeadMaps')&&!files.race.includes('ren
 check(files.race.includes("runtimeRegistry.assertRegistered({capability:'timeMachine'})"),'Time Machine adapter completeness is not asserted at startup');
 check(files.race.includes("runtimeRegistry.assertRegistered({capability:'live'})"),'Live Camera adapter completeness is not asserted after runtime registration');
 const liveKeys=metadataWindow.VisionRuntimeRegistry.modelKeys.filter(key=>metadataWindow.VisionRuntimeRegistry.capabilityEnabled(metadataRegistry[key],'live'));
-check(JSON.stringify(liveKeys)==='["tinyyolo","ssd","yolox","rtdetr","rtdetrv2"]','all runnable Time Machine detectors must be eligible for Live Camera');
+check(JSON.stringify(liveKeys)==='["tinyyolo","ssd","yolox","rtdetr","rtdetrv2","lwdetr","dfine"]','the seven approved detectors must be eligible for Live Camera');
 check(metadataRegistry.defaults?.live===metadataRegistry.defaults?.timeMachine,'default Live Camera model must follow the Time Machine default');
 check(files.index.includes('id="live-model-name"')&&files.index.includes('id="live-model-controls"')&&files.index.includes('id="live-model-select"'),'Live Camera metadata/model picker containers missing');
 check(files.app.includes("RuntimeRegistry.validate({capability:'live'}).expected")&&files.app.includes('adapter.run(video,canvas,{updateMain:false,live:true})'),'Live Camera is not capability/runtime-adapter driven');
@@ -226,6 +226,7 @@ check(!benchmarkFunction.includes('cameraStartToken'),'benchmark error handling 
 check(cameraStartFunction.includes('if(token!==state.cameraStartToken)return;'),'Live Camera must ignore errors from a cancelled start');
 check(files.app.includes('prepare:()=>createSession()'),'SSD live adapter does not preserve pre-camera runtime preparation');
 for(const [key,needle] of [['tinyyolo','prepare:()=>createTinySession()'],['yolox','prepare:()=>createYoloSession()'],['rtdetr','prepare:()=>createRT()'],['rtdetrv2','prepare:()=>create()']])check(files.race.includes(needle),`${key}: Live Camera adapter does not prepare its runtime before camera access`);
+check(files.historicalDetectors.includes("return{run,prepare,release,backend:()=> 'WASM fp32'")&&files.historicalDetectors.includes("return{run,prepare:load,release,backend:()=> 'WASM fp32'"),'LW-DETR and D-FINE Live Camera adapters must prepare their runtime before camera access');
 check(!files.app.includes('inferSource(video,canvas,{updateMain:false})'),'Live Camera still directly calls SSD inference');
 check(files.app.includes('refreshLiveModels:renderLiveModels')&&files.race.includes('api.refreshLiveModels?.()'),'Live Camera registry refresh contract missing');
 for(const item of timeMachineModels){
@@ -295,7 +296,8 @@ check(lwEntry?.year===2024&&lwEntry.month===6&&lwEntry.kind==='runnable','LW-DET
 check(lw.bytes===38313297&&lw.sha256==='dadac1a335e108a5d1a52c4ac0280cd9b71ea2f7c39400e2d532f3a1f663dea0'&&lw.runtime.wasm.device==='wasm'&&lw.runtime.wasm.dtype==='fp32','LW-DETR artifact integrity metadata or WASM fp32 path changed');
 check(lw.sources?.some(source=>source.url===`assets/models/lw-detr-tiny.onnx?sha256=${lw.sha256}`),'LW-DETR must use the checksum-pinned same-origin Pages asset');
 check(lw.sourceModel==='AnnaZhang/lwdetr_tiny_60e_coco'&&lw.sourceRevision==='4b636b514dcf623f6eafc9e1ab63b8ad5c513925'&&lw.labels.length===91,'LW-DETR checkpoint revision or label map changed');
-check(lw.capabilities.timeMachine&&!lw.capabilities.benchmark&&!lw.capabilities.live&&!lw.capabilities.race&&!lw.capabilities.inspection,'LW-DETR must remain Time Machine only');
+const lwLive=metadataWindow.VisionRuntimeRegistry.liveMeta(lw);
+check(lw.capabilities.timeMachine&&!lw.capabilities.benchmark&&lwLive?.order===70&&!lw.capabilities.race&&!lw.capabilities.inspection,'LW-DETR must remain Time Machine + Live Camera only');
 check(files.historicalDetectors.includes("runtimes.register('lwdetr'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("JSON.stringify(logits.dims)!=='[1,100,91]'"),'LW-DETR adapter must use verified WASM and pinned input/output contracts');
 check(files.historicalDetectors.includes("sourceLabel=model.sources?.[0]?.label||'Pinned ONNX asset'")&&files.historicalDetectors.includes('source:runtimeSource'),'LW-DETR runtime must show the actual Pages delivery source separately from checkpoint provenance');
 check(files.historicalDetectors.includes('const sessionStarted=performance.now()')&&files.historicalDetectors.includes('initMs=sessionInitMs'),'LW-DETR session initialization timing must start after transfer and checksum verification');
@@ -309,8 +311,10 @@ const dfine=metadataRegistry.dfine,dfineEntry=metadataRegistry.timeline.find(ite
 check(dfineEntry?.year===2024&&dfineEntry.month===10&&dfineEntry.kind==='runnable','D-FINE-N October 2024 Time Machine entry is missing');
 check(dfine.modelId==='onnx-community/dfine_n_coco-ONNX'&&dfine.revision==='e2b9c0f0884ee7c90b79feedfd30054e82ed634c'&&dfine.baseRevision==='066438d3d8f0da137a37b38fdf3368fd4afceced','D-FINE-N base/conversion revisions must stay pinned');
 check(dfine.bytes===15300000&&dfine.sha256==='0f684f409618ee8a822410e754a29caa817d1aa16283ce89cad936d0a48e2f35'&&dfine.runtime.wasm.device==='wasm'&&dfine.runtime.wasm.dtype==='fp32','D-FINE-N size/source integrity metadata or WASM fp32 path changed');
-check(dfine.capabilities.timeMachine&&!dfine.capabilities.benchmark&&!dfine.capabilities.live&&!dfine.capabilities.race&&!dfine.capabilities.inspection,'D-FINE-N must remain Time Machine only');
+const dfineLive=metadataWindow.VisionRuntimeRegistry.liveMeta(dfine);
+check(dfine.capabilities.timeMachine&&!dfine.capabilities.benchmark&&dfineLive?.order===60&&!dfine.capabilities.race&&!dfine.capabilities.inspection,'D-FINE-N must remain Time Machine + Live Camera only');
 check(files.historicalDetectors.includes("runtimes.register('lwdetr'")&&files.historicalDetectors.includes("runtimes.register('dfine'")&&files.historicalDetectors.includes("model.modelId,{device:'wasm',dtype:'fp32',revision:model.revision"),'D-FINE-N and LW-DETR adapters must use their pinned runtime paths');
+check(files.historicalDetectors.includes("const keepLiveKey=event.detail?.tab==='live-camera'?api.getLiveModel?.()||'':''")&&files.historicalDetectors.includes('releaseHistoricalRuntimes(keepLiveKey)'),'Live Camera must preserve its selected historical-detector runtime while releasing the others');
 check(files.historicalDetectors.includes("runtimes.register('ssd2016'")&&files.historicalDetectors.includes("runtimes.register('detr'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("subtle.digest('SHA-256'"),'historical model adapters must register SSD, use WASM, and checksum SSD weights');
 check((files.index.match(/id="image-file"/g)||[]).length===1,'Time Machine must keep one shared image input');
 check(!files.index.includes('data-tab="classical-cv"')&&!files.index.includes('id="classical-cv"'),'separate Classical CV tab/panel must not return');
