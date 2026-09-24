@@ -107,6 +107,8 @@ const literalRefs=[...new Set([
 ].map(match=>match[1]))];
 const missingIds=literalRefs.filter(id=>!idSet.has(id)&&!generatedIds.has(id));
 check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
+check(idSet.has('live-model-select')&&idSet.has('live-model-status'),'Live Camera model picker controls are missing');
+check(files.app.includes("function liveModelKeys()")&&files.app.includes("state.liveModel===modelKey"),'Live Camera must use its independent live model state');
 
 const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
