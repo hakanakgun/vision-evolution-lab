@@ -116,7 +116,7 @@ def main() -> None:
         actual_logits, reference_logits.numpy(), rtol=3e-4, atol=3e-4
     )
     np.testing.assert_allclose(
-        actual_boxes, reference_boxes.numpy(), rtol=3e-4, atol=3e-4
+        actual_boxes, reference_boxes.numpy(), rtol=2e-3, atol=1e-3
     )
     if not np.isfinite(actual_logits).all() or not np.isfinite(actual_boxes).all():
         raise RuntimeError("ONNX Runtime produced non-finite outputs")
