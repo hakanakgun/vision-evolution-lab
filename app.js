@@ -12,7 +12,7 @@
     const $ = id => document.getElementById(id);
     const DEFAULT_MODEL = REGISTRY.defaults?.timeMachine || Object.keys(REGISTRY).find(key=>REGISTRY[key]?.status==='runnable'&&RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine')) || 'yolox';
     const DEFAULT_LIVE_MODEL = REGISTRY.defaults?.live || RuntimeRegistry.modelKeys.find(key=>RuntimeRegistry.capabilityEnabled(REGISTRY[key],'live')) || '';
-    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,liveInference:Promise.resolve(),runtimeTransition:Promise.resolve(),session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve()};
+    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,liveInference:Promise.resolve(),liveTransition:Promise.resolve(),liveLoopToken:0,liveSwitching:false,runtimeTransition:Promise.resolve(),session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve()};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -39,10 +39,8 @@
       if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}
       if(!REGISTRY[key]||!RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine'))return;
       const previousKey=state.activeModel;
-      if(state.live)stopCamera();
-      state.cameraStartToken++;
-      state.historyExperiment='';state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.clear?.());state.activeModel=key;state.liveModel=key;syncHistoryControls();
-      if(previousKey!==key){const previousAdapter=RuntimeRegistry.get(previousKey);state.runtimeTransition=state.runtimeTransition.catch(()=>{}).then(async()=>{await state.liveInference.catch(()=>{});await previousAdapter?.release();}).catch(error=>console.warn('Previous model runtime release failed',error));}
+      state.historyExperiment='';state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.clear?.());state.activeModel=key;syncHistoryControls();
+      if(previousKey!==key){const previousAdapter=RuntimeRegistry.get(previousKey);state.runtimeTransition=state.runtimeTransition.catch(()=>{}).then(async()=>{if(state.live&&state.liveModel===previousKey)return;await state.liveInference.catch(()=>{});await previousAdapter?.release();}).catch(error=>console.warn('Previous model runtime release failed',error));}
       resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();renderLiveModels();
       if(state.image){drawSourceOnly();setStatus(activeModel().title+' selected. Run the current image when ready.');}
       else setStatus(activeModel().title+' selected. Choose an image to run this generation.');
@@ -472,25 +470,59 @@
     $('confidence').addEventListener('input',()=>{$('confidence-value').textContent=Number($('confidence').value).toFixed(2);if(!state.historyExperiment)redrawUploaded();});
 
     function liveAdapters(){return RuntimeRegistry.list({capability:'live'})}
-    function currentLiveAdapter(){return RuntimeRegistry.get(state.activeModel)}
+    function liveModelKeys(){return RuntimeRegistry.validate({capability:'live'}).expected}
+    function currentLiveAdapter(){return RuntimeRegistry.get(state.liveModel)}
     function resetLiveMetrics(){for(const id of ['live-inf','live-total','live-fps','live-count'])$(id).textContent='—';$('live-frames').textContent='0';state.liveSamples=[];state.liveFrameCount=0}
+    function setLiveStatus(message,kind=''){const el=$('live-model-status');el.textContent=message||'';el.className=`tiny live-model-status ${kind}`.trim()}
     function renderLiveModels(){
-      const adapters=liveAdapters(),controls=$('live-model-controls'),label=$('live-model-name');
-      controls.replaceChildren();controls.hidden=true;
-      if(!adapters.length){
-        state.liveModel='';label.textContent='No live-capable runtime registered';controls.hidden=true;$('camera-start').disabled=true;$('live-backend').textContent='Not available';return;
+      const keys=liveModelKeys(),select=$('live-model-select'),label=$('live-model-name');
+      select.replaceChildren();
+      for(const key of keys){const option=document.createElement('option');option.value=key;option.textContent=REGISTRY[key].title;select.appendChild(option)}
+      if(!keys.length){
+        state.liveModel='';label.textContent='No live-capable runtime registered';select.disabled=true;$('camera-start').disabled=true;$('live-backend').textContent='Not available';return;
       }
-      state.liveModel=state.activeModel;
-      if(!adapters.some(adapter=>adapter.key===state.activeModel)){state.liveModel='';label.textContent=activeModel().title+' · Live Camera is not supported';controls.hidden=true;$('camera-start').disabled=true;$('live-backend').textContent='Not available';return;}
-      const active=RuntimeRegistry.get(state.liveModel),meta=RuntimeRegistry.liveMeta(active.model);
-      label.textContent=active.model.title+' · '+(meta?.summary||'Sequential inference');
-      $('camera-start').disabled=state.live;
+      if(!keys.includes(state.liveModel))state.liveModel=keys.includes(DEFAULT_LIVE_MODEL)?DEFAULT_LIVE_MODEL:keys[0];
+      select.value=state.liveModel;
+      const model=REGISTRY[state.liveModel],adapter=currentLiveAdapter(),meta=RuntimeRegistry.liveMeta(model);
+      label.textContent=model.title+' · '+(meta?.summary||'Sequential inference');
+      select.disabled=state.liveSwitching;
+      $('camera-start').disabled=state.live||state.liveSwitching||!adapter;
+      if(!adapter&&!state.liveSwitching)$('live-backend').textContent='Runtime loading';
     }
-    function selectLiveModel(key){
-      if(state.live)return;
+    async function selectLiveModel(key){
+      if(state.liveSwitching||key===state.liveModel)return;
       const adapter=RuntimeRegistry.get(key);
-      if(!adapter||!RuntimeRegistry.capabilityEnabled(adapter.model,'live'))return;
-      selectActiveModel(key,{scroll:false});resetLiveMetrics();$('live-backend').textContent='Not loaded';renderLiveModels();
+      if(!adapter||!RuntimeRegistry.capabilityEnabled(adapter.model,'live')){renderLiveModels();return}
+      const previousKey=state.liveModel,previousAdapter=RuntimeRegistry.get(previousKey),wasLive=state.live;
+      if(!wasLive){
+        state.liveModel=key;resetLiveMetrics();$('live-backend').textContent='Not loaded';renderLiveModels();setLiveStatus(adapter.model.title+' selected. Start camera when ready.');return;
+      }
+      state.liveSwitching=true;state.liveLoopToken++;renderLiveModels();setLiveStatus('Loading '+adapter.model.title+'…');
+      try{
+        state.liveTransition=state.liveTransition.catch(()=>{}).then(async()=>{
+          await state.runtimeTransition.catch(()=>{});
+          await state.liveInference.catch(()=>{});
+          await previousAdapter?.release();
+          try{await adapter.prepare?.()}catch(error){try{await adapter.release?.()}catch(_){}throw error}
+          state.liveModel=key;resetLiveMetrics();setLiveBackend(adapter);renderLiveModels();
+          if(state.live)liveLoop(adapter,key,++state.liveLoopToken);
+        });
+        await state.liveTransition;
+        setLiveStatus(state.live?adapter.model.title+' is active. Camera stream stayed open.':adapter.model.title+' selected. Start camera when ready.');
+      }catch(err){
+        console.error(err);
+        let restored=false;
+        if(wasLive&&state.live&&previousAdapter){
+          try{
+            await previousAdapter.prepare?.();
+            state.liveModel=previousKey;resetLiveMetrics();setLiveBackend(previousAdapter);liveLoop(previousAdapter,previousKey,++state.liveLoopToken);restored=true;
+          }catch(rollbackError){console.error('Live Camera rollback failed',rollbackError)}
+        }else state.liveModel=previousKey;
+        if(!restored&&state.live)stopCamera('Model switch failed and the previous runtime could not be restored.');
+        else setLiveStatus(restored?adapter.model.title+' could not be loaded. '+previousAdapter.model.title+' is still active.':'Could not select '+adapter.model.title+'.','error');
+      }finally{
+        state.liveSwitching=false;renderLiveModels();
+      }
     }
     function setLiveBackend(adapter){
       const runtime=adapter?.runtimeInfo?.()||{},backend=runtime.backend||'';
@@ -498,58 +530,62 @@
       else if(adapter?.backend){const value=adapter.backend();if(value)$('live-backend').textContent=String(value)}
     }
     async function startCamera(){
-      if(state.live)return;
-      const modelKey=state.activeModel,token=++state.cameraStartToken,adapter=currentLiveAdapter();
-      if(!adapter){renderLiveModels();return}
-      $('camera-start').disabled=true;
+      if(state.live||state.liveSwitching)return;
+      const modelKey=state.liveModel,token=++state.cameraStartToken,adapter=currentLiveAdapter();
+      if(!adapter){renderLiveModels();setLiveStatus('Live Camera runtime is still loading.','error');return}
+      $('camera-start').disabled=true;setLiveStatus('Loading '+adapter.model.title+'…');
       try{
-        await state.runtimeTransition;
-        if(token!==state.cameraStartToken||state.activeModel!==modelKey)return;
+        await state.liveTransition.catch(()=>{});
+        await state.runtimeTransition.catch(()=>{});
+        if(token!==state.cameraStartToken||state.liveModel!==modelKey)return;
         await adapter.prepare?.();
-        if(token!==state.cameraStartToken||state.activeModel!==modelKey)return;
+        if(token!==state.cameraStartToken||state.liveModel!==modelKey)return;
         setLiveBackend(adapter);
         const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
-        if(token!==state.cameraStartToken||state.activeModel!==modelKey){stream.getTracks().forEach(track=>track.stop());return;}
+        if(token!==state.cameraStartToken||state.liveModel!==modelKey){stream.getTracks().forEach(track=>track.stop());return;}
         state.stream=stream;
         const video=$('camera-video');video.srcObject=stream;await video.play();
         state.live=true;resetLiveMetrics();
         $('camera-empty').hidden=true;$('camera-canvas').hidden=false;$('live-badge').classList.add('on');$('camera-stop').disabled=false;
         $('live-size').textContent=`${video.videoWidth} × ${video.videoHeight} camera`;
-        renderLiveModels();
-        liveLoop(adapter,modelKey);
+        renderLiveModels();setLiveStatus(adapter.model.title+' is running locally. You can switch models without restarting the camera.');
+        liveLoop(adapter,modelKey,++state.liveLoopToken);
       }catch(err){
         if(token!==state.cameraStartToken)return;
         console.error(err);
         if(state.stream){state.stream.getTracks().forEach(track=>track.stop());state.stream=null}
-        const video=$('camera-video');video.srcObject=null;$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Camera unavailable</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;$('camera-start').disabled=false;
+        const video=$('camera-video');video.srcObject=null;$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Camera unavailable</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;renderLiveModels();setLiveStatus('Camera could not start with '+adapter.model.title+'.','error');
       }
     }
 
-    async function liveLoop(adapter,modelKey){
+    async function liveLoop(adapter,modelKey,loopToken){
       const video=$('camera-video'),canvas=$('camera-canvas');
-      while(state.live&&state.activeModel===modelKey){
+      while(state.live&&state.liveModel===modelKey&&state.liveLoopToken===loopToken){
         await new Promise(requestAnimationFrame);
-        if(!state.live||state.activeModel!==modelKey||video.readyState<2)continue;
+        if(!state.live||state.liveModel!==modelKey||state.liveLoopToken!==loopToken||video.readyState<2)continue;
         let framePromise;
         try{
           framePromise=Promise.resolve(adapter.run(video,canvas,{updateMain:false,live:true}));state.liveInference=framePromise;
           const r=await framePromise;
+          if(!state.live||state.liveModel!==modelKey||state.liveLoopToken!==loopToken)continue;
           state.liveFrameCount++;
           state.liveSamples.push(r);if(state.liveSamples.length>20)state.liveSamples.shift();
           const avg=key=>state.liveSamples.reduce((sum,item)=>sum+item[key],0)/state.liveSamples.length;
           const ai=avg('infMs'),at=avg('totalMs');
           $('live-inf').textContent=ms(ai);$('live-total').textContent=ms(at);$('live-fps').textContent=ai>0?(1000/ai).toFixed(1):'—';$('live-count').textContent=String(r.visible);$('live-frames').textContent=String(state.liveFrameCount);setLiveBackend(adapter);
         }catch(err){
-          console.error(err);stopCamera();$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Live inference stopped</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;
+          console.error(err);stopCamera('Live inference stopped for '+adapter.model.title+'.');$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Live inference stopped</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;
         }finally{if(framePromise&&state.liveInference===framePromise)state.liveInference=Promise.resolve();}
       }
     }
 
-    function stopCamera(){
-      state.live=false;if(state.stream){state.stream.getTracks().forEach(track=>track.stop());state.stream=null}
+    function stopCamera(message=''){
+      state.cameraStartToken++;state.liveLoopToken++;state.live=false;if(state.stream){state.stream.getTracks().forEach(track=>track.stop());state.stream=null}
       const video=$('camera-video');video.srcObject=null;$('live-badge').classList.remove('on');$('camera-stop').disabled=true;$('camera-canvas').hidden=true;$('camera-empty').hidden=false;$('live-size').textContent='Camera off';renderLiveModels();
+      setLiveStatus(typeof message==='string'&&message?message:(state.liveModel&&REGISTRY[state.liveModel]?REGISTRY[state.liveModel].title+' remains selected.':'Camera stopped.'));
     }
-    $('camera-start').addEventListener('click',startCamera);$('camera-stop').addEventListener('click',stopCamera);
+    $('live-model-select').addEventListener('change',event=>selectLiveModel(event.target.value));
+    $('camera-start').addEventListener('click',startCamera);$('camera-stop').addEventListener('click',()=>stopCamera());
 
     window.VisionLab = Object.freeze({
       getImage:()=>state.image,
@@ -582,5 +618,5 @@
     });
 
     updateActiveModelUI();updateActiveCacheState();renderLiveModels();
-    window.addEventListener('pagehide',stopCamera);
+    window.addEventListener('pagehide',()=>stopCamera());
   })();
