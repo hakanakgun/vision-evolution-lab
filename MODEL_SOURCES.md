@@ -182,15 +182,15 @@ The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Comm
 
 ### RT-DETRv2 R18
 
-- Status: integrated research preview; one iOS/WebKit inference run reported by the user, broader validation pending.
+- Status: integrated research preview; user-reported iOS 18.7 / Brave-WebKit WebGPU fp16 inference and a 20-run warm benchmark completed on 2026-09-23; broader device/sample validation remains pending.
 - Base model: `PekingU/rtdetr_v2_r18vd`, Apache-2.0, trained on COCO train2017 and validated on COCO val2017.
 - ONNX Community conversion: `onnx-community/rtdetr_v2_r18vd-ONNX`, explicitly tagged for Transformers.js object detection and based on the PekingU checkpoint.
 - Pinned conversion revision: `936f90b6a476c6da4dfe053fc521af55285976ba`.
 - fp16 WebGPU ONNX asset: `onnx/model_fp16.onnx`, 40,750,249 bytes, SHA-256 `2922e7137689ac648cd99f0aa33b885d681fd981302ac5c77ed9a4ee946eaa36`.
 - Quantized WASM ONNX asset: `onnx/model_quantized.onnx`, 20,991,219 bytes, SHA-256 `4b839c46187b77fc620c770de0be6790637b98afde9b386232b0fcf74382eb3`.
 - Preprocessor: 640×640 resize, RGB, rescale by 1/255, no mean/std normalization, no padding.
-- Runtime: Transformers.js 4.3.0 object-detection pipeline; WebGPU fp16 first and WASM q8/int8 fallback. Browser does not reimplement the RT-DETRv2 decoder or add page-side NMS.
-- User-reported iPhone test on 2026-09-23: screenshot shows Brave/WebKit on iOS 18.7 using WebGPU fp16; pipeline load 7,769 ms, current inference 1,216 ms, and 27 detections at confidence 0.40. The 20-run benchmark fields were blank, so this is one successful inference observation, not a warm-latency benchmark.
+- Runtime: Transformers.js 4.3.0 object-detection pipeline; WebGPU fp16 first and WASM q8 fallback using the pinned quantized asset. Browser does not reimplement the RT-DETRv2 decoder or add page-side NMS.
+- User-reported iPhone evidence on 2026-09-23: Brave/WebKit on iOS 18.7 completed a five-model Model Race and 20-run warm benchmark with RT-DETRv2 on WebGPU fp16. RT-DETRv2 measured p50 178 ms, p90 183 ms, p50 end-to-end 178.5 ms, and CV 3.2%. This remains one device/session and does not establish broad compatibility or accuracy.
 - The upstream project reports 48.1 COCO AP for RT-DETRv2-S. This is model-card/paper context only; this project does not reproduce it.
 - Model file terms follow the Apache-2.0 ONNX Community/base model declarations. The repository downloads the pinned asset at runtime and does not redistribute it.
 
