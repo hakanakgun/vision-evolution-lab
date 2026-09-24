@@ -1,0 +1,55 @@
+name: publish LW-DETR Pages asset
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/publish-lwdetr-pages-model.yml
+      - models.js
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lwdetr-pages-model-main
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out site
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Download and verify the pinned release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA256: dadac1a335e108a5d1a52c4ac0280cd9b71ea2f7c39400e2d532f3a1f663dea0
+        run: |
+          mkdir -p "$RUNNER_TEMP/lwdetr"
+          gh release download lw-detr-tiny-4604afc2e4a1-1 \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'lw-detr-tiny.onnx' \
+            --dir "$RUNNER_TEMP/lwdetr"
+          model="$RUNNER_TEMP/lwdetr/lw-detr-tiny.onnx"
+          test "$(stat -c %s "$model")" = "38313297"
+          printf '%s  %s\n' "$EXPECTED_SHA256" "$model" | sha256sum --check --strict
+          mkdir -p assets/models
+          install -m 0644 "$model" assets/models/lw-detr-tiny.onnx
+
+      - name: Publish static Pages asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/models/lw-detr-tiny.onnx
+          if git diff --cached --quiet; then
+            echo "The verified Pages asset is already current."
+            exit 0
+          fi
+          git commit -m "chore: publish verified LW-DETR Pages asset"
+          git push origin HEAD:main
