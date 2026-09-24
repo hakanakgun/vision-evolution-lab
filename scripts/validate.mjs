@@ -108,6 +108,7 @@ const literalRefs=[...new Set([
 const missingIds=literalRefs.filter(id=>!idSet.has(id)&&!generatedIds.has(id));
 check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
 check(idSet.has('live-model-select')&&idSet.has('live-model-status'),'Live Camera model picker controls are missing');
+for(const id of ['camera-flip','camera-zoom-controls','camera-zoom-out','camera-zoom-reset','camera-zoom-in'])check(idSet.has(id),'Live Camera device control missing: '+id);
 check(files.app.includes("function liveModelKeys()")&&files.app.includes("state.liveModel===modelKey"),'Live Camera must use its independent live model state');
 
 const {version,build}=files.version;
@@ -222,8 +223,15 @@ check(files.app.includes('await state.runtimeTransition.catch(()=>{})')&&files.a
 check(files.app.includes('previousAdapter.prepare?.()')&&files.app.includes("if(!restored&&state.live)stopCamera("),'failed live-model switches must attempt rollback and stop the camera if rollback fails');
 const benchmarkFunction=files.app.slice(files.app.indexOf('async function runBenchmark()'),files.app.indexOf("$('image-file').addEventListener('change'"));
 const cameraStartFunction=files.app.slice(files.app.indexOf('async function startCamera()'),files.app.indexOf('async function liveLoop('));
+const cameraSwitchFunction=files.app.slice(files.app.indexOf('async function switchCamera()'),files.app.indexOf('function renderLiveModels()'));
+const cameraZoomFunction=files.app.slice(files.app.indexOf('async function applyCameraZoom('),files.app.indexOf('function stepCameraZoom('));
 check(!benchmarkFunction.includes('cameraStartToken'),'benchmark error handling must not use Live Camera cancellation state');
-check(cameraStartFunction.includes('if(token!==state.cameraStartToken)return;'),'Live Camera must ignore errors from a cancelled start');
+check(cameraStartFunction.includes('if(token!==state.cameraStartToken')&&cameraStartFunction.includes("requestCameraStream(state.cameraFacing,{exact:false})"),'Live Camera start must honor cancellation and request the selected facing mode');
+check(files.app.includes("facingMode:exact?{exact:facing}:{ideal:facing}")&&files.app.includes("device.kind==='videoinput'"),'camera facing controls must use Media Capture facingMode and permission-scoped video-device discovery');
+check(cameraSwitchFunction.includes('await state.liveInference.catch(()=>{})')&&cameraSwitchFunction.indexOf('stopMediaStream(oldStream)')<cameraSwitchFunction.indexOf("requestCameraStream(targetFacing,{exact:true})"),'camera switching must settle inference and stop the old track before requesting the opposite facing mode');
+check(cameraSwitchFunction.includes("requestCameraStream(previousFacing,{exact:true})")&&cameraSwitchFunction.includes('Camera switch rollback failed'),'failed camera switching must attempt to reacquire the previous facing mode');
+check(files.app.includes("getCapabilities()")&&files.app.includes("capabilities.zoom?.min")&&files.app.includes("getSettings?.()"),'camera zoom controls must derive their range/current value from the active MediaStreamTrack');
+check(cameraZoomFunction.includes("track.applyConstraints({advanced:[{zoom:target}]})")&&files.app.includes("state.cameraFacing==='environment'?state.cameraZoom:null"),'rear-camera zoom must use track constraints and stay hidden when the active rear track has no zoom capability');
 check(files.app.includes('prepare:()=>createSession()'),'SSD live adapter does not preserve pre-camera runtime preparation');
 for(const [key,needle] of [['tinyyolo','prepare:()=>createTinySession()'],['yolox','prepare:()=>createYoloSession()'],['rtdetr','prepare:()=>createRT()'],['rtdetrv2','prepare:()=>create()']])check(files.race.includes(needle),`${key}: Live Camera adapter does not prepare its runtime before camera access`);
 check(files.historicalDetectors.includes("return{run,prepare,release,backend:()=> 'WASM fp32'")&&files.historicalDetectors.includes("return{run,prepare:load,release,backend:()=> 'WASM fp32'"),'LW-DETR and D-FINE Live Camera adapters must prepare their runtime before camera access');
