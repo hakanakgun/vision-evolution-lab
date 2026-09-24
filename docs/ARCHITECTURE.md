@@ -87,7 +87,7 @@ RT-DETR R18 is loaded through pinned Transformers.js 4.3.0 using the pinned `onn
 
 RT-DETRv2 R18 uses the same pipeline contract with its separate pinned ONNX Community revision. On 2026-09-23, a user-reported iOS 18.7 / Brave-WebKit run completed WebGPU fp16 inference and a 20-run warm benchmark. It remains a research preview while multi-image and broader-device validation are pending.
 
-RT-DETR R18 prefers WebGPU fp16 with WASM q8 fallback; RT-DETRv2 R18 prefers WebGPU fp16 with WASM int8 fallback. Diagnostic runs can explicitly lock the requested device.
+RT-DETR R18 and RT-DETRv2 R18 prefer WebGPU fp16 with WASM q8 fallback. Diagnostic runs can explicitly lock the requested device.
 
 Both RT-DETR variants have a broader timing boundary than the direct ORT models: the measured pipeline call includes Transformers.js processor/model/postprocessor work. The 2026-09-23 user-reported RT-DETRv2 iOS 18.7 / Brave-WebKit ×20 run measured p50 178 ms, p90 183 ms, p50 end-to-end 178.5 ms, and CV 3.2% on WebGPU fp16.
 
