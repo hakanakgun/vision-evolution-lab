@@ -7,7 +7,7 @@ on:
       - main
     paths:
       - .github/workflows/publish-lwdetr-pages-model.yml
-      - models.js
+      - src/models/models.js
 
 permissions:
   contents: write
