@@ -141,7 +141,7 @@ If this project later redistributes or modifies YOLOX weights instead of referen
 
 ## Transformer-era model sources
 
-RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS/WebKit WebGPU fp16 inference result, but remains a research preview pending repeat-run and broader device/sample validation. D-FINE-N and LW-DETR-tiny run in Time Machine through pinned ONNX browser paths; broad user-image accuracy, speed, and iOS/WebKit validation remain outstanding.
+RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS 18.7 / Brave-WebKit WebGPU fp16 inference result and 20-run warm benchmark, but remains a research preview pending broader device/sample validation. D-FINE-N and LW-DETR-tiny run in Time Machine through pinned ONNX browser paths; LW-DETR has one user-reported iOS ×20 timing sample, while broad user-image accuracy and cross-device validation remain outstanding.
 
 ### RT-DETR R18
 
