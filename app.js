@@ -469,7 +469,6 @@
     $('benchmark').addEventListener('click',runBenchmark);
     $('confidence').addEventListener('input',()=>{$('confidence-value').textContent=Number($('confidence').value).toFixed(2);if(!state.historyExperiment)redrawUploaded();});
 
-    function liveAdapters(){return RuntimeRegistry.list({capability:'live'})}
     function liveModelKeys(){return RuntimeRegistry.validate({capability:'live'}).expected}
     function currentLiveAdapter(){return RuntimeRegistry.get(state.liveModel)}
     function resetLiveMetrics(){for(const id of ['live-inf','live-total','live-fps','live-count'])$(id).textContent='—';$('live-frames').textContent='0';state.liveSamples=[];state.liveFrameCount=0}
