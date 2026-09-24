@@ -25,7 +25,7 @@ On 2026-09-24, after the v0.13.4 telemetry/input-label correction, the user repo
 - In Live Camera, use its model picker to run each of the seven live-capable models, including newly enabled D-FINE-N and LW-DETR-tiny; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.
 - While the camera is running, switch models from the Live Camera picker and confirm the camera stream stays open, inference resumes on the new model, and a failed switch restores the previous model when possible. Also stop and restart the camera for each model.
 - Run a 2–5 minute camera soak with RT-DETRv2 and YOLOX-Nano, then stop and restart; watch for page reload, frozen frames, thermal slowdown, or an unresponsive stop control.
-- Test camera permission denied/revoked, switching rear/front camera if offered by the UI, rotating the phone, and backgrounding/resuming the tab.
+- Test camera permission denied/revoked, switch rear → front → rear while inference is running, and verify the selected model runtime stays active while the camera stream is reacquired. On the rear camera, record the reported zoom min/max/current values, exercise zoom out/in/reset, and confirm controls are hidden if the track does not expose zoom. Also test rotation and background → return.
 - Repeat the Live Camera checks in iOS Safari as well as Brave; the benchmark screenshot establishes only the reported Brave/WebKit path.
 - Verify fallback on a configuration where WebGPU is unavailable or rejected, especially RT-DETR and RT-DETRv2 WASM fallback, if such an iOS/browser combination is available.
 

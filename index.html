@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.24-v0.15.0">
+<html lang="en" data-build="2026.09.24-v0.15.1">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.24-v0.15.0';
+      const CURRENT_BUILD = '2026.09.24-v0.15.1';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=0.15.0">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.15.1">
 </head>
 <body>
   <main class="shell">
@@ -402,6 +402,12 @@
             <canvas id="camera-canvas" hidden></canvas>
             <div class="empty" id="camera-empty"><strong>Camera stays local</strong>Camera permission is requested only after you press Start camera. Frames are processed in this page and are not uploaded.</div>
             <div class="live-badge" id="live-badge"><span class="live-dot"></span>LIVE</div>
+            <button class="camera-overlay-btn camera-flip" id="camera-flip" type="button" aria-label="Switch camera" hidden>↻ Front</button>
+            <div class="camera-zoom-controls" id="camera-zoom-controls" aria-label="Camera zoom controls" hidden>
+              <button class="camera-overlay-btn" id="camera-zoom-out" type="button" aria-label="Zoom out">−</button>
+              <button class="camera-overlay-btn camera-zoom-value" id="camera-zoom-reset" type="button" aria-label="Reset camera zoom">1×</button>
+              <button class="camera-overlay-btn" id="camera-zoom-in" type="button" aria-label="Zoom in">+</button>
+            </div>
           </div>
           <div class="controls">
             <button class="btn" id="camera-start">Start camera</button>
@@ -427,19 +433,19 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.15.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.15.1 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="src/core/runtime-bootstrap.js?v=0.15.0"></script>
-  <script src="src/core/preprocessing.js?v=0.15.0"></script>
-  <script src="src/models/models.js?v=0.15.0"></script>
-  <script src="src/core/detection-metrics.js?v=0.15.0"></script>
-  <script src="src/core/model-runtime.js?v=0.15.0"></script>
-  <script src="src/core/model-loader.js?v=0.15.0"></script>
-  <script src="src/app.js?v=0.15.0"></script>
-  <script src="src/models/lwdetr-postprocess.js?v=0.15.0"></script>
-  <script src="src/models/historical-detectors.js?v=0.15.0"></script>
-  <script src="src/models/race.js?v=0.15.0"></script>
-  <script src="src/history/history-experiments.js?v=0.15.0"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.15.1"></script>
+  <script src="src/core/preprocessing.js?v=0.15.1"></script>
+  <script src="src/models/models.js?v=0.15.1"></script>
+  <script src="src/core/detection-metrics.js?v=0.15.1"></script>
+  <script src="src/core/model-runtime.js?v=0.15.1"></script>
+  <script src="src/core/model-loader.js?v=0.15.1"></script>
+  <script src="src/app.js?v=0.15.1"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.15.1"></script>
+  <script src="src/models/historical-detectors.js?v=0.15.1"></script>
+  <script src="src/models/race.js?v=0.15.1"></script>
+  <script src="src/history/history-experiments.js?v=0.15.1"></script>
 </body>
 </html>
