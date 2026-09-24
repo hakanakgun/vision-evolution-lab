@@ -6,7 +6,7 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.12.0',
+    version:'0.13.0',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),
@@ -25,7 +25,7 @@
       Object.freeze({year:2020,month:5,model:'detr',title:'DETR · ResNet-50',note:'reference checkpoint · COCO · WASM q8',kind:'runnable',className:'transformer'}),
       Object.freeze({year:2021,month:7,model:'yolox',title:'YOLOX-Nano',note:'tap to run',kind:'runnable'}),
       Object.freeze({year:2023,month:4,model:'rtdetr',title:'RT-DETR R18',note:'tap to run',kind:'runnable',className:'transformer'}),
-      Object.freeze({year:2024,month:6,title:'LW-DETR-tiny',note:'research · first paper',kind:'research'}),
+      Object.freeze({year:2024,month:6,model:'lwdetr',title:'LW-DETR-tiny',note:'run · Time Machine · WASM fp32',kind:'runnable',className:'transformer'}),
       Object.freeze({year:2024,month:7,model:'rtdetrv2',title:'RT-DETRv2 R18',note:'research preview · tap to run',kind:'runnable',className:'transformer'}),
       Object.freeze({year:2024,month:10,model:'dfine',title:'D-FINE-N',note:'tap to run · Time Machine',kind:'runnable',className:'transformer'})
     ]),
@@ -246,6 +246,16 @@
       decoder:'Transformers.js RT-DETRv2 postprocessor',
       ui:Object.freeze({runtime:Object.freeze({initLabel:'Pipeline load',bytesText:'~21.0 MB int8 / 40.8 MB fp16',cacheInitial:'checked at load',managedTransferWhenMissing:true,inferenceBoundaryNote:'Inference is the Transformers.js processor/model/postprocessor call.',benchmarkBoundary:'p50, p90, min–max and run-to-run timing variation from 20 warm Transformers.js pipeline calls; pipeline/model load excluded.'}),subtitle:'COCO object detection · Transformers.js · RT-DETRv2',provenance:'PekingU RT-DETRv2 R18 COCO checkpoint with the pinned Hugging Face ONNX Community conversion. User-reported iOS/WebKit test confirms one WebGPU fp16 inference run; repeat-run benchmark and broader device/sample validation are pending.',links:Object.freeze([Object.freeze({label:'Base model ↗',url:'https://huggingface.co/PekingU/rtdetr_v2_r18vd'}),Object.freeze({label:'Pinned ONNX conversion ↗',url:'https://huggingface.co/onnx-community/rtdetr_v2_r18vd-ONNX/tree/936f90b6a476c6da4dfe053fc521af55285976ba'}),Object.freeze({label:'Official implementation ↗',url:'https://github.com/lyuwenyu/RT-DETR'}),Object.freeze({label:'License/provenance ↗',url:'MODEL_SOURCES.md#rt-detrv2-r18'})])}),
       source:'https://huggingface.co/onnx-community/rtdetr_v2_r18vd-ONNX'
+    }),
+    lwdetr:Object.freeze({
+      id:'lw-detr-tiny-coco-onnx',title:'LW-DETR-tiny',year:2024,status:'runnable',family:'LW-DETR',task:'object-detection',license:'Apache-2.0',parameters:'12.1M',input:640,bytes:38313297,sha256:'dadac1a335e108a5d1a52c4ac0280cd9b71ea2f7c39400e2d532f3a1f663dea0',
+      sourceModel:'AnnaZhang/lwdetr_tiny_60e_coco',sourceRevision:'4b636b514dcf623f6eafc9e1ab63b8ad5c513925',labels:Object.freeze(["N/A","person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","street sign","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","hat","backpack","umbrella","shoe","eye glasses","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","plate","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","mirror","dining table","window","desk","toilet","door","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator","blender","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"]),
+      capabilities:Object.freeze({timeMachine:true,benchmark:false,live:false,race:false,inspection:false}),
+      runtime:Object.freeze({wasm:Object.freeze({device:'wasm',dtype:'fp32',modelBytes:38313297})}),executionProviders:Object.freeze(['wasm']),
+      preprocessing:Object.freeze({resize:'direct stretch to 640×640',layout:'NCHW',dtype:'float32',channels:'RGB',rescale:'1/255 then ImageNet mean/std',padding:'none'}),
+      decoder:'Deformable DETR: sigmoid scores · global top 100 query/class pairs · normalized cxcywh · no NMS',
+      ui:Object.freeze({runtime:Object.freeze({initLabel:'ONNX session',bytesText:'38.3 MB · fp32 ONNX',cacheInitial:'checking pinned model',inferenceBoundaryNote:'Inference is the ONNX Runtime Web WASM run.',benchmarkBoundary:'Time Machine only; excluded from Model Race, Live Camera, individual benchmark, and Inside the Model.'}),subtitle:'COCO object detection · direct ONNX · WASM fp32',provenance:'Apache-2.0 LW-DETR-tiny checkpoint exported to ONNX with custom CUDA kernels disabled. This pinned browser conversion is used in Time Machine only; browser speed, user-image accuracy, and iOS/WebKit have not been broadly benchmarked.',links:Object.freeze([Object.freeze({label:'LW-DETR paper ↗',url:'https://arxiv.org/abs/2406.03459'}),Object.freeze({label:'Base checkpoint ↗',url:'https://huggingface.co/AnnaZhang/lwdetr_tiny_60e_coco/tree/4b636b514dcf623f6eafc9e1ab63b8ad5c513925'}),Object.freeze({label:'Pinned ONNX release ↗',url:'https://github.com/hakanakgun/vision-evolution-lab/releases/tag/lw-detr-tiny-4604afc2e4a1-1'}),Object.freeze({label:'Provenance ↗',url:'MODEL_SOURCES.md#lw-detr-tiny'})])}),
+      sources:Object.freeze([Object.freeze({label:'Pinned GitHub Release',url:'https://github.com/hakanakgun/vision-evolution-lab/releases/download/lw-detr-tiny-4604afc2e4a1-1/lw-detr-tiny.onnx',provenance:'LW-DETR-tiny ONNX release lw-detr-tiny-4604afc2e4a1-1 · SHA-256 verified'})])
     }),
     dfine:Object.freeze({
       id:'dfine-n-coco-transformersjs',title:'D-FINE-N',year:2024,status:'runnable',family:'D-FINE',task:'object-detection',license:'Apache-2.0',
