@@ -257,7 +257,7 @@ On iOS/iPadOS:
 - SSD-MobileNetV1 INT8: WASM
 - YOLOX-Nano: WASM
 - RT-DETR R18: unchanged independent Transformers.js runtime, normally WebGPU fp16 with WASM q8 fallback
-- RT-DETRv2 R18: independent Transformers.js runtime, normally WebGPU fp16 with WASM int8 fallback
+- RT-DETRv2 R18: independent Transformers.js runtime, normally WebGPU fp16 with WASM q8 fallback
 
 On non-iOS platforms, direct ORT keeps `ort.webgpu.min.js` so YOLOX retains WebGPU-first behavior.
 
