@@ -67,6 +67,12 @@
   runtimes.register('ssd2016',createSsdAdapter());
   runtimes.register('detr',createDetrAdapter());
   runtimes.register('dfine',createDfineAdapter());
-  document.addEventListener('vision:tabchange',event=>{if(event.detail?.tab!=='time-machine'){void Promise.all([runtimes.get('lwdetr')?.release?.(),runtimes.get('ssd2016')?.release?.(),runtimes.get('detr')?.release?.(),runtimes.get('dfine')?.release?.()])}});
-  window.addEventListener('pagehide',()=>{void Promise.all([runtimes.get('lwdetr')?.release?.(),runtimes.get('ssd2016')?.release?.(),runtimes.get('detr')?.release?.(),runtimes.get('dfine')?.release?.()])});
+  const historicalRuntimeKeys=Object.freeze(['lwdetr','ssd2016','detr','dfine']);
+  async function releaseHistoricalRuntimes(exceptKey=''){await Promise.all(historicalRuntimeKeys.filter(key=>key!==exceptKey).map(key=>runtimes.get(key)?.release?.()))}
+  document.addEventListener('vision:tabchange',event=>{
+    if(event.detail?.tab==='time-machine')return;
+    const keepLiveKey=event.detail?.tab==='live-camera'?api.getLiveModel?.()||'':'';
+    void releaseHistoricalRuntimes(keepLiveKey);
+  });
+  window.addEventListener('pagehide',()=>{void releaseHistoricalRuntimes()});
 })();
