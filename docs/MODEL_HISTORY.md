@@ -22,7 +22,7 @@ For older milestones, the timeline shows the year only. Recent model entries sho
 | 2020 | DETR · ResNet-50 | Transformer-based set prediction for object detection. | Runnable · q8/WASM reference checkpoint | Pinned Xenova conversion of the Apache-2.0 Facebook base, not asserted to be the exact paper weights; Time Machine only. |
 | 2021-07 | YOLOX-Nano | Anchor-free detector with a decoupled head. | Runnable | Month follows the first public arXiv paper; not a release date. |
 | 2023-04 | RT-DETR R18 | Real-time end-to-end DETR detector. | Runnable | Month follows the first public arXiv paper. |
-| 2024-06 | LW-DETR-tiny | Lightweight ViT encoder and shallow DETR decoder. | Research only | No pinned browser conversion; not run by the app. |
+| 2024-06 | LW-DETR-tiny | Lightweight ViT encoder and shallow DETR decoder. | Runnable · Time Machine only | Pinned Apache-2.0 checkpoint exported to a verified ONNX graph; WASM fp32; speed, user-image accuracy and iOS/WebKit compatibility not broadly tested. |
 | 2024-07 | RT-DETRv2 R18 | Revised real-time DETR training recipe. | Research preview · runnable | Month follows the first public arXiv paper. |
 | 2024-10 | D-FINE-N | Fine-grained distribution refinement for DETR box regression. | Runnable · Time Machine only | Pinned COCO ONNX conversion; WASM fp32; browser speed and iOS compatibility not tested. |
 
