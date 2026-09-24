@@ -20,6 +20,7 @@ const files={
   loader:read('model-loader.js'),
   app:read('app.js'),
   historicalDetectors:read('historical-detectors.js'),
+  lwdetrPostprocess:read('lwdetr-postprocess.js'),
   race:read('race.js'),
   historyExperiments:read('history-experiments.js'),
   classicalWorker:read('classical-cv-worker.js'),
@@ -35,7 +36,7 @@ const files={
   version:JSON.parse(read('version.json'))
 };
 
-for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,historicalDetectors:files.historicalDetectors,race:files.race,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
+for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
 for(const [index,code] of [...files.index.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match=>match[1]).entries()){
@@ -99,10 +100,10 @@ check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
 const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
 check(files.index.includes(`const CURRENT_BUILD = '${build}'`),'CURRENT_BUILD does not match version.json');
-for(const asset of ['styles.css','runtime-bootstrap.js','preprocessing.js','detection-metrics.js','models.js','model-runtime.js','model-loader.js','app.js','historical-detectors.js','race.js','history-experiments.js']){
+for(const asset of ['styles.css','runtime-bootstrap.js','preprocessing.js','detection-metrics.js','models.js','model-runtime.js','model-loader.js','app.js','lwdetr-postprocess.js','historical-detectors.js','race.js','history-experiments.js']){
   check(files.index.includes(`${asset}?v=${version}`),`cache-busted asset missing or stale: ${asset}`);
 }
-const scriptOrder=['runtime-bootstrap.js','preprocessing.js','models.js','detection-metrics.js','model-runtime.js','model-loader.js','app.js','historical-detectors.js','race.js','history-experiments.js'];
+const scriptOrder=['runtime-bootstrap.js','preprocessing.js','models.js','detection-metrics.js','model-runtime.js','model-loader.js','app.js','lwdetr-postprocess.js','historical-detectors.js','race.js','history-experiments.js'];
 let previous=-1;
 for(const script of scriptOrder){
   const current=files.index.indexOf(script);
@@ -265,8 +266,8 @@ check(files.index.includes('Historical experiment · same image')&&historyExperi
 check(files.catalog.includes('| 1980 | Neocognitron-inspired feature response | Runnable historical experiment |')&&files.catalog.includes('| 1998 | LeNet-era MNIST CNN reference | Runnable historical experiment |')&&files.catalog.includes('| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable historical experiment |')&&files.catalog.includes('| 2005 | HOG + linear SVM pedestrian detector | Runnable historical experiment |')&&files.catalog.includes('| 2012 | AlexNet · ImageNet classification | Runnable historical experiment |'),'catalog must distinguish runnable historical experiments');
 check(files.readme.includes('one image selected in Time Machine')&&files.docsIndex.includes('[Time Machine historical experiments](CLASSICAL_CV.md)'),'README/docs map must describe and link to same-image history experiments');
 for(const source of ['https://doi.org/10.1007/BF00344251','https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf','https://doi.org/10.1109/CVPR.2001.990517','https://doi.org/10.1109/CVPR.2005.177','https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2014/html/Girshick_Rich_Feature_Hierarchies_2014_CVPR_paper.html','https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html','https://research.google/pubs/ssd-single-shot-multibox-detector/','https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php'])check(files.history.includes(source),'historical primary-paper source missing: '+source);
-check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===8,'Time Machine registry should contain five race models and three historical detectors');
-check(timeMachineModels.length===8,'Time Machine must expose eight runnable model generations');
+check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===9,'Time Machine registry should contain five race models and four historical detectors');
+check(timeMachineModels.length===9,'Time Machine must expose nine runnable model generations');
 for(const [key,year,title] of [['ssd2016',2016,'SSD · ResNet-34 INT8'],['detr',2020,'DETR · ResNet-50']]){
   const model=metadataRegistry[key],entry=metadataRegistry.timeline.find(item=>item.model===key);
   check(model&&entry&&entry.year===year&&entry.title===title,'historical detector timeline entry missing: '+key);
@@ -275,12 +276,22 @@ for(const [key,year,title] of [['ssd2016',2016,'SSD · ResNet-34 INT8'],['detr',
 }
 check(metadataRegistry.ssd2016.bytes===20485276&&metadataRegistry.ssd2016.sha256==='56d2c03a8c74c03f704509ccfcd91763991c6e1b92f63da730fb2b3d07565453','SSD 2016 pinned artifact integrity metadata changed');
 check(metadataRegistry.detr.revision==='8be7ab59ff663484ee9ba2e8d8f267330d5ad03e'&&metadataRegistry.detr.runtime.wasm.dtype==='q8','DETR must stay on its pinned q8/WASM conversion');
+const lw=metadataRegistry.lwdetr,lwEntry=metadataRegistry.timeline.find(item=>item.model==='lwdetr');
+check(lwEntry?.year===2024&&lwEntry.month===6&&lwEntry.kind==='runnable','LW-DETR-tiny June 2024 Time Machine entry is missing');
+check(lw.bytes===38313297&&lw.sha256==='dadac1a335e108a5d1a52c4ac0280cd9b71ea2f7c39400e2d532f3a1f663dea0'&&lw.runtime.wasm.device==='wasm'&&lw.runtime.wasm.dtype==='fp32','LW-DETR artifact integrity metadata or WASM fp32 path changed');
+check(lw.sourceModel==='AnnaZhang/lwdetr_tiny_60e_coco'&&lw.sourceRevision==='4b636b514dcf623f6eafc9e1ab63b8ad5c513925'&&lw.labels.length===91,'LW-DETR checkpoint revision or label map changed');
+check(lw.capabilities.timeMachine&&!lw.capabilities.benchmark&&!lw.capabilities.live&&!lw.capabilities.race&&!lw.capabilities.inspection,'LW-DETR must remain Time Machine only');
+check(files.historicalDetectors.includes("runtimes.register('lwdetr'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("JSON.stringify(logits.dims)!=='[1,100,91]'"),'LW-DETR adapter must use verified WASM and pinned input/output contracts');
+const decodeWindow={};vm.runInNewContext(files.lwdetrPostprocess,{window:decodeWindow,Float32Array,TypeError,RangeError,Number,Array,Math,Object},{filename:'lwdetr-postprocess.js'});
+const decoded=decodeWindow.VisionLwDetrPostprocess.decode(new Float32Array([0,1,2,0,1.5,.5]),new Float32Array([.5,.5,.4,.4,.25,.75,.2,.3]),{labels:['N/A','person','cat'],width:640,height:480,threshold:.8,topK:3});
+check(decoded.rawCount===3&&decoded.detections.length===2&&decoded.detections[0].label==='cat'&&decoded.detections[0].classId===2&&decoded.detections[1].label==='person'&&decoded.detections[1].classId===1,'LW-DETR postprocessor must sigmoid and globally rank query/class pairs');
+check(decoded.detections[0].box.every((value,index)=>Math.abs(value-[.3,.3,.7,.7][index])<1e-6),'LW-DETR cxcywh-to-normalized-yxyx conversion changed');
 const dfine=metadataRegistry.dfine,dfineEntry=metadataRegistry.timeline.find(item=>item.model==='dfine');
 check(dfineEntry?.year===2024&&dfineEntry.month===10&&dfineEntry.kind==='runnable','D-FINE-N October 2024 Time Machine entry is missing');
 check(dfine.modelId==='onnx-community/dfine_n_coco-ONNX'&&dfine.revision==='e2b9c0f0884ee7c90b79feedfd30054e82ed634c'&&dfine.baseRevision==='066438d3d8f0da137a37b38fdf3368fd4afceced','D-FINE-N base/conversion revisions must stay pinned');
 check(dfine.bytes===15300000&&dfine.sha256==='0f684f409618ee8a822410e754a29caa817d1aa16283ce89cad936d0a48e2f35'&&dfine.runtime.wasm.device==='wasm'&&dfine.runtime.wasm.dtype==='fp32','D-FINE-N size/source integrity metadata or WASM fp32 path changed');
 check(dfine.capabilities.timeMachine&&!dfine.capabilities.benchmark&&!dfine.capabilities.live&&!dfine.capabilities.race&&!dfine.capabilities.inspection,'D-FINE-N must remain Time Machine only');
-check(files.historicalDetectors.includes("runtimes.register('dfine'")&&files.historicalDetectors.includes("model.modelId,{device:'wasm',dtype:'fp32',revision:model.revision"),'D-FINE-N adapter must use Transformers.js on the pinned WASM fp32 conversion');
+check(files.historicalDetectors.includes("runtimes.register('lwdetr'")&&files.historicalDetectors.includes("runtimes.register('dfine'")&&files.historicalDetectors.includes("model.modelId,{device:'wasm',dtype:'fp32',revision:model.revision"),'D-FINE-N and LW-DETR adapters must use their pinned runtime paths');
 check(files.historicalDetectors.includes("runtimes.register('ssd2016'")&&files.historicalDetectors.includes("runtimes.register('detr'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("subtle.digest('SHA-256'"),'historical model adapters must register SSD, use WASM, and checksum SSD weights');
 check((files.index.match(/id="image-file"/g)||[]).length===1,'Time Machine must keep one shared image input');
 check(!files.index.includes('data-tab="classical-cv"')&&!files.index.includes('id="classical-cv"'),'separate Classical CV tab/panel must not return');

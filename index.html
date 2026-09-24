@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.24-v0.12.0">
+<html lang="en" data-build="2026.09.24-v0.13.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.24-v0.12.0';
+      const CURRENT_BUILD = '2026.09.24-v0.13.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.12.0">
+  <link rel="stylesheet" href="styles.css?v=0.13.0">
 </head>
 <body>
   <main class="shell">
@@ -236,12 +236,12 @@
             <div class="links"><a href="https://huggingface.co/PekingU/rtdetr_r18vd" target="_blank" rel="noreferrer">Hugging Face ↗</a><a href="https://github.com/lyuwenyu/RT-DETR" target="_blank" rel="noreferrer">Official repo ↗</a></div>
           </article>
 
-          <article class="card evolution-card research-card">
-            <div class="evolution-top"><span class="pill research-pill">Jun 2024 · research</span><span class="license-chip apache">Apache-2.0</span></div>
+          <article class="card evolution-card runnable-card">
+            <div class="evolution-top"><span class="pill transformer-pill">Jun 2024 · runnable</span><span class="license-chip apache">Apache-2.0</span></div>
             <h3>LW-DETR-tiny</h3>
-            <p>A lightweight ViT encoder plus shallow DETR decoder targets the real-time regime with a transformer-first architecture.</p>
-            <div class="change-line"><b>Reported</b><span>12.1M params · 42.6/42.9 COCO mAP</span></div>
-            <div class="links"><a href="https://huggingface.co/xbsu/LW-DETR" target="_blank" rel="noreferrer">Hugging Face ↗</a><a href="https://github.com/Atten4Vis/LW-DETR" target="_blank" rel="noreferrer">Official repo ↗</a></div>
+            <p>A lightweight ViT encoder with a shallow DETR decoder. Its pinned COCO checkpoint now runs on the selected Time Machine image through a verified ONNX/WASM workaround.</p>
+            <div class="change-line"><b>Browser now</b><span>WASM · fp32 · 38.3 MB · Time Machine only</span></div>
+            <div class="links"><a href="#" data-jump="time-machine">Run ↗</a><a href="https://arxiv.org/abs/2406.03459" target="_blank" rel="noreferrer">Paper ↗</a><a href="https://huggingface.co/AnnaZhang/lwdetr_tiny_60e_coco/tree/4b636b514dcf623f6eafc9e1ab63b8ad5c513925" target="_blank" rel="noreferrer">Pinned base model ↗</a><a href="https://github.com/hakanakgun/vision-evolution-lab/releases/tag/lw-detr-tiny-4604afc2e4a1-1" target="_blank" rel="noreferrer">ONNX release ↗</a><a href="MODEL_SOURCES.md#lw-detr-tiny" target="_blank">Provenance ↗</a></div>
           </article>
 
           <article class="card evolution-card runnable-card">
@@ -260,7 +260,7 @@
             <div class="links"><a href="#" data-jump="time-machine">Run ↗</a><a href="https://arxiv.org/abs/2410.13842" target="_blank" rel="noreferrer">Paper ↗</a><a href="https://huggingface.co/onnx-community/dfine_n_coco-ONNX/tree/e2b9c0f0884ee7c90b79feedfd30054e82ed634c" target="_blank" rel="noreferrer">Pinned ONNX ↗</a><a href="MODEL_SOURCES.md#d-fine-n" target="_blank">Provenance ↗</a></div>
           </article>
         </div>
-        <div class="note evolution-note">D-FINE-N is enabled in Time Machine only. Its browser speed, accuracy on user images, and iOS/WebKit compatibility have not been benchmarked. LW-DETR-tiny remains research-only because a browser-ready ONNX conversion is not yet verified.</div>
+        <div class="note evolution-note">D-FINE-N and LW-DETR-tiny run in Time Machine only. Their browser speed, accuracy on user images, and iOS/WebKit compatibility have not been broadly benchmarked. LW-DETR uses a pinned ONNX/WASM conversion; see the provenance notes.</div>
       </section>
     </section>
 
@@ -423,18 +423,19 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.12.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.13.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="runtime-bootstrap.js?v=0.12.0"></script>
-  <script src="preprocessing.js?v=0.12.0"></script>
-  <script src="models.js?v=0.12.0"></script>
-  <script src="detection-metrics.js?v=0.12.0"></script>
-  <script src="model-runtime.js?v=0.12.0"></script>
-  <script src="model-loader.js?v=0.12.0"></script>
-  <script src="app.js?v=0.12.0"></script>
-  <script src="historical-detectors.js?v=0.12.0"></script>
-  <script src="race.js?v=0.12.0"></script>
-  <script src="history-experiments.js?v=0.12.0"></script>
+  <script src="runtime-bootstrap.js?v=0.13.0"></script>
+  <script src="preprocessing.js?v=0.13.0"></script>
+  <script src="models.js?v=0.13.0"></script>
+  <script src="detection-metrics.js?v=0.13.0"></script>
+  <script src="model-runtime.js?v=0.13.0"></script>
+  <script src="model-loader.js?v=0.13.0"></script>
+  <script src="app.js?v=0.13.0"></script>
+  <script src="lwdetr-postprocess.js?v=0.13.0"></script>
+  <script src="historical-detectors.js?v=0.13.0"></script>
+  <script src="race.js?v=0.13.0"></script>
+  <script src="history-experiments.js?v=0.13.0"></script>
 </body>
 </html>

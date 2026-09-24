@@ -14,6 +14,7 @@ Vision Evolution Lab lets you run and compare object-detection generations witho
 - **Live Camera** runs the currently selected Time Machine detector locally, through its runtime adapter, with rolling latency measurements. It processes frames sequentially without a frame queue.
 - **Early history experiments** run inside Time Machine. Their task-specific outputs stay separate from the general-object models in Model Race.
 - **D-FINE-N** runs as a Time Machine-only COCO reference through a pinned Transformers.js ONNX conversion on WASM fp32. Performance and iOS/WebKit compatibility have not been benchmarked.
+- **LW-DETR-tiny** runs in Time Machine through a reproducibly exported, checksum-pinned ONNX checkpoint on ONNX Runtime Web/WASM fp32. It is excluded from Race, Live Camera, individual benchmarks, and Inside the Model; speed, user-image accuracy, and iOS/WebKit compatibility have not been broadly benchmarked.
 - **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
 Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model.
@@ -26,6 +27,7 @@ Selecting a model in Time Machine stays in Time Machine. Inside the Model follow
 | 2017 | SSD-MobileNetV1 INT8 | COCO | ONNX Runtime Web / intentional WASM |
 | 2021 | YOLOX-Nano | COCO | ONNX Runtime Web / standard WASM on iOS; WebGPU-first on desktop |
 | 2023 | RT-DETR R18 | COCO | Transformers.js / WebGPU fp16 or WASM q8 |
+| 2024-06 | LW-DETR-tiny | COCO · pinned checkpoint label map | Time Machine only · ONNX Runtime Web / WASM fp32 · 38.3 MB |
 | 2024-07 | RT-DETRv2 R18 · research preview | COCO | Transformers.js / WebGPU fp16 or WASM int8 |
 | 2024-10 | D-FINE-N | COCO | Time Machine only · Transformers.js / WASM fp32 |
 

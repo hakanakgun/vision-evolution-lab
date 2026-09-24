@@ -141,7 +141,7 @@ If this project later redistributes or modifies YOLOX weights instead of referen
 
 ## Transformer-era model sources
 
-RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS/WebKit WebGPU fp16 inference result, but remains a research preview pending repeat-run and broader device/sample validation. D-FINE-N is runnable in Time Machine through a pinned Transformers.js ONNX conversion, but has not been browser-performance or iOS/WebKit tested. LW-DETR remains research-only because a pinned, verified browser conversion is not available in this project.
+RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS/WebKit WebGPU fp16 inference result, but remains a research preview pending repeat-run and broader device/sample validation. D-FINE-N and LW-DETR-tiny run in Time Machine through pinned ONNX browser paths; broad user-image accuracy, speed, and iOS/WebKit validation remain outstanding.
 
 ### RT-DETR R18
 
@@ -196,11 +196,14 @@ The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Comm
 
 ### LW-DETR-tiny
 
-- Official implementation: `Atten4Vis/LW-DETR`, Apache-2.0.
-- Official repository points model downloads to Hugging Face `xbsu/LW-DETR`.
-- Hugging Face repository metadata: Apache-2.0.
-- Upstream reports 12.1M parameters, 11.2 GFLOPs and 42.6 (42.9 reimplementation) COCO mAP for LW-DETR-tiny.
-- Upstream provides ONNX export tooling, but this project has not verified a pinned Transformers.js-compatible browser conversion. It is not fetched or executed.
+- Paper: [LW-DETR](https://arxiv.org/abs/2406.03459), first public arXiv version June 2024; the [official implementation](https://github.com/Atten4Vis/LW-DETR) is Apache-2.0.
+- Base checkpoint: [`AnnaZhang/lwdetr_tiny_60e_coco`](https://huggingface.co/AnnaZhang/lwdetr_tiny_60e_coco/tree/4b636b514dcf623f6eafc9e1ab63b8ad5c513925), pinned revision `4b636b514dcf623f6eafc9e1ab63b8ad5c513925`; model repository metadata declares Apache-2.0. It is a 12.1M-parameter COCO checkpoint; upstream paper reports 42.6 / 42.9 COCO mAP.
+- Browser checkpoint: [pinned ONNX release](https://github.com/hakanakgun/vision-evolution-lab/releases/tag/lw-detr-tiny-4604afc2e4a1-1), derived from that source revision using `tools/export_lw_detr.py`, Transformers 5.13.1, ONNX opset 17, and `disable_custom_kernels=True`. The export replaces the custom CUDA-only deformable-attention path with standard PyTorch operations before export.
+- Runtime asset: `lw-detr-tiny.onnx`, 38,313,297 bytes; SHA-256 `dadac1a335e108a5d1a52c4ac0280cd9b71ea2f7c39400e2d532f3a1f663dea0`. The app downloads it at runtime, verifies the size and digest, and executes it with ONNX Runtime Web 1.30.0 on WASM fp32; it is not bundled into the site.
+- Verified input/output contract: direct resize to 640×640, RGB NCHW float32, rescale by 1/255 and normalize with ImageNet mean/std; input `pixel_values`, output `logits [1,100,91]` and `pred_boxes [1,100,4]` in normalized cxcywh.
+- Export checks: ONNX checker and ONNX Runtime 1.23.1 CPU parity passed; logits use rtol/atol 3e-4, boxes use rtol 2e-3 and atol 1e-3 to allow the measured GridSample floating-point difference (maximum absolute box-coordinate delta 0.00084257). A separate ONNX Runtime Web 1.30.0/WASM smoke test opened the graph and ran the same input/output contract.
+- Postprocessing follows the checkpoint’s Deformable DETR image-processor contract: sigmoid each query/class logit, take the global top 100 query/class scores, gather normalized cxcywh boxes, then apply the UI’s score filter. It does not use softmax or add NMS. The 91 class names come from the pinned checkpoint’s `id2label` map; displayed scores are not calibrated confidence.
+- App scope: Time Machine only. It is excluded from Model Race, Live Camera, individual benchmark runs, and Inside the Model. Browser speed, user-image detection accuracy, and iOS/WebKit compatibility have not been broadly measured; the paper’s COCO metric is an upstream report, not an evaluation of this browser export.
 
 ### D-FINE-N
 

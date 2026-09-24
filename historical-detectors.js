@@ -36,9 +36,38 @@
     async function release(){await inFlight.catch(()=>{});if(loading)await loading.catch(()=>{});const old=pipe;pipe=null;if(old&&typeof old.dispose==='function')try{await old.dispose()}catch(error){console.warn('D-FINE pipeline dispose failed',error)}}
     return{run,prepare:load,release,backend:()=> 'WASM fp32',runtimeInfo:()=>({backend:'wasm',dtype:'fp32',initMs:loadMs,bytes:model.runtime.wasm.modelBytes,cacheState:pipe?'pipeline ready':'pipeline released',source:formatSource(model.revision)}),handlesMainUi:false};
   }
+  function createLwdetrAdapter(){
+    const model=registry.lwdetr;let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',inFlight=Promise.resolve(),loading=null;
+    async function prepare(){
+      if(session)return session;if(loading)return loading;
+      loading=(async()=>{const started=performance.now(),asset=await loader.load(model,{onState:value=>{cacheState=value.state;if(value.source)cacheState+=` · ${value.source}`},onProgress:value=>api.reportRuntimeEvent('lwdetr',{type:'progress',info:value})});downloadMs=asset.downloadMs;
+        if(asset.buffer.byteLength!==model.bytes){loader.evictMemory(model);throw new Error(`Pinned LW-DETR checkpoint size mismatch (${asset.buffer.byteLength} bytes).`)}
+        const digest=await crypto.subtle.digest('SHA-256',asset.buffer),hash=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
+        if(hash!==model.sha256){loader.evictMemory(model);throw new Error('Pinned LW-DETR checkpoint SHA-256 verification failed.')}
+        const active=await ort.InferenceSession.create(asset.buffer,{executionProviders:['wasm'],graphOptimizationLevel:'all'});
+        if(!active.inputNames.includes('pixel_values')||!active.outputNames.includes('logits')||!active.outputNames.includes('pred_boxes')){await active.release();loader.evictMemory(model);throw new Error('Pinned LW-DETR ONNX input/output contract changed.')}
+        session=active;initMs=performance.now()-started;cacheState=asset.cacheState;api.reportRuntimeEvent('lwdetr',{type:'runtime',backend:'WASM',dtype:'fp32',downloadMs,initMs,bytes:model.bytes,cacheState,source:formatSource(model.sourceRevision)});return session;
+      })().finally(()=>{loading=null});return loading;
+    }
+    async function infer(source,canvas){
+      const started=performance.now(),preStart=performance.now(),sourceSize=api.sourceSize(source);if(!sourceSize.w||!sourceSize.h)throw new Error('Input has no readable dimensions.');
+      work.width=640;work.height=640;const ctx=work.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,640,640);
+      const rgba=ctx.getImageData(0,0,640,640).data,tensor=new Float32Array(3*640*640),plane=640*640,mean=[.485,.456,.406],std=[.229,.224,.225];
+      for(let i=0;i<plane;i++){tensor[i]=(rgba[i*4]/255-mean[0])/std[0];tensor[plane+i]=(rgba[i*4+1]/255-mean[1])/std[1];tensor[plane*2+i]=(rgba[i*4+2]/255-mean[2])/std[2]}
+      const preMs=performance.now()-preStart,active=await prepare(),inferStart=performance.now(),output=await active.run({pixel_values:new ort.Tensor('float32',tensor,[1,3,640,640])}),infMs=performance.now()-inferStart,logits=output.logits,boxes=output.pred_boxes;
+      if(!logits||!boxes||logits.type!=='float32'||boxes.type!=='float32'||JSON.stringify(logits.dims)!=='[1,100,91]'||JSON.stringify(boxes.dims)!=='[1,100,4]')throw new Error('Pinned LW-DETR returned an unexpected tensor shape.');
+      const outputSize=stage(source,canvas),decoded=window.VisionLwDetrPostprocess.decode(logits.data,boxes.data,{labels:model.labels,width:outputSize.width,height:outputSize.height,threshold:api.getRetentionThreshold(),topK:100});
+      const postStart=performance.now(),visible=api.drawDetections(canvas,decoded.detections),postMs=performance.now()-postStart;
+      return{preMs,infMs,postMs,totalMs:performance.now()-started,detections:decoded.detections,visible,width:outputSize.width,height:outputSize.height,rawCount:decoded.rawCount,retained:decoded.detections.length,droppedInvalid:decoded.droppedInvalid,retentionThreshold:api.getRetentionThreshold(),timingBoundary:'onnx-run'};
+    }
+    function run(source,canvas){const promise=inFlight.catch(()=>{}).then(()=>infer(source,canvas));inFlight=promise;return promise}
+    async function release(){await inFlight.catch(()=>{});if(loading)await loading.catch(()=>{});const old=session;session=null;if(old)try{await old.release()}catch(error){console.warn('LW-DETR runtime release failed',error)}loader.evictMemory(model);cacheState='runtime released'}
+    return{run,prepare,release,backend:()=> 'WASM fp32',runtimeInfo:()=>({backend:'wasm',dtype:'fp32',initMs,downloadMs,bytes:model.bytes,cacheState,source:formatSource(model.sourceRevision)}),handlesMainUi:false};
+  }
+  runtimes.register('lwdetr',createLwdetrAdapter());
   runtimes.register('ssd2016',createSsdAdapter());
   runtimes.register('detr',createDetrAdapter());
   runtimes.register('dfine',createDfineAdapter());
-  document.addEventListener('vision:tabchange',event=>{if(event.detail?.tab!=='time-machine'){void Promise.all([runtimes.get('ssd2016')?.release?.(),runtimes.get('detr')?.release?.(),runtimes.get('dfine')?.release?.()])}});
-  window.addEventListener('pagehide',()=>{void Promise.all([runtimes.get('ssd2016')?.release?.(),runtimes.get('detr')?.release?.(),runtimes.get('dfine')?.release?.()])});
+  document.addEventListener('vision:tabchange',event=>{if(event.detail?.tab!=='time-machine'){void Promise.all([runtimes.get('lwdetr')?.release?.(),runtimes.get('ssd2016')?.release?.(),runtimes.get('detr')?.release?.(),runtimes.get('dfine')?.release?.()])}});
+  window.addEventListener('pagehide',()=>{void Promise.all([runtimes.get('lwdetr')?.release?.(),runtimes.get('ssd2016')?.release?.(),runtimes.get('detr')?.release?.(),runtimes.get('dfine')?.release?.()])});
 })();
