@@ -57,7 +57,7 @@
 
 All five early experiments operate on the same Time Machine source image but retain different tasks and output types. They remain outside the general-object Model Race. There is no accuracy leaderboard or cross-task box overlap.
 
-OpenCV.js loads on demand in `classical-cv-worker.js`; the worker receives an aspect-preserving copy capped at 640 px on its longest side and returns only boxes/timings or digit-region proposals. Before a history experiment runs, registered AI adapters are released. For digit classification, the OpenCV worker is terminated before the ONNX Runtime WASM session is loaded. AlexNet also runs through ONNX Runtime WASM and releases its session when leaving Time Machine.
+OpenCV.js loads on demand in `src/history/classical-cv-worker.js`; the worker receives an aspect-preserving copy capped at 640 px on its longest side and returns only boxes/timings or digit-region proposals. Before a history experiment runs, registered AI adapters are released. For digit classification, the OpenCV worker is terminated before the ONNX Runtime WASM session is loaded. AlexNet also runs through ONNX Runtime WASM and releases its session when leaving Time Machine.
 
 ## Tiny YOLOv2
 

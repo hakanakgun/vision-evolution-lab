@@ -3,7 +3,7 @@
 ## OpenCV.js 4.12.0 browser runtime
 
 - Browser package: `@techstark/opencv-js@4.12.0-release.1`.
-- Delivery: pinned jsDelivr npm URL, loaded lazily inside `classical-cv-worker.js`.
+- Delivery: pinned jsDelivr npm URL, loaded lazily inside `src/history/classical-cv-worker.js`.
 - Package repository: `TechStark/opencv-js`.
 - Package metadata license: Apache-2.0.
 - Package metadata/readme identify the distributed OpenCV.js binary with OpenCV 4.12.0.
@@ -74,7 +74,7 @@ Most model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetche
 - Browser fallback: `Heliosoph/yolox-onnx` on Hugging Face, Apache-2.0 metadata, revision `9206d80cbad9ed54986edeff8d7457eb5333882a`.
 - The fallback model card states that its ONNX files are Megvii's published checkpoints and are not locally converted.
 
-The original Vision Evolution Lab source code is licensed under the repository's [MIT License](LICENSE).
+The original Vision Evolution Lab source code is licensed under the repository's [MIT License](../LICENSE).
 
 ## COCO validation benchmark sample
 

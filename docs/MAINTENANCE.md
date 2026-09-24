@@ -9,7 +9,7 @@ This document is the operational companion to [CONTRIBUTING.md](../CONTRIBUTING.
 - In a local checkout, inspect `git status` and preserve unrelated changes.
 - Keep patches narrow. Do not opportunistically refactor adjacent code or add diagnostics/dependencies/assets without a task-driven reason.
 
-Detailed product/runtime constraints live in [ARCHITECTURE.md](ARCHITECTURE.md), [../DESIGN.md](../DESIGN.md), and the model reference documents linked from [README.md](README.md).
+Detailed product/runtime constraints live in [ARCHITECTURE.md](ARCHITECTURE.md), [DESIGN.md](DESIGN.md), and the model reference documents linked from [README.md](README.md).
 
 ## Branch and pull-request flow
 
@@ -42,9 +42,9 @@ Then add the smallest check that can fail for the changed behavior:
 
 - UI/layout: affected desktop width plus narrow mobile width.
 - Model/runtime: at least one real inference on the affected adapter.
-- Benchmark logic: follow [../BENCHMARK_METHODOLOGY.md](../BENCHMARK_METHODOLOGY.md) and keep initialization outside warm-run measurements.
+- Benchmark logic: follow [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md) and keep initialization outside warm-run measurements.
 - iOS/WebKit-sensitive runtime work: follow [IOS_WEBKIT_DIAGNOSTICS.md](IOS_WEBKIT_DIAGNOSTICS.md); do not substitute desktop simulation for physical-device evidence.
-- Provenance/model changes: reconcile [../MODEL_CATALOG.md](../MODEL_CATALOG.md), [../MODEL_SOURCES.md](../MODEL_SOURCES.md), and [../THIRD_PARTY_LICENSES.md](../THIRD_PARTY_LICENSES.md).
+- Provenance/model changes: reconcile [MODEL_CATALOG.md](MODEL_CATALOG.md), [MODEL_SOURCES.md](MODEL_SOURCES.md), and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 Treat syntax/static validation, browser execution, benchmark results, and physical-device tests as separate evidence classes.
 
@@ -64,7 +64,7 @@ A successful PR check alone is not deployment evidence.
 
 `.github/workflows/publish-lwdetr-pages-model.yml` runs when relevant LW-DETR model metadata changes. It downloads the pinned release asset, verifies exact size/SHA-256, and only creates a protected-branch candidate if the committed same-origin Pages asset is stale.
 
-Do not bypass that verification or directly replace the binary without reconciling [../MODEL_SOURCES.md](../MODEL_SOURCES.md) and [../THIRD_PARTY_LICENSES.md](../THIRD_PARTY_LICENSES.md).
+Do not bypass that verification or directly replace the binary without reconciling [MODEL_SOURCES.md](MODEL_SOURCES.md) and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ## Evidence discipline
 

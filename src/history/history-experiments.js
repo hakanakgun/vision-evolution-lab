@@ -106,7 +106,7 @@
   async function ensureWorker(){
     if(state.workerReady)return state.workerReady;
     const started=performance.now();
-    state.worker=new Worker(`classical-cv-worker.js?v=${VERSION}`);
+    state.worker=new Worker(`src/history/classical-cv-worker.js?v=${VERSION}`);
     state.worker.onmessage=event=>{
       const message=event.data||{},pending=state.pending.get(message.id);if(!pending)return;
       state.pending.delete(message.id);
