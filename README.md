@@ -11,10 +11,10 @@ Vision Evolution Lab lets you run and compare object-detection generations witho
 - **Vision Time Machine** opens with YOLOX-Nano as a lightweight fast-inference starting point; all runnable years remain selectable, including SSD 2016 and DETR 2020 reference checkpoints. One image stays selected while early task-specific experiments show pattern responses, handwritten digits, faces, or pedestrians.
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
-- **Live Camera** has its own model picker for the five live-capable detectors. It runs the selected detector locally with rolling latency measurements, processes frames sequentially without a frame queue, and can switch models while keeping the camera stream open.
+- **Live Camera** has its own model picker for seven live-capable detectors. It runs the selected detector locally with rolling latency measurements, processes frames sequentially without a frame queue, and can switch models while keeping the camera stream open.
 - **Early history experiments** run inside Time Machine. Their task-specific outputs stay separate from the general-object models in Model Race.
-- **D-FINE-N** runs as a Time Machine-only COCO reference through a pinned Transformers.js ONNX conversion on WASM fp32. Performance and iOS/WebKit compatibility have not been benchmarked.
-- **LW-DETR-tiny** runs in Time Machine through a reproducibly exported, checksum-pinned ONNX checkpoint on ONNX Runtime Web/WASM fp32. It is excluded from Race, Live Camera, individual benchmarks, and Inside the Model. One user-reported iOS 18.7 / Brave-WebKit Benchmark ×20 completed on 2026-09-24; this does not establish broad device performance or user-image accuracy. See the iOS diagnostics.
+- **D-FINE-N** runs in Time Machine and Live Camera through a pinned Transformers.js ONNX conversion on WASM fp32. It remains excluded from Model Race, individual benchmarks, and Inside the Model; mobile Live Camera performance is still unverified.
+- **LW-DETR-tiny** runs in Time Machine and Live Camera through a reproducibly exported, checksum-pinned ONNX checkpoint on ONNX Runtime Web/WASM fp32. It remains excluded from Model Race, individual benchmarks, and Inside the Model. One user-reported iOS 18.7 / Brave-WebKit Benchmark ×20 completed on 2026-09-24 at about 612 ms p50 inference; sustained Live Camera stability and broad device performance remain unverified. See the iOS diagnostics.
 - **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
 Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model. Live Camera keeps an independent model selection, so changing either view does not silently change the other.
@@ -27,9 +27,9 @@ Selecting a model in Time Machine stays in Time Machine. Inside the Model follow
 | 2017 | SSD-MobileNetV1 INT8 | COCO | ONNX Runtime Web / intentional WASM |
 | 2021 | YOLOX-Nano | COCO | ONNX Runtime Web / standard WASM on iOS; WebGPU-first on desktop |
 | 2023 | RT-DETR R18 | COCO | Transformers.js / WebGPU fp16 or WASM q8 |
-| 2024-06 | LW-DETR-tiny | COCO · pinned checkpoint label map | Time Machine only · ONNX Runtime Web / WASM fp32 · 38.3 MB |
+| 2024-06 | LW-DETR-tiny | COCO · pinned checkpoint label map | Time Machine + Live Camera · ONNX Runtime Web / WASM fp32 · 38.3 MB |
 | 2024-07 | RT-DETRv2 R18 · research preview | COCO | Transformers.js / WebGPU fp16 or WASM int8 |
-| 2024-10 | D-FINE-N | COCO | Time Machine only · Transformers.js / WASM fp32 |
+| 2024-10 | D-FINE-N | COCO | Time Machine + Live Camera · Transformers.js / WASM fp32 |
 
 Exact model revisions, licenses, provenance, preprocessing, and fallback rules are maintained in [MODEL_SOURCES.md](docs/MODEL_SOURCES.md), [MODEL_CATALOG.md](docs/MODEL_CATALOG.md), and [THIRD_PARTY_LICENSES.md](docs/THIRD_PARTY_LICENSES.md).
 
@@ -83,7 +83,7 @@ The repeated four-model benchmark reload issue is mitigated by using the standar
 
 On 2026-09-22, the updated iOS path completed five consecutive full four-model Benchmark ×20 runs on the user's physical iPhone/Brave session without an abrupt reload. On 2026-09-23, the user also completed a five-model ×20 run and Model Race, including the RT-DETRv2 R18 research preview, on iOS 18.7 / Brave-WebKit. These results support the tested device path; they do not prove the historical WebKit/JSEP root cause or universal stability across iOS devices and versions.
 
-Live Camera has an independent selector for its five eligible detectors; changing Time Machine no longer changes the active camera model. SSD 2016 and DETR are intentionally Time Machine-only; their mobile-device latency and memory behavior have not yet been tested. Sustained per-model camera testing on physical iOS devices is still pending. See [the iOS test checklist](docs/IOS_WEBKIT_DIAGNOSTICS.md#physical-ios-tests-still-pending).
+Live Camera has an independent selector for seven eligible detectors; changing Time Machine no longer changes the active camera model. SSD 2016 and DETR remain intentionally Time Machine-only. D-FINE-N and LW-DETR-tiny are now Live Camera eligible, but sustained physical-iOS camera testing is still pending for them and the existing live models. See [the iOS test checklist](docs/IOS_WEBKIT_DIAGNOSTICS.md#physical-ios-tests-still-pending).
 
 The normal 1 warm-up + 20 measured-run benchmark contract is unchanged. The diagnostic modes remain available for regression analysis.
 

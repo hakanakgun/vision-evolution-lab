@@ -22,7 +22,7 @@ On 2026-09-24, after the v0.13.4 telemetry/input-label correction, the user repo
 
 ## Physical iOS tests still pending
 
-- In Live Camera, use its model picker to run each of the five live-capable models; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.
+- In Live Camera, use its model picker to run each of the seven live-capable models, including newly enabled D-FINE-N and LW-DETR-tiny; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.
 - While the camera is running, switch models from the Live Camera picker and confirm the camera stream stays open, inference resumes on the new model, and a failed switch restores the previous model when possible. Also stop and restart the camera for each model.
 - Run a 2–5 minute camera soak with RT-DETRv2 and YOLOX-Nano, then stop and restart; watch for page reload, frozen frames, thermal slowdown, or an unresponsive stop control.
 - Test camera permission denied/revoked, switching rear/front camera if offered by the UI, rotating the phone, and backgrounding/resuming the tab.

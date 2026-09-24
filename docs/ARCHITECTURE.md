@@ -13,7 +13,7 @@ The current runtime is intentionally client-side so users can compare computer-v
 - `src/core/model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
 - `src/core/model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
 - `src/app.js` — Time Machine state, SSD-MobileNet runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
-- `src/models/historical-detectors.js` — Time Machine-only adapters for SSD 2016, DETR 2020, LW-DETR-tiny, and D-FINE-N, including their model loading, preprocessing/postprocessing, and release paths.
+- `src/models/historical-detectors.js` — adapters for SSD 2016, DETR 2020, LW-DETR-tiny, and D-FINE-N, including their model loading, preprocessing/postprocessing, Live Camera eligibility where declared, and release paths.
 - `src/models/race.js` — Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
 - `src/history/history-experiments.js` — Time Machine historical experiment runners for a pattern-response preview, MNIST digit crops, frontal-face cascade, HOG pedestrian detection, and AlexNet ImageNet classification.
 - `src/history/classical-cv-worker.js` — lazy OpenCV.js WASM runtime, frontal-face cascade, HOG pedestrian detection, and explicit OpenCV object cleanup.
@@ -25,7 +25,7 @@ Runnable model metadata lives in `src/models/models.js`. Each runnable model dec
 
 - `timeMachine` — boolean opt-in for Time Machine;
 - `benchmark` — boolean opt-in for the warm benchmark contract;
-- `live` — `false` or ordered live-camera metadata; all five runnable general-object detectors are live-capable;
+- `live` — `false` or ordered live-camera metadata; seven detectors are currently live-capable;
 - `inspection` — a truthful inspection descriptor, or `false` when no inspection surface is exposed;
 - `race` — comparison group, deterministic order, UI prefix/work-canvas ownership, and timing boundary.
 
@@ -41,7 +41,7 @@ SSD registers its adapter in `src/app.js`; Tiny YOLOv2, YOLOX-Nano, RT-DETR R18,
 
 Model Race presentation is also capability-driven. Each `race` capability declares deterministic order, DOM prefix, work-canvas ownership, timing boundary, card/metric presentation, and architecture summary. `src/models/race.js` generates result cards, benchmark rows, pairwise-overlap cells, unmatched counters, architecture cards, and hidden work canvases from that metadata. Adding another model to the `general-object` comparison group no longer requires adding another static result card or pairwise overlap cell to `index.html`.
 
-Live Camera keeps an independent model selection backed by the same runtime registry. The `live` capability marks eligible detectors and orders the native model picker. Camera start calls the selected adapter's optional `prepare()` hook before requesting camera access, and each frame goes through `adapter.run(..., {live:true})`. The loop processes one frame at a time without queuing. When the user changes models while the camera is running, the frame loop is paused, the in-flight inference is allowed to settle, the previous runtime is released, and the new runtime is prepared while the existing `MediaStream` stays open. If preparation fails, the previous runtime is prepared again and resumed when possible; if rollback also fails, the camera is stopped. Time Machine selection is independent and does not silently change the Live Camera model. Tiny YOLOv2, SSD-MobileNetV1 INT8, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 are enabled. Sustained physical-iOS camera testing is still pending.
+Live Camera keeps an independent model selection backed by the same runtime registry. The `live` capability marks eligible detectors and orders the native model picker. Camera start calls the selected adapter's optional `prepare()` hook before requesting camera access, and each frame goes through `adapter.run(..., {live:true})`. The loop processes one frame at a time without queuing. When the user changes models while the camera is running, the frame loop is paused, the in-flight inference is allowed to settle, the previous runtime is released, and the new runtime is prepared while the existing `MediaStream` stays open. If preparation fails, the previous runtime is prepared again and resumed when possible; if rollback also fails, the camera is stopped. Time Machine selection is independent and does not silently change the Live Camera model. Tiny YOLOv2, SSD-MobileNetV1 INT8, YOLOX-Nano, RT-DETR R18, RT-DETRv2 R18, D-FINE-N, and LW-DETR-tiny are enabled. D-FINE-N and LW-DETR-tiny reuse their existing historical-detector adapters; the selected one is retained while the Live Camera panel is active and the other historical runtimes are released. Sustained physical-iOS camera testing remains pending, especially for the two newly enabled models.
 
 ## Historical experiments in Time Machine
 
