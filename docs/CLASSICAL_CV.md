@@ -38,13 +38,13 @@ Before classification, the isolated OpenCV worker uses Otsu thresholding in both
 
 If no crop candidate is found, the model is not downloaded. If no candidate reaches the display cutoff, the panel says that this model recognizes isolated handwritten digits only and is not a general-object detector. Printed text, signs, serial numbers, and digits inside natural scenes may not match MNIST preprocessing.
 
-The previous `mnist-1.onnx` export was replaced after matching its `Block386:Div(1)` session-creation error to [ONNX Model Zoo issue #439](https://github.com/onnx/models/issues/439). The active opset-12 export is pinned by source commit and SHA-256; [MODEL_SOURCES.md](../MODEL_SOURCES.md) records the exact Git LFS asset, input contract, and both upstream license statements.
+The previous `mnist-1.onnx` export was replaced after matching its `Block386:Div(1)` session-creation error to [ONNX Model Zoo issue #439](https://github.com/onnx/models/issues/439). The active opset-12 export is pinned by source commit and SHA-256; [MODEL_SOURCES.md](MODEL_SOURCES.md) records the exact Git LFS asset, input contract, and both upstream license statements.
 
 ## 2001 · Viola–Jones method family / frontal-face cascade
 
 The worker loads OpenCV.js `4.12.0-release.1` only when a user runs the method. It fetches the exact OpenCV 4.12.0 `haarcascade_frontalface_default.xml` revision, converts RGBA to grayscale, applies histogram equalization, and runs `CascadeClassifier.detectMultiScale` with scale factor 1.1, minNeighbors 3, and a 24×24 minimum window.
 
-The cascade XML is a later OpenCV-distributed asset credited to Rainer Lienhart. It is a runnable representative of the Viola–Jones method family, not the original 2001 paper's trained weights. Exact pin and file-specific terms are documented in [MODEL_SOURCES.md](../MODEL_SOURCES.md) and [THIRD_PARTY_LICENSES.md](../THIRD_PARTY_LICENSES.md).
+The cascade XML is a later OpenCV-distributed asset credited to Rainer Lienhart. It is a runnable representative of the Viola–Jones method family, not the original 2001 paper's trained weights. Exact pin and file-specific terms are documented in [MODEL_SOURCES.md](MODEL_SOURCES.md) and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ## 2005 · HOG + linear SVM pedestrian detector
 
@@ -58,7 +58,7 @@ The selected image is resized directly to 224×224, converted from RGB to BGR, h
 
 This is the BVLC AlexNet-family ONNX Model Zoo checkpoint, not the exact 2012 paper weights. The published Model Zoo validation numbers (54.68% top-1 and 78.23% top-5 for its INT8 graph) are upstream results, not measurements by this site. The current app does not have ImageNet ground truth for arbitrary user images; its displayed values are model scores, not calibrated confidence or accuracy estimates.
 
-The INT8 model file is approximately 58.2 MiB / 61.0 MB and loads only when AlexNet is selected. Its pinned file size and SHA-256 are verified before session initialization. The 1,000 ImageNet synset labels are bundled as a small static mapping and independently checksum-verified. The source code path was confirmed in Intel Neural Compressor commit `36442dbd1354e0d9012b1dcc78de1a9601f69ede`; see [MODEL_SOURCES.md](../MODEL_SOURCES.md) for the exact artifact and source links.
+The INT8 model file is approximately 58.2 MiB / 61.0 MB and loads only when AlexNet is selected. Its pinned file size and SHA-256 are verified before session initialization. The 1,000 ImageNet synset labels are bundled as a small static mapping and independently checksum-verified. The source code path was confirmed in Intel Neural Compressor commit `36442dbd1354e0d9012b1dcc78de1a9601f69ede`; see [MODEL_SOURCES.md](MODEL_SOURCES.md) for the exact artifact and source links.
 
 ## Runtime and memory ownership
 
