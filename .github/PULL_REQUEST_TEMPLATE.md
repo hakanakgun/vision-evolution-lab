@@ -8,7 +8,7 @@
 
 ## Validation
 
-- [ ] `node --check app.js` passes when JavaScript changed.
+- [ ] `node --check src/app.js` passes when JavaScript changed.
 - [ ] No duplicate HTML IDs were introduced.
 - [ ] Relevant image inference flow was tested.
 - [ ] Benchmark changes were checked with the 20-run warm benchmark.
@@ -18,7 +18,7 @@
 ## Models / dependencies / provenance
 
 - [ ] No model, weights, dataset, runtime, or dependency provenance changed.
-- [ ] Or: `MODEL_SOURCES.md` / `THIRD_PARTY_LICENSES.md` was updated with the exact source and license information.
+- [ ] Or: `docs/MODEL_SOURCES.md` / `docs/THIRD_PARTY_LICENSES.md` was updated with the exact source and license information.
 
 ## Privacy
 
