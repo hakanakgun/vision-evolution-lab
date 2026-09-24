@@ -39,6 +39,12 @@ const files={
 for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
+let relativeLoaderUrl='';
+const relativeLoaderWindow={location:{href:'https://hakanakgun.github.io/vision-evolution-lab/'}};
+vm.runInNewContext(files.loader,{window:relativeLoaderWindow,URL,Map,performance,fetch:async url=>{relativeLoaderUrl=String(url);return{ok:true,headers:{get:()=>null},arrayBuffer:async()=>new ArrayBuffer(8)}}},{filename:'model-loader-relative-url-test.js'});
+const relativeLoaderResult=await relativeLoaderWindow.VisionModelLoader.load({id:'relative-model-url-test',sources:[{label:'relative test',url:'assets/models/test.onnx'}]});
+check(relativeLoaderUrl==='https://hakanakgun.github.io/vision-evolution-lab/assets/models/test.onnx'&&relativeLoaderResult.buffer.byteLength===8,'model loader must resolve relative source URLs against the current page origin');
+
 for(const [index,code] of [...files.index.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match=>match[1]).entries()){
   try{new Function(code)}catch(error){fail(`index inline script #${index+1}: ${error.message}`)}
 }
