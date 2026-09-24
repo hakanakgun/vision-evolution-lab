@@ -9,12 +9,12 @@ The current runtime is intentionally client-side so users can compare computer-v
 ## Main modules
 
 - `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints.
-- `models.js` — five general-object Model Race models, two Time Machine-only historical detector models, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
+- `models.js` — five general-object Model Race models, four Time Machine-only detector references, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
 - `model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
 - `model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
 - `app.js` — Time Machine state, SSD-MobileNet runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
-- `historical-detectors.js` — checksum-verified SSD 2016 ONNX and pinned DETR q8 Transformers.js adapters, both limited to Time Machine.
-- `race.js` — Tiny YOLOv2, YOLOX-Nano, and RT-DETR runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
+- `historical-detectors.js` — Time Machine-only adapters for SSD 2016, DETR 2020, LW-DETR-tiny, and D-FINE-N, including their model loading, preprocessing/postprocessing, and release paths.
+- `race.js` — Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
 - `history-experiments.js` — Time Machine historical experiment runners for a pattern-response preview, MNIST digit crops, frontal-face cascade, HOG pedestrian detection, and AlexNet ImageNet classification.
 - `classical-cv-worker.js` — lazy OpenCV.js WASM runtime, frontal-face cascade, HOG pedestrian detection, and explicit OpenCV object cleanup.
 - `scripts/validate.mjs` — dependency-free repository contract checks used locally and by pull-request CI.
@@ -37,7 +37,7 @@ Runtime behavior is registered through `model-runtime.js`. Every runnable adapte
 - optional `prepare()` for pre-run initialization
 - optional `runtimeInfo()`, inspection data, and diagnostic backend choices
 
-SSD registers its adapter in `app.js`; Tiny YOLOv2, YOLOX-Nano, and RT-DETR register theirs in `race.js`. Time Machine and the Model Race benchmark resolve runtimes through this registry instead of selecting implementations with model-name branches.
+SSD registers its adapter in `app.js`; Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 register in `race.js`; SSD 2016, DETR 2020, LW-DETR-tiny, and D-FINE-N register in `historical-detectors.js`. Time Machine and Model Race resolve runtimes through this registry instead of selecting implementations with model-name branches.
 
 Model Race presentation is also capability-driven. Each `race` capability declares deterministic order, DOM prefix, work-canvas ownership, timing boundary, card/metric presentation, and architecture summary. `race.js` generates result cards, benchmark rows, pairwise-overlap cells, unmatched counters, architecture cards, and hidden work canvases from that metadata. Adding another model to the `general-object` comparison group no longer requires adding another static result card or pairwise overlap cell to `index.html`.
 
@@ -85,15 +85,13 @@ This policy is an iOS memory-safety mitigation based on upstream ONNX Runtime ev
 
 RT-DETR R18 is loaded through pinned Transformers.js 4.3.0 using the pinned `onnx-community/rtdetr_r18vd` revision declared in `models.js`.
 
-RT-DETRv2 R18 uses the same pipeline contract with its separate pinned ONNX Community revision. A user-reported iOS/WebKit WebGPU fp16 run succeeded; it remains a research preview while repeat-run, multi-image and broader device validation are pending.
+RT-DETRv2 R18 uses the same pipeline contract with its separate pinned ONNX Community revision. On 2026-09-23, a user-reported iOS 18.7 / Brave-WebKit run completed WebGPU fp16 inference and a 20-run warm benchmark. It remains a research preview while multi-image and broader-device validation are pending.
 
-The production preference is WebGPU fp16 with WASM q8 fallback where supported. Diagnostic runs can explicitly lock the requested device.
+RT-DETR R18 prefers WebGPU fp16 with WASM q8 fallback; RT-DETRv2 R18 prefers WebGPU fp16 with WASM int8 fallback. Diagnostic runs can explicitly lock the requested device.
 
-Both RT-DETR variants have a broader timing boundary than the direct ORT models: the measured pipeline call includes Transformers.js processor/model/postprocessor work. RT-DETRv2's iOS screenshot reports one 1.216 s inference; its 20-run warm benchmark has not yet been recorded.
+Both RT-DETR variants have a broader timing boundary than the direct ORT models: the measured pipeline call includes Transformers.js processor/model/postprocessor work. The 2026-09-23 user-reported RT-DETRv2 iOS 18.7 / Brave-WebKit ×20 run measured p50 178 ms, p90 183 ms, p50 end-to-end 178.5 ms, and CV 3.2% on WebGPU fp16.
 
 ## Runtime ownership
-
-Normal Model Race is sequential:
 
 Normal Model Race and the benchmark both use sequential runtime ownership. Before a race starts, registered race runtimes are released. Each normal race adapter is released after its result has been retained for drawing/comparison; benchmark runs likewise release between models. The shared `model-runtime.js` registry owns group release semantics. This prevents model count from turning into resident-runtime count.
 
@@ -105,13 +103,13 @@ Normal Model Race and the benchmark both use sequential runtime ownership. Befor
 
 Raw ONNX `ArrayBuffer` references are dropped after ORT session construction and the model loader's in-memory entry is evicted. This reduces retained JavaScript references but is not evidence that browser-native, WASM, GPU, or allocator memory has already been reclaimed.
 
-RT-DETR uses an aspect-preserving staging canvas capped at 640 px on the longest side so the race does not retain a second full-resolution source image.
+Both RT-DETR variants use an aspect-preserving staging canvas capped at 640 px on the longest side so the race does not retain a second full-resolution source image.
 
 ## Model selection and UI state
 
 Time Machine owns the active runnable model. Selecting a generation does not navigate to Model Race.
 
-The timeline itself is registry-driven. `models.js` owns chronological entries, the default Time Machine AI model, and a separate `historyExperiments` table. Time Machine opens with YOLOX-Nano as a lightweight fast-inference starting point; Live Camera follows this active selection. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model. `app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
+The timeline itself is registry-driven. `models.js` owns chronological entries, the default Time Machine AI model, and a separate `historyExperiments` table. Time Machine opens with YOLOX-Nano as a lightweight fast-inference starting point. Live Camera also defaults to YOLOX-Nano but keeps an independent selection state. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model. `app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
 
 Inside the Model follows the same active model through the `inspection` capability contract. The contract declares the native input/preprocessing presentation, tensor shape/layout, pipeline explanation, comparison-table values, preview strategy, intermediate-data policy, and result note. `app.js` renders these fields generically.
 
@@ -136,7 +134,7 @@ See [BENCHMARK_METHODOLOGY.md](../BENCHMARK_METHODOLOGY.md) for the stable bench
 
 ## Model assets, cache, and provenance
 
-Raw model binaries are fetched at runtime rather than redistributed in the repository.
+Most model binaries are fetched at runtime. LW-DETR-tiny is the deliberate exception: a verified derived ONNX export is committed as `assets/models/lw-detr-tiny.onnx` and served from the same GitHub Pages origin.
 
 `model-loader.js` distinguishes:
 
