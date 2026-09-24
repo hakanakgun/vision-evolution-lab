@@ -14,7 +14,7 @@ Vision Evolution Lab lets you run and compare object-detection generations witho
 - **Live Camera** runs the currently selected Time Machine detector locally, through its runtime adapter, with rolling latency measurements. It processes frames sequentially without a frame queue.
 - **Early history experiments** run inside Time Machine. Their task-specific outputs stay separate from the general-object models in Model Race.
 - **D-FINE-N** runs as a Time Machine-only COCO reference through a pinned Transformers.js ONNX conversion on WASM fp32. Performance and iOS/WebKit compatibility have not been benchmarked.
-- **LW-DETR-tiny** runs in Time Machine through a reproducibly exported, checksum-pinned ONNX checkpoint on ONNX Runtime Web/WASM fp32. It is excluded from Race, Live Camera, individual benchmarks, and Inside the Model; speed, user-image accuracy, and iOS/WebKit compatibility have not been broadly benchmarked.
+- **LW-DETR-tiny** runs in Time Machine through a reproducibly exported, checksum-pinned ONNX checkpoint on ONNX Runtime Web/WASM fp32. It is excluded from Race, Live Camera, individual benchmarks, and Inside the Model. One user-reported iOS 18.7 / Brave-WebKit Benchmark ×20 completed on 2026-09-24; this does not establish broad device performance or user-image accuracy. See the iOS diagnostics.
 - **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
 Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model.
