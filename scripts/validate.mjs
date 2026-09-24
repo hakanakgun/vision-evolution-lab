@@ -279,6 +279,7 @@ check(metadataRegistry.detr.revision==='8be7ab59ff663484ee9ba2e8d8f267330d5ad03e
 const lw=metadataRegistry.lwdetr,lwEntry=metadataRegistry.timeline.find(item=>item.model==='lwdetr');
 check(lwEntry?.year===2024&&lwEntry.month===6&&lwEntry.kind==='runnable','LW-DETR-tiny June 2024 Time Machine entry is missing');
 check(lw.bytes===38313297&&lw.sha256==='dadac1a335e108a5d1a52c4ac0280cd9b71ea2f7c39400e2d532f3a1f663dea0'&&lw.runtime.wasm.device==='wasm'&&lw.runtime.wasm.dtype==='fp32','LW-DETR artifact integrity metadata or WASM fp32 path changed');
+check(lw.sources?.some(source=>source.url===`assets/models/lw-detr-tiny.onnx?sha256=${lw.sha256}`),'LW-DETR must use the checksum-pinned same-origin Pages asset');
 check(lw.sourceModel==='AnnaZhang/lwdetr_tiny_60e_coco'&&lw.sourceRevision==='4b636b514dcf623f6eafc9e1ab63b8ad5c513925'&&lw.labels.length===91,'LW-DETR checkpoint revision or label map changed');
 check(lw.capabilities.timeMachine&&!lw.capabilities.benchmark&&!lw.capabilities.live&&!lw.capabilities.race&&!lw.capabilities.inspection,'LW-DETR must remain Time Machine only');
 check(files.historicalDetectors.includes("runtimes.register('lwdetr'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("JSON.stringify(logits.dims)!=='[1,100,91]'"),'LW-DETR adapter must use verified WASM and pinned input/output contracts');
