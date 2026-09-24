@@ -9,19 +9,19 @@ The current runtime is intentionally client-side so users can compare computer-v
 ## Main modules
 
 - `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints.
-- `models.js` — five general-object Model Race models, four Time Machine-only detector references, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
-- `model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
-- `model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
-- `app.js` — Time Machine state, SSD-MobileNet runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
-- `historical-detectors.js` — Time Machine-only adapters for SSD 2016, DETR 2020, LW-DETR-tiny, and D-FINE-N, including their model loading, preprocessing/postprocessing, and release paths.
-- `race.js` — Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
-- `history-experiments.js` — Time Machine historical experiment runners for a pattern-response preview, MNIST digit crops, frontal-face cascade, HOG pedestrian detection, and AlexNet ImageNet classification.
-- `classical-cv-worker.js` — lazy OpenCV.js WASM runtime, frontal-face cascade, HOG pedestrian detection, and explicit OpenCV object cleanup.
+- `src/models/models.js` — five general-object Model Race models, four Time Machine-only detector references, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
+- `src/core/model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
+- `src/core/model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
+- `src/app.js` — Time Machine state, SSD-MobileNet runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
+- `src/models/historical-detectors.js` — Time Machine-only adapters for SSD 2016, DETR 2020, LW-DETR-tiny, and D-FINE-N, including their model loading, preprocessing/postprocessing, and release paths.
+- `src/models/race.js` — Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
+- `src/history/history-experiments.js` — Time Machine historical experiment runners for a pattern-response preview, MNIST digit crops, frontal-face cascade, HOG pedestrian detection, and AlexNet ImageNet classification.
+- `src/history/classical-cv-worker.js` — lazy OpenCV.js WASM runtime, frontal-face cascade, HOG pedestrian detection, and explicit OpenCV object cleanup.
 - `scripts/validate.mjs` — dependency-free repository contract checks used locally and by pull-request CI.
 
 ## Model capability and runtime adapter contract
 
-Runnable model metadata lives in `models.js`. Each runnable model declares capabilities independently from its runtime implementation:
+Runnable model metadata lives in `src/models/models.js`. Each runnable model declares capabilities independently from its runtime implementation:
 
 - `timeMachine` — boolean opt-in for Time Machine;
 - `benchmark` — boolean opt-in for the warm benchmark contract;
@@ -29,7 +29,7 @@ Runnable model metadata lives in `models.js`. Each runnable model declares capab
 - `inspection` — a truthful inspection descriptor, or `false` when no inspection surface is exposed;
 - `race` — comparison group, deterministic order, UI prefix/work-canvas ownership, and timing boundary.
 
-Runtime behavior is registered through `model-runtime.js`. Every runnable adapter exposes the same minimum lifecycle:
+Runtime behavior is registered through `src/core/model-runtime.js`. Every runnable adapter exposes the same minimum lifecycle:
 
 - `run(source, canvas, options)`
 - `release()`
@@ -37,9 +37,9 @@ Runtime behavior is registered through `model-runtime.js`. Every runnable adapte
 - optional `prepare()` for pre-run initialization
 - optional `runtimeInfo()`, inspection data, and diagnostic backend choices
 
-SSD registers its adapter in `app.js`; Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 register in `race.js`; SSD 2016, DETR 2020, LW-DETR-tiny, and D-FINE-N register in `historical-detectors.js`. Time Machine and Model Race resolve runtimes through this registry instead of selecting implementations with model-name branches.
+SSD registers its adapter in `src/app.js`; Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 register in `src/models/race.js`; SSD 2016, DETR 2020, LW-DETR-tiny, and D-FINE-N register in `src/models/historical-detectors.js`. Time Machine and Model Race resolve runtimes through this registry instead of selecting implementations with model-name branches.
 
-Model Race presentation is also capability-driven. Each `race` capability declares deterministic order, DOM prefix, work-canvas ownership, timing boundary, card/metric presentation, and architecture summary. `race.js` generates result cards, benchmark rows, pairwise-overlap cells, unmatched counters, architecture cards, and hidden work canvases from that metadata. Adding another model to the `general-object` comparison group no longer requires adding another static result card or pairwise overlap cell to `index.html`.
+Model Race presentation is also capability-driven. Each `race` capability declares deterministic order, DOM prefix, work-canvas ownership, timing boundary, card/metric presentation, and architecture summary. `src/models/race.js` generates result cards, benchmark rows, pairwise-overlap cells, unmatched counters, architecture cards, and hidden work canvases from that metadata. Adding another model to the `general-object` comparison group no longer requires adding another static result card or pairwise overlap cell to `index.html`.
 
 Live Camera keeps an independent model selection backed by the same runtime registry. The `live` capability marks eligible detectors and orders the native model picker. Camera start calls the selected adapter's optional `prepare()` hook before requesting camera access, and each frame goes through `adapter.run(..., {live:true})`. The loop processes one frame at a time without queuing. When the user changes models while the camera is running, the frame loop is paused, the in-flight inference is allowed to settle, the previous runtime is released, and the new runtime is prepared while the existing `MediaStream` stays open. If preparation fails, the previous runtime is prepared again and resumed when possible; if rollback also fails, the camera is stopped. Time Machine selection is independent and does not silently change the Live Camera model. Tiny YOLOv2, SSD-MobileNetV1 INT8, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 are enabled. Sustained physical-iOS camera testing is still pending.
 
@@ -65,7 +65,7 @@ See [CLASSICAL_CV.md](CLASSICAL_CV.md) for method details and provenance.
 
 Direct ORT models no longer use one bundle on every platform.
 
-`runtime-bootstrap.js` selects exactly one ONNX Runtime Web 1.30.0 classic bundle before `models.js`, `app.js`, and `race.js` execute:
+`src/core/runtime-bootstrap.js` selects exactly one ONNX Runtime Web 1.30.0 classic bundle before `src/models/models.js`, `src/app.js`, and `src/models/race.js` execute:
 
 - iOS / iPadOS default: `ort.wasm.min.js` — standard non-JSEP WASM distribution.
 - Other platforms default: `ort.webgpu.min.js` — JSEP/WebGPU-capable distribution so YOLOX can retain its WebGPU-first path.
@@ -83,7 +83,7 @@ This policy is an iOS memory-safety mitigation based on upstream ONNX Runtime ev
 
 ### Transformers.js
 
-RT-DETR R18 is loaded through pinned Transformers.js 4.3.0 using the pinned `onnx-community/rtdetr_r18vd` revision declared in `models.js`.
+RT-DETR R18 is loaded through pinned Transformers.js 4.3.0 using the pinned `onnx-community/rtdetr_r18vd` revision declared in `src/models/models.js`.
 
 RT-DETRv2 R18 uses the same pipeline contract with its separate pinned ONNX Community revision. On 2026-09-23, a user-reported iOS 18.7 / Brave-WebKit run completed WebGPU fp16 inference and a 20-run warm benchmark. It remains a research preview while multi-image and broader-device validation are pending.
 
@@ -93,7 +93,7 @@ Both RT-DETR variants have a broader timing boundary than the direct ORT models:
 
 ## Runtime ownership
 
-Normal Model Race and the benchmark both use sequential runtime ownership. Before a race starts, registered race runtimes are released. Each normal race adapter is released after its result has been retained for drawing/comparison; benchmark runs likewise release between models. The shared `model-runtime.js` registry owns group release semantics. This prevents model count from turning into resident-runtime count.
+Normal Model Race and the benchmark both use sequential runtime ownership. Before a race starts, registered race runtimes are released. Each normal race adapter is released after its result has been retained for drawing/comparison; benchmark runs likewise release between models. The shared `src/core/model-runtime.js` registry owns group release semantics. This prevents model count from turning into resident-runtime count.
 
 1. initialize one model runtime,
 2. execute one unmeasured warm-up,
@@ -109,9 +109,9 @@ Both RT-DETR variants use an aspect-preserving staging canvas capped at 640 px o
 
 Time Machine owns the active runnable model. Selecting a generation does not navigate to Model Race.
 
-The timeline itself is registry-driven. `models.js` owns chronological entries, the default Time Machine AI model, and a separate `historyExperiments` table. Time Machine opens with YOLOX-Nano as a lightweight fast-inference starting point. Live Camera also defaults to YOLOX-Nano but keeps an independent selection state. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model. `app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
+The timeline itself is registry-driven. `src/models/models.js` owns chronological entries, the default Time Machine AI model, and a separate `historyExperiments` table. Time Machine opens with YOLOX-Nano as a lightweight fast-inference starting point. Live Camera also defaults to YOLOX-Nano but keeps an independent selection state. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model. `src/app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
 
-Inside the Model follows the same active model through the `inspection` capability contract. The contract declares the native input/preprocessing presentation, tensor shape/layout, pipeline explanation, comparison-table values, preview strategy, intermediate-data policy, and result note. `app.js` renders these fields generically.
+Inside the Model follows the same active model through the `inspection` capability contract. The contract declares the native input/preprocessing presentation, tensor shape/layout, pipeline explanation, comparison-table values, preview strategy, intermediate-data policy, and result note. `src/app.js` renders these fields generically.
 
 - Tiny YOLOv2 declares preprocessing plus its final-grid contract, but no simulated backbone activations.
 - SSD declares native preprocessing and no deeper exported activations.
@@ -130,13 +130,13 @@ The UI confidence threshold filters retained outputs. Runtime retention must not
 
 Pairwise overlap uses same-class IoU >= 0.35. It is a disagreement/overlap diagnostic, not an accuracy metric.
 
-See [BENCHMARK_METHODOLOGY.md](../BENCHMARK_METHODOLOGY.md) for the stable benchmark contract.
+See [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md) for the stable benchmark contract.
 
 ## Model assets, cache, and provenance
 
 Most model binaries are fetched at runtime. LW-DETR-tiny is the deliberate exception: a verified derived ONNX export is committed as `assets/models/lw-detr-tiny.onnx` and served from the same GitHub Pages origin.
 
-`model-loader.js` distinguishes:
+`src/core/model-loader.js` distinguishes:
 
 - in-memory reuse,
 - application Cache API hit/miss,
@@ -146,7 +146,7 @@ Most model binaries are fetched at runtime. LW-DETR-tiny is the deliberate excep
 
 The browser's HTTP-cache hit/miss is not inferred when the Fetch API does not expose it.
 
-Model implementation license, checkpoint terms, dataset terms, runtime license, pinned revision, provenance, redistribution status, and attribution are documented separately in [MODEL_SOURCES.md](../MODEL_SOURCES.md) and [THIRD_PARTY_LICENSES.md](../THIRD_PARTY_LICENSES.md).
+Model implementation license, checkpoint terms, dataset terms, runtime license, pinned revision, provenance, redistribution status, and attribution are documented separately in [MODEL_SOURCES.md](MODEL_SOURCES.md) and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ## Privacy boundaries
 
