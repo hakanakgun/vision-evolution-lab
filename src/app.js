@@ -510,7 +510,7 @@
     function renderCameraControls(){
       const flip=$('camera-flip'),zoomControls=$('camera-zoom-controls'),out=$('camera-zoom-out'),reset=$('camera-zoom-reset'),inc=$('camera-zoom-in');
       const showFlip=state.live&&state.cameraCanFlip;
-      flip.hidden=!showFlip;flip.disabled=state.liveSwitching;flip.textContent=state.cameraFacing==='environment'?'↻ Front':'↻ Rear';
+      flip.hidden=!showFlip;flip.disabled=state.liveSwitching||state.cameraZoomChanging;flip.textContent=state.cameraFacing==='environment'?'↻ Front':'↻ Rear';
       flip.setAttribute('aria-label',state.cameraFacing==='environment'?'Switch to front camera':'Switch to rear camera');
       const zoom=state.cameraFacing==='environment'?state.cameraZoom:null,showZoom=state.live&&Boolean(zoom);
       zoomControls.hidden=!showZoom;
@@ -536,17 +536,18 @@
       state.cameraZoomChanging=true;renderCameraControls();
       try{
         await track.applyConstraints({zoom:target});
+        if(!state.live||currentCameraTrack()!==track)return;
         let settings={};try{settings=track.getSettings?.()||{}}catch(_){}
         const actual=Number(settings.zoom);
         state.cameraZoom={...zoom,value:quantizeCameraZoom(zoom,Number.isFinite(actual)?actual:target)};
         setLiveStatus(`Rear camera zoom ${formatZoom(state.cameraZoom.value)}. ${currentLiveAdapter()?.model.title||'Model'} remains active.`);
       }catch(error){
-        console.error('Camera zoom change failed',error);setLiveStatus('This camera reported zoom support but rejected the requested zoom value.','error');
+        console.error('Camera zoom change failed',error);if(state.live&&currentCameraTrack()===track)setLiveStatus('This camera reported zoom support but rejected the requested zoom value.','error');
       }finally{state.cameraZoomChanging=false;renderCameraControls()}
     }
     function stepCameraZoom(direction){const zoom=state.cameraZoom;if(!zoom)return;void applyCameraZoom(zoom.value+direction*zoom.tapStep)}
     async function switchCamera(){
-      if(!state.live||state.liveSwitching||!state.cameraCanFlip)return;
+      if(!state.live||state.liveSwitching||state.cameraZoomChanging||!state.cameraCanFlip)return;
       const adapter=currentLiveAdapter(),modelKey=state.liveModel,previousFacing=state.cameraFacing,targetFacing=previousFacing==='environment'?'user':'environment',token=++state.cameraStartToken;
       if(!adapter)return;
       state.liveSwitching=true;state.liveLoopToken++;renderLiveModels();renderCameraControls();setLiveStatus('Switching to '+(targetFacing==='user'?'front':'rear')+' camera…');
