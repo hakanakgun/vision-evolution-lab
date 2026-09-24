@@ -18,6 +18,8 @@ On 2026-09-23, the user reported a five-model Benchmark ×20 and Model Race comp
 
 These are user-reported results from one iPhone session, not a cross-device performance guarantee. The Model Race image run is also a one-image comparison, not a dataset-level accuracy evaluation. The completed tests do not cover sustained Live Camera inference.
 
+On 2026-09-24, the user reported LW-DETR-tiny completing Benchmark ×20 in Brave-WebKit on iOS 18.7 using direct ONNX Runtime Web/WASM fp32: p50 586 ms, p90 595 ms, min–max 546–602 ms, CV 2.2%, p50 end-to-end 594.5 ms, and 15 visible detections at confidence 0.40. This is one user-reported device/session and image; it does not establish detection accuracy, Safari compatibility, sustained stability, or broad iOS support. The screenshot was captured before the input-size label correction; the model tensor is 640×640 even though the aspect-preserved display canvas was shown as 288×640.
+
 ## Physical iOS tests still pending
 
 - Start Live Camera separately with each of the five Time Machine models selected; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.
