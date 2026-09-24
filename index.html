@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.24-v0.14.1">
+<html lang="en" data-build="2026.09.24-v0.14.2">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.24-v0.14.1';
+      const CURRENT_BUILD = '2026.09.24-v0.14.2';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.14.1">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.14.2">
 </head>
 <body>
   <main class="shell">
@@ -217,7 +217,7 @@
             <h3>SSD + MobileNetV1</h3>
             <p>The SSD idea was paired with a lightweight mobile backbone, making practical low-compute detection a central design target.</p>
             <div class="change-line"><b>Browser now</b><span>INT8 · WASM · 9.10 MB</span></div>
-            <div class="links"><a href="#" data-jump="time-machine">Run ↗</a><a href="MODEL_SOURCES.md#ssd-mobilenetv1-12-int8" target="_blank">Provenance ↗</a></div>
+            <div class="links"><a href="#" data-jump="time-machine">Run ↗</a><a href="docs/MODEL_SOURCES.md#ssd-mobilenetv1-12-int8" target="_blank">Provenance ↗</a></div>
           </article>
 
           <article class="card evolution-card runnable-card">
@@ -241,7 +241,7 @@
             <h3>LW-DETR-tiny</h3>
             <p>A lightweight ViT encoder with a shallow DETR decoder. Its pinned COCO checkpoint now runs on the selected Time Machine image through a verified ONNX/WASM workaround.</p>
             <div class="change-line"><b>Browser now</b><span>WASM · fp32 · 38.3 MB · Time Machine only</span></div>
-            <div class="links"><a href="#" data-jump="time-machine">Run ↗</a><a href="https://arxiv.org/abs/2406.03459" target="_blank" rel="noreferrer">Paper ↗</a><a href="https://huggingface.co/AnnaZhang/lwdetr_tiny_60e_coco/tree/4b636b514dcf623f6eafc9e1ab63b8ad5c513925" target="_blank" rel="noreferrer">Pinned base model ↗</a><a href="https://github.com/hakanakgun/vision-evolution-lab/releases/tag/lw-detr-tiny-4604afc2e4a1-1" target="_blank" rel="noreferrer">ONNX release ↗</a><a href="MODEL_SOURCES.md#lw-detr-tiny" target="_blank">Provenance ↗</a></div>
+            <div class="links"><a href="#" data-jump="time-machine">Run ↗</a><a href="https://arxiv.org/abs/2406.03459" target="_blank" rel="noreferrer">Paper ↗</a><a href="https://huggingface.co/AnnaZhang/lwdetr_tiny_60e_coco/tree/4b636b514dcf623f6eafc9e1ab63b8ad5c513925" target="_blank" rel="noreferrer">Pinned base model ↗</a><a href="https://github.com/hakanakgun/vision-evolution-lab/releases/tag/lw-detr-tiny-4604afc2e4a1-1" target="_blank" rel="noreferrer">ONNX release ↗</a><a href="docs/MODEL_SOURCES.md#lw-detr-tiny" target="_blank">Provenance ↗</a></div>
           </article>
 
           <article class="card evolution-card runnable-card">
@@ -249,7 +249,7 @@
             <h3>RT-DETRv2 R18</h3>
             <p>RT-DETRv2 improves the end-to-end DETR training recipe while keeping the R18 real-time model family.</p>
             <div class="change-line"><b>Browser now</b><span>Transformers.js · ONNX · ~20M params</span></div>
-            <div class="links"><a href="#" data-jump="model-race">Run ↗</a><a href="https://huggingface.co/onnx-community/rtdetr_v2_r18vd-ONNX/tree/936f90b6a476c6da4dfe053fc521af55285976ba" target="_blank" rel="noreferrer">Pinned conversion ↗</a><a href="MODEL_SOURCES.md#rt-detrv2-r18" target="_blank">Provenance ↗</a></div>
+            <div class="links"><a href="#" data-jump="model-race">Run ↗</a><a href="https://huggingface.co/onnx-community/rtdetr_v2_r18vd-ONNX/tree/936f90b6a476c6da4dfe053fc521af55285976ba" target="_blank" rel="noreferrer">Pinned conversion ↗</a><a href="docs/MODEL_SOURCES.md#rt-detrv2-r18" target="_blank">Provenance ↗</a></div>
           </article>
 
           <article class="card evolution-card runnable-card">
@@ -257,7 +257,7 @@
             <h3>D-FINE-N</h3>
             <p>D-FINE reframes DETR box regression as fine-grained distribution refinement. The COCO Nano checkpoint now runs in Time Machine through a pinned Transformers.js ONNX conversion.</p>
             <div class="change-line"><b>Browser now</b><span>WASM · fp32 · ~15.3 MB · Time Machine only</span></div>
-            <div class="links"><a href="#" data-jump="time-machine">Run ↗</a><a href="https://arxiv.org/abs/2410.13842" target="_blank" rel="noreferrer">Paper ↗</a><a href="https://huggingface.co/onnx-community/dfine_n_coco-ONNX/tree/e2b9c0f0884ee7c90b79feedfd30054e82ed634c" target="_blank" rel="noreferrer">Pinned ONNX ↗</a><a href="MODEL_SOURCES.md#d-fine-n" target="_blank">Provenance ↗</a></div>
+            <div class="links"><a href="#" data-jump="time-machine">Run ↗</a><a href="https://arxiv.org/abs/2410.13842" target="_blank" rel="noreferrer">Paper ↗</a><a href="https://huggingface.co/onnx-community/dfine_n_coco-ONNX/tree/e2b9c0f0884ee7c90b79feedfd30054e82ed634c" target="_blank" rel="noreferrer">Pinned ONNX ↗</a><a href="docs/MODEL_SOURCES.md#d-fine-n" target="_blank">Provenance ↗</a></div>
           </article>
         </div>
         <div class="note evolution-note">D-FINE-N and LW-DETR-tiny run in Time Machine only. Their browser speed, accuracy on user images, and iOS/WebKit compatibility have not been broadly benchmarked. LW-DETR uses a pinned ONNX/WASM conversion; see the provenance notes.</div>
@@ -374,7 +374,7 @@
           <div class="side-head"><div class="side-title">Native preprocessing</div><div class="tiny">fairness context</div></div>
           <div class="preprocess-table" id="preprocess-table"></div>
           <div class="note">Model Race intentionally uses the same source image and UI confidence threshold, not an artificially identical tensor. Each checkpoint receives its native preprocessing contract.</div>
-          <div class="links inspector-links"><a href="BENCHMARK_METHODOLOGY.md" target="_blank">Benchmark methodology ↗</a><a href="MODEL_CATALOG.md" target="_blank">Model catalog ↗</a></div>
+          <div class="links inspector-links"><a href="docs/BENCHMARK_METHODOLOGY.md" target="_blank">Benchmark methodology ↗</a><a href="docs/MODEL_CATALOG.md" target="_blank">Model catalog ↗</a></div>
         </div>
       </div>
       <div class="card feature-map-card" style="margin-top:18px">
@@ -427,19 +427,19 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.14.1 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.14.2 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="runtime-bootstrap.js?v=0.14.1"></script>
-  <script src="preprocessing.js?v=0.14.1"></script>
-  <script src="models.js?v=0.14.1"></script>
-  <script src="detection-metrics.js?v=0.14.1"></script>
-  <script src="model-runtime.js?v=0.14.1"></script>
-  <script src="model-loader.js?v=0.14.1"></script>
-  <script src="app.js?v=0.14.1"></script>
-  <script src="lwdetr-postprocess.js?v=0.14.1"></script>
-  <script src="historical-detectors.js?v=0.14.1"></script>
-  <script src="race.js?v=0.14.1"></script>
-  <script src="history-experiments.js?v=0.14.1"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.14.2"></script>
+  <script src="src/core/preprocessing.js?v=0.14.2"></script>
+  <script src="src/models/models.js?v=0.14.2"></script>
+  <script src="src/core/detection-metrics.js?v=0.14.2"></script>
+  <script src="src/core/model-runtime.js?v=0.14.2"></script>
+  <script src="src/core/model-loader.js?v=0.14.2"></script>
+  <script src="src/app.js?v=0.14.2"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.14.2"></script>
+  <script src="src/models/historical-detectors.js?v=0.14.2"></script>
+  <script src="src/models/race.js?v=0.14.2"></script>
+  <script src="src/history/history-experiments.js?v=0.14.2"></script>
 </body>
 </html>
