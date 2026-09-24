@@ -141,7 +141,7 @@ If this project later redistributes or modifies YOLOX weights instead of referen
 
 ## Transformer-era model sources
 
-RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS 18.7 / Brave-WebKit WebGPU fp16 inference result and 20-run warm benchmark, but remains a research preview pending broader device/sample validation. D-FINE-N and LW-DETR-tiny run in Time Machine through pinned ONNX browser paths; LW-DETR has one user-reported iOS ×20 timing sample, while broad user-image accuracy and cross-device validation remain outstanding.
+RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS 18.7 / Brave-WebKit WebGPU fp16 inference result and 20-run warm benchmark, but remains a research preview pending broader device/sample validation. D-FINE-N and LW-DETR-tiny run in Time Machine and Live Camera through their existing pinned ONNX browser paths; LW-DETR has one user-reported iOS ×20 timing sample, while sustained camera behavior, broad user-image accuracy, and cross-device validation remain outstanding.
 
 ### RT-DETR R18
 
@@ -204,7 +204,7 @@ The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Comm
 - Verified input/output contract: direct resize to 640×640, RGB NCHW float32, rescale by 1/255 and normalize with ImageNet mean/std; input `pixel_values`, output `logits [1,100,91]` and `pred_boxes [1,100,4]` in normalized cxcywh.
 - Export checks: ONNX checker and ONNX Runtime 1.23.1 CPU parity passed; logits use rtol/atol 3e-4, boxes use rtol 2e-3 and atol 1e-3 to allow the measured GridSample floating-point difference (maximum absolute box-coordinate delta 0.00084257). A separate ONNX Runtime Web 1.30.0/WASM smoke test opened the graph and ran the same input/output contract.
 - Postprocessing follows the checkpoint’s Deformable DETR image-processor contract: sigmoid each query/class logit, take the global top 100 query/class scores, gather normalized cxcywh boxes, then apply the UI’s score filter. It does not use softmax or add NMS. The 91 class names come from the pinned checkpoint’s `id2label` map; displayed scores are not calibrated confidence.
-- App scope: Time Machine only. It is excluded from Model Race, Live Camera, individual benchmark runs, and Inside the Model. Browser speed, user-image detection accuracy, and iOS/WebKit compatibility have not been broadly measured; the paper’s COCO metric is an upstream report, not an evaluation of this browser export.
+- App scope: Time Machine and Live Camera. It remains excluded from Model Race, individual benchmark runs, and Inside the Model. The existing direct ONNX/WASM adapter is reused for camera frames with sequential no-queue inference. Browser speed, sustained camera behavior, user-image detection accuracy, and iOS/WebKit compatibility have not been broadly measured; the paper’s COCO metric is an upstream report, not an evaluation of this browser export.
 
 ### D-FINE-N
 
@@ -213,5 +213,5 @@ The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Comm
 - Browser conversion: `onnx-community/dfine_n_coco-ONNX`, pinned revision `e2b9c0f0884ee7c90b79feedfd30054e82ed634c`; Transformers.js object-detection pipeline; WASM fp32 only.
 - Upstream ONNX file size: about 15.3 MB; SHA-256 `0f684f409618ee8a822410e754a29caa817d1aa16283ce89cad936d0a48e2f35`.
 - The COCO checkpoint is used; Objects365-derived variants are not.
-- Purpose: Time Machine only. It is not in Model Race, Live Camera, individual benchmark runs, or Inside the Model. Browser performance and iOS/WebKit compatibility have not been tested.
+- Purpose: Time Machine and Live Camera. It is not in Model Race, individual benchmark runs, or Inside the Model. The existing Transformers.js WASM fp32 adapter is reused for sequential camera-frame inference. Browser performance and iOS/WebKit Live Camera compatibility have not been tested.
 - Month labels use the first public arXiv paper date where verified; this is not necessarily the date weights or software were released.
