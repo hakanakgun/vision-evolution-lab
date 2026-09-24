@@ -22,8 +22,8 @@ On 2026-09-24, the user reported LW-DETR-tiny completing Benchmark ×20 in Brave
 
 ## Physical iOS tests still pending
 
-- Start Live Camera separately with each of the five Time Machine models selected; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.
-- Stop and restart camera for each model; change the Time Machine selection while the camera runs and confirm the stream stops and the next start uses the newly selected model.
+- In Live Camera, use its model picker to run each of the five live-capable models; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.
+- While the camera is running, switch models from the Live Camera picker and confirm the camera stream stays open, inference resumes on the new model, and a failed switch restores the previous model when possible. Also stop and restart the camera for each model.
 - Run a 2–5 minute camera soak with RT-DETRv2 and YOLOX-Nano, then stop and restart; watch for page reload, frozen frames, thermal slowdown, or an unresponsive stop control.
 - Test camera permission denied/revoked, switching rear/front camera if offered by the UI, rotating the phone, and backgrounding/resuming the tab.
 - Repeat the Live Camera checks in iOS Safari as well as Brave; the benchmark screenshot establishes only the reported Brave/WebKit path.
