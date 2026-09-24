@@ -40,7 +40,7 @@ jobs:
           mkdir -p assets/models
           install -m 0644 "$model" assets/models/lw-detr-tiny.onnx
 
-      - name: Prepare protected-branch PR
+      - name: Prepare protected-branch model branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -52,6 +52,6 @@ jobs:
           git commit -m "chore: publish verified LW-DETR Pages asset"
           branch="bot/lwdetr-pages-${GITHUB_SHA::12}"
           git push --force origin "HEAD:refs/heads/$branch"
-          echo "Verified asset branch: `$branch`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Verified asset branch: $branch" >> "$GITHUB_STEP_SUMMARY"
           echo "Open a PR from this branch to main to publish the model through GitHub Pages." >> "$GITHUB_STEP_SUMMARY"
           echo "https://github.com/$GITHUB_REPOSITORY/compare/main...$branch?expand=1" >> "$GITHUB_STEP_SUMMARY"
