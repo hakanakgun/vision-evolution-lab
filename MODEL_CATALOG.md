@@ -95,9 +95,9 @@ Promoted to runnable because the Apache-2.0 PekingU base model has a Hugging Fac
 
 This Time Machine-only reference uses the pinned USTC COCO D-FINE-N checkpoint and a pinned ONNX Community conversion with a Transformers.js object-detection pipeline. It runs on WASM fp32 and is excluded from Model Race, Live Camera, individual benchmarks, and Inside the Model. The repository declares Apache-2.0; Objects365-derived checkpoint variants are not used. The displayed ~15.3 MB is the upstream artifact size. Browser performance, detection quality on user images, and iOS/WebKit compatibility have not been measured. Exact source revisions and artifact SHA-256 are listed in `MODEL_SOURCES.md`.
 
-### LW-DETR-tiny research-only reference
+### LW-DETR-tiny browser checkpoint
 
-LW-DETR remains in the timeline as a research milestone. Its official ONNX export path is not yet backed by a pinned, verified browser conversion in this project, so the site does not download or execute it.
+LW-DETR-tiny is runnable in Time Machine through the pinned ONNX Runtime Web/WASM fp32 export. The model is served as a static file from the app’s same-origin GitHub Pages site to avoid GitHub Release CORS failures. Its size and SHA-256 are verified before session creation; it remains excluded from Model Race, Live Camera, individual benchmarks, and Inside the Model.
 
 ### RT-DETRv2 R18 research preview
 
