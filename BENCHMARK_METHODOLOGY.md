@@ -9,15 +9,15 @@ The UI reports startup and per-run costs separately.
 ### Startup
 
 - **Model transfer**: wall-clock time to fetch the model asset into page memory. Browser/network cache can materially change this value.
-- **Session init**: ONNX Runtime session creation and graph/backend initialization.
-- Startup values are not included in warm inference percentiles.
+- **Session init**: time spent in ONNX Runtime session creation and graph/backend initialization, after transfer and integrity checks.
+- Startup values are excluded from current-run end-to-end time and warm inference percentiles.
 
 ### Current run
 
 - **Preprocess**: source-image resize / tensor preparation performed by the page.
 - **Inference**: the awaited runtime model execution only.
 - **Postprocess + draw**: output decoding, threshold/NMS where applicable, and overlay drawing.
-- **End-to-end**: preprocess + inference + postprocess/draw for that run.
+- **End-to-end**: preprocess + inference + postprocess/draw for that run. The first run excludes model transfer, integrity verification, and session creation just like later runs.
 
 ## 2. Warm benchmark
 
