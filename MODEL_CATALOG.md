@@ -9,6 +9,8 @@ Status meanings:
 - **Research-only** — reference or candidate shown without downloading or executing its checkpoint.
 - **Candidate** — may become runnable only after browser compatibility plus checkpoint/license provenance are verified.
 
+Timeline month labels use the first public arXiv paper date when one is available. Entries without a verified month retain year-only labels; this is a paper-date convention, not a claim about release or deployment dates.
+
 | Year | Model | Status | Architecture shift | Upstream license/provenance | Browser note |
 | --- | --- | --- | --- | --- | --- |
 | 1980 | Neocognitron-inspired feature response | Runnable historical experiment | oriented local responses + max pooling | Fukushima 1980 paper reference; no original weights used; CMU's separate 1992 simulator is documented as public domain but not redistributed | educational approximation; response map only, no object labels |
@@ -25,9 +27,9 @@ Status meanings:
 | 2020 | DETR · ResNet-50 | Runnable | transformer set prediction | pinned Xenova conversion of Apache-2.0 `facebook/detr-resnet-50`; conversion license is not independently declared | Time Machine only; Transformers.js q8/WASM; 43.1 MB; later COCO 2017 reference checkpoint |
 | 2021 | YOLOX-Nano | Runnable | anchor-free decoupled YOLO head | official Megvii project/release, Apache-2.0 | iOS: standard non-JSEP WASM; other platforms: WebGPU-first JSEP bundle with WASM fallback |
 | 2023 | RT-DETR R18 | Runnable | real-time end-to-end DETR | base `PekingU/rtdetr_r18vd`: Apache-2.0, COCO, 20.2M params; HF Staff ONNX conversion `onnx-community/rtdetr_r18vd` | Transformers.js 4.3.0; native WebGPU fp16 first, WASM q8 fallback; physical iPhone/WebKit WebGPU fp16 inference + 20-run warm benchmark verified 2026-09-21 |
-| 2024 | RT-DETRv2 R18 | Research preview | improved end-to-end DETR training recipe | base `PekingU/rtdetr_v2_r18vd`; Apache-2.0 ONNX Community conversion pinned in `MODEL_SOURCES.md`; COCO | User-reported iOS/WebKit WebGPU fp16 inference; one run only, broader device/sample validation and warm benchmark pending |
-| 2024 | LW-DETR-tiny | Research-only | lightweight ViT encoder + shallow DETR decoder | Hugging Face `xbsu/LW-DETR`: Apache-2.0; official repo points to these weights | ONNX export exists upstream; browser operator/runtime fit not yet validated |
-| 2024 | D-FINE-N | Research-only | fine-grained distribution refinement for DETR box regression | official code Apache-2.0; 4M / 42.8 AP reported upstream | checkpoint/dataset provenance and browser operator fit must be re-verified before runnable integration |
+| 2024-06 | LW-DETR-tiny | Research-only | lightweight ViT encoder + shallow DETR decoder | Hugging Face `xbsu/LW-DETR`: Apache-2.0; official repo points to these weights | No pinned browser-ready ONNX conversion verified; not downloaded or executed |
+| 2024-07 | RT-DETRv2 R18 | Research preview | improved end-to-end DETR training recipe | base `PekingU/rtdetr_v2_r18vd`; Apache-2.0 ONNX Community conversion pinned in `MODEL_SOURCES.md`; COCO | User-reported iOS/WebKit WebGPU fp16 inference; one run only, broader device/sample validation and warm benchmark pending |
+| 2024-10 | D-FINE-N | Runnable historical experiment | fine-grained distribution refinement for DETR box regression | Apache-2.0 COCO checkpoint and pinned ONNX Community Transformers.js conversion; exact revisions in `MODEL_SOURCES.md` | Time Machine only; WASM fp32; ~15.3 MB; performance and iOS/WebKit compatibility not benchmarked |
 
 ## License policy
 
@@ -89,9 +91,13 @@ This Time Machine-only entry uses the pinned Xenova Transformers.js conversion i
 
 Promoted to runnable because the Apache-2.0 PekingU base model has a Hugging Face Staff ONNX conversion explicitly tagged for Transformers.js object detection. The pinned graph exposed the legacy ONNX Runtime Web/JSEP `AveragePool ceil()` limitation during earlier real iPhone inference even after model load succeeded. The same checkpoint revision now runs through Transformers.js 4.3.0/native WebGPU EP with WASM q8 fallback. Physical iPhone/WebKit testing on 2026-09-21 completed real WebGPU fp16 inference and a 20-run warm benchmark without reproducing the legacy failure; this remains device-specific compatibility evidence rather than a universal browser guarantee.
 
-### LW-DETR / D-FINE
+### D-FINE-N · COCO
 
-Remain research-only. They still represent important transformer-era transitions, but this project has not promoted their exact checkpoints to the same browser/provenance confidence level.
+This Time Machine-only reference uses the pinned USTC COCO D-FINE-N checkpoint and a pinned ONNX Community conversion with a Transformers.js object-detection pipeline. It runs on WASM fp32 and is excluded from Model Race, Live Camera, individual benchmarks, and Inside the Model. The repository declares Apache-2.0; Objects365-derived checkpoint variants are not used. The displayed ~15.3 MB is the upstream artifact size. Browser performance, detection quality on user images, and iOS/WebKit compatibility have not been measured. Exact source revisions and artifact SHA-256 are listed in `MODEL_SOURCES.md`.
+
+### LW-DETR-tiny research-only reference
+
+LW-DETR remains in the timeline as a research milestone. Its official ONNX export path is not yet backed by a pinned, verified browser conversion in this project, so the site does not download or execute it.
 
 ### RT-DETRv2 R18 research preview
 

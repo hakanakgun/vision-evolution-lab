@@ -141,7 +141,7 @@ If this project later redistributes or modifies YOLOX weights instead of referen
 
 ## Transformer-era model sources
 
-RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS/WebKit WebGPU fp16 inference result, but remains a research preview pending repeat-run and broader device/sample validation. LW-DETR and D-FINE remain research-only candidates and are not downloaded or executed by the current site.
+RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS/WebKit WebGPU fp16 inference result, but remains a research preview pending repeat-run and broader device/sample validation. D-FINE-N is runnable in Time Machine through a pinned Transformers.js ONNX conversion, but has not been browser-performance or iOS/WebKit tested. LW-DETR remains research-only because a pinned, verified browser conversion is not available in this project.
 
 ### RT-DETR R18
 
@@ -200,11 +200,14 @@ The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Comm
 - Official repository points model downloads to Hugging Face `xbsu/LW-DETR`.
 - Hugging Face repository metadata: Apache-2.0.
 - Upstream reports 12.1M parameters, 11.2 GFLOPs and 42.6 (42.9 reimplementation) COCO mAP for LW-DETR-tiny.
-- Upstream provides ONNX export tooling, but this project has not yet validated its ONNX graph in ONNX Runtime Web.
+- Upstream provides ONNX export tooling, but this project has not verified a pinned Transformers.js-compatible browser conversion. It is not fetched or executed.
 
 ### D-FINE-N
 
-- Official implementation: `Peterande/D-FINE`, Apache-2.0.
-- Upstream reports 4M parameters, 7 GFLOPs and 42.8 COCO AP for D-FINE-N.
-- D-FINE's own documentation warns that Objects365-trained/pretrained checkpoints may have separate dataset terms.
-- The current site therefore treats D-FINE as research-only until the exact checkpoint, pretraining chain, and browser graph are re-verified.
+- Paper: [D-FINE](https://arxiv.org/abs/2410.13842), first public arXiv version October 2024.
+- Base checkpoint: `ustc-community/dfine-nano-coco`, pinned revision `066438d3d8f0da137a37b38fdf3368fd4afceced`; repository metadata declares Apache-2.0 and COCO.
+- Browser conversion: `onnx-community/dfine_n_coco-ONNX`, pinned revision `e2b9c0f0884ee7c90b79feedfd30054e82ed634c`; Transformers.js object-detection pipeline; WASM fp32 only.
+- Upstream ONNX file size: about 15.3 MB; SHA-256 `0f684f409618ee8a822410e754a29caa817d1aa16283ce89cad936d0a48e2f35`.
+- The COCO checkpoint is used; Objects365-derived variants are not.
+- Purpose: Time Machine only. It is not in Model Race, Live Camera, individual benchmark runs, or Inside the Model. Browser performance and iOS/WebKit compatibility have not been tested.
+- Month labels use the first public arXiv paper date where verified; this is not necessarily the date weights or software were released.
