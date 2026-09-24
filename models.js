@@ -6,7 +6,7 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.11.0',
+    version:'0.12.0',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),
@@ -22,12 +22,12 @@
       Object.freeze({year:2016,model:'ssd2016',title:'SSD · ResNet-34 INT8',note:'reference checkpoint · COCO · WASM',kind:'runnable'}),
       Object.freeze({year:2016,model:'tinyyolo',title:'Tiny YOLOv2',note:'tap to run · VOC20',kind:'runnable'}),
       Object.freeze({year:2017,model:'ssd',title:'SSD + MobileNet',note:'tap to run',kind:'runnable'}),
-      Object.freeze({year:2020,model:'detr',title:'DETR · ResNet-50',note:'reference checkpoint · COCO · WASM q8',kind:'runnable',className:'transformer'}),
-      Object.freeze({year:2021,model:'yolox',title:'YOLOX-Nano',note:'tap to run',kind:'runnable'}),
-      Object.freeze({year:2023,model:'rtdetr',title:'RT-DETR R18',note:'tap to run',kind:'runnable',className:'transformer'}),
-      Object.freeze({year:2024,model:'rtdetrv2',title:'RT-DETRv2 R18',note:'research preview · tap to run',kind:'runnable',className:'transformer'}),
-      Object.freeze({year:2024,title:'LW-DETR',note:'research',kind:'research'}),
-      Object.freeze({year:2024,title:'D-FINE',note:'research',kind:'research'})
+      Object.freeze({year:2020,month:5,model:'detr',title:'DETR · ResNet-50',note:'reference checkpoint · COCO · WASM q8',kind:'runnable',className:'transformer'}),
+      Object.freeze({year:2021,month:7,model:'yolox',title:'YOLOX-Nano',note:'tap to run',kind:'runnable'}),
+      Object.freeze({year:2023,month:4,model:'rtdetr',title:'RT-DETR R18',note:'tap to run',kind:'runnable',className:'transformer'}),
+      Object.freeze({year:2024,month:6,title:'LW-DETR-tiny',note:'research · first paper',kind:'research'}),
+      Object.freeze({year:2024,month:7,model:'rtdetrv2',title:'RT-DETRv2 R18',note:'research preview · tap to run',kind:'runnable',className:'transformer'}),
+      Object.freeze({year:2024,month:10,model:'dfine',title:'D-FINE-N',note:'tap to run · Time Machine',kind:'runnable',className:'transformer'})
     ]),
     historyExperiments:Object.freeze({
       'neocognitron':Object.freeze({
@@ -246,6 +246,16 @@
       decoder:'Transformers.js RT-DETRv2 postprocessor',
       ui:Object.freeze({runtime:Object.freeze({initLabel:'Pipeline load',bytesText:'~21.0 MB int8 / 40.8 MB fp16',cacheInitial:'checked at load',managedTransferWhenMissing:true,inferenceBoundaryNote:'Inference is the Transformers.js processor/model/postprocessor call.',benchmarkBoundary:'p50, p90, min–max and run-to-run timing variation from 20 warm Transformers.js pipeline calls; pipeline/model load excluded.'}),subtitle:'COCO object detection · Transformers.js · RT-DETRv2',provenance:'PekingU RT-DETRv2 R18 COCO checkpoint with the pinned Hugging Face ONNX Community conversion. User-reported iOS/WebKit test confirms one WebGPU fp16 inference run; repeat-run benchmark and broader device/sample validation are pending.',links:Object.freeze([Object.freeze({label:'Base model ↗',url:'https://huggingface.co/PekingU/rtdetr_v2_r18vd'}),Object.freeze({label:'Pinned ONNX conversion ↗',url:'https://huggingface.co/onnx-community/rtdetr_v2_r18vd-ONNX/tree/936f90b6a476c6da4dfe053fc521af55285976ba'}),Object.freeze({label:'Official implementation ↗',url:'https://github.com/lyuwenyu/RT-DETR'}),Object.freeze({label:'License/provenance ↗',url:'MODEL_SOURCES.md#rt-detrv2-r18'})])}),
       source:'https://huggingface.co/onnx-community/rtdetr_v2_r18vd-ONNX'
+    }),
+    dfine:Object.freeze({
+      id:'dfine-n-coco-transformersjs',title:'D-FINE-N',year:2024,status:'runnable',family:'D-FINE',task:'object-detection',license:'Apache-2.0',
+      modelId:'onnx-community/dfine_n_coco-ONNX',baseModel:'ustc-community/dfine-nano-coco',baseRevision:'066438d3d8f0da137a37b38fdf3368fd4afceced',revision:'e2b9c0f0884ee7c90b79feedfd30054e82ed634c',parameters:'3.8M',input:640,bytes:15300000,sha256:'0f684f409618ee8a822410e754a29caa817d1aa16283ce89cad936d0a48e2f35',
+      capabilities:Object.freeze({timeMachine:true,benchmark:false,live:false,race:false,inspection:false}),
+      runtime:Object.freeze({wasm:Object.freeze({device:'wasm',dtype:'fp32',modelBytes:15300000})}),
+      preprocessing:Object.freeze({resize:'640×640 processor resize',layout:'NCHW',dtype:'float32',channels:'RGB',rescale:'1/255 then ImageNet mean/std',padding:'none'}),
+      decoder:'Transformers.js D-FINE postprocessor',
+      ui:Object.freeze({runtime:Object.freeze({initLabel:'Pipeline load',bytesText:'~15.3 MB · fp32 ONNX',cacheInitial:'checked at load',managedTransferWhenMissing:true,inferenceBoundaryNote:'Inference is the Transformers.js processor/model/postprocessor call.',benchmarkBoundary:'Time Machine inference only; not enabled for Model Race or Live Camera.'}),subtitle:'COCO object detection · Transformers.js · WASM fp32',provenance:'USTC D-FINE-N COCO checkpoint with the pinned ONNX Community Transformers.js conversion. The upstream COCO model and code declare Apache-2.0. Objects365-derived variants are not used. This model is enabled in Time Machine only; browser performance and iOS/WebKit compatibility have not yet been benchmarked.',links:Object.freeze([Object.freeze({label:'D-FINE paper ↗',url:'https://arxiv.org/abs/2410.13842'}),Object.freeze({label:'Base model ↗',url:'https://huggingface.co/ustc-community/dfine-nano-coco/tree/066438d3d8f0da137a37b38fdf3368fd4afceced'}),Object.freeze({label:'Pinned ONNX conversion ↗',url:'https://huggingface.co/onnx-community/dfine_n_coco-ONNX/tree/e2b9c0f0884ee7c90b79feedfd30054e82ed634c'}),Object.freeze({label:'Official repo ↗',url:'https://github.com/Peterande/D-FINE'}),Object.freeze({label:'License/provenance ↗',url:'MODEL_SOURCES.md#d-fine-n'})])}),
+      source:'https://huggingface.co/onnx-community/dfine_n_coco-ONNX'
     })
   });
 })();

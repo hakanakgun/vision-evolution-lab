@@ -4,7 +4,7 @@
 
 The Time Machine keeps one selected image while users move through its history. The 1980 pattern-response preview, 1998 MNIST digit task, 2001 face cascade, 2005 pedestrian detector, and 2012 AlexNet classifier run on that same image, each with its native task and output. Historical experiments do not change the selected general-object AI model or enter Model Race.
 
-The year shown is the peer-reviewed publication year where available. YOLOv1 is dated 2016 for its CVPR paper; its arXiv preprint appeared in 2015. These entries are a selected lineage, not a claim that computer vision followed a single path.
+For older milestones, the timeline shows the year only. Recent model entries show the first public arXiv paper month where verified; this is not necessarily the model-weight or software release date. YOLOv1 is dated 2016 for its CVPR paper; its arXiv preprint appeared in 2015. These entries are a selected lineage, not a claim that computer vision followed a single path.
 
 ## Milestones
 
@@ -20,6 +20,11 @@ The year shown is the peer-reviewed publication year where available. YOLOv1 is 
 | 2016 | YOLOv1 | Unified grid-based, single-stage object detection. | History only | The timeline reference is paper-only; the runnable 2016 model in this app is Tiny YOLOv2. |
 | 2016 | SSD · ResNet-34 INT8 | Single-shot multi-scale object detection. | Runnable · COCO reference checkpoint | Later ONNX Model Zoo COCO 2017 ResNet-34 export, not the original paper weights; Time Machine only. |
 | 2020 | DETR · ResNet-50 | Transformer-based set prediction for object detection. | Runnable · q8/WASM reference checkpoint | Pinned Xenova conversion of the Apache-2.0 Facebook base, not asserted to be the exact paper weights; Time Machine only. |
+| 2021-07 | YOLOX-Nano | Anchor-free detector with a decoupled head. | Runnable | Month follows the first public arXiv paper; not a release date. |
+| 2023-04 | RT-DETR R18 | Real-time end-to-end DETR detector. | Runnable | Month follows the first public arXiv paper. |
+| 2024-06 | LW-DETR-tiny | Lightweight ViT encoder and shallow DETR decoder. | Research only | No pinned browser conversion; not run by the app. |
+| 2024-07 | RT-DETRv2 R18 | Revised real-time DETR training recipe. | Research preview · runnable | Month follows the first public arXiv paper. |
+| 2024-10 | D-FINE-N | Fine-grained distribution refinement for DETR box regression. | Runnable · Time Machine only | Pinned COCO ONNX conversion; WASM fp32; browser speed and iOS compatibility not tested. |
 
 ## Primary papers
 

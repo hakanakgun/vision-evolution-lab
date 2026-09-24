@@ -98,7 +98,7 @@ The original Vision Evolution Lab source code is licensed under the repository's
 
 - Project: Hugging Face Transformers.js
 - Browser import: jsDelivr, pinned to `@huggingface/transformers@4.3.0`
-- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for DETR, RT-DETR R18 and RT-DETRv2 R18. v4 uses the newer native WebGPU runtime/EP; WASM is used by the historical DETR reference and remains available as fallback for RT-DETR.
+- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for DETR, RT-DETR R18, RT-DETRv2 R18 and D-FINE-N. v4 uses the newer native WebGPU runtime/EP; WASM is used by historical references and remains available as fallback.
 - Upstream package/project terms remain their own.
 
 ## SSD 2016 browser checkpoint
@@ -123,6 +123,13 @@ The original Vision Evolution Lab source code is licensed under the repository's
 - Browser conversion: `onnx-community/rtdetr_r18vd`
 - Pinned conversion revision: `ec641af14c7cc8f93cd641a1458f498abbbbb533`
 - The conversion is referenced from Hugging Face at runtime and is not bundled in this repository.
+
+## D-FINE-N COCO browser conversion
+
+- Base checkpoint: `ustc-community/dfine-nano-coco`, pinned revision `066438d3d8f0da137a37b38fdf3368fd4afceced`; repository metadata declares Apache-2.0 and COCO.
+- Browser conversion: `onnx-community/dfine_n_coco-ONNX`, pinned revision `e2b9c0f0884ee7c90b79feedfd30054e82ed634c`; upstream provides a Transformers.js object-detection pipeline conversion.
+- Runtime fetch only; WASM fp32; approximate upstream size 15.3 MB; SHA-256 `0f684f409618ee8a822410e754a29caa817d1aa16283ce89cad936d0a48e2f35`.
+- The app selects the COCO checkpoint and does not use Objects365-derived variants. This attribution records upstream repository declarations; it is not independent legal advice. Browser performance and iOS/WebKit have not been tested.
 
 ## RT-DETRv2 R18 browser conversion
 

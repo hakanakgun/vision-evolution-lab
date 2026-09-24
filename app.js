@@ -74,16 +74,18 @@
     function timeMachineEntries(){
       return (REGISTRY.timeline||[]).filter(entry=>!entry.model||(REGISTRY[entry.model]&&RuntimeRegistry.capabilityEnabled(REGISTRY[entry.model],'timeMachine')));
     }
+    function timelineDate(entry){const month=Number(entry?.month),names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return Number.isInteger(month)&&month>=1&&month<=12?`${names[month-1]} ${entry.year}`:String(entry?.year??'');}
+    function timelineModelEntry(key){return (REGISTRY.timeline||[]).find(entry=>entry.model===key)||REGISTRY[key]||{};}
     function renderTimeline(){
       const track=$('timeline-track'),entries=timeMachineEntries();if(!track)return;
       track.replaceChildren();
       for(const entry of entries){
         const runnable=Boolean(entry.model),experiment=Boolean(entry.experiment),jump=Boolean(entry.jump),item=document.createElement(runnable||experiment||jump?'button':'div');
         item.className=['milestone',runnable?'runnable runnable-launch':'',experiment?'historical-experiment':'',jump?'module-launch':'',entry.kind==='research'?'research-only':'',entry.kind==='historical'?'historical-only':'',entry.className||'',runnable&&!state.historyExperiment&&entry.model===state.activeModel?'active':'',experiment&&entry.experiment===state.historyExperiment?'active':''].filter(Boolean).join(' ');
-        if(runnable){item.type='button';item.dataset.runnableModel=entry.model;item.setAttribute('aria-label','Select '+entry.title+' '+entry.year);item.setAttribute('aria-pressed',String(!state.historyExperiment&&entry.model===state.activeModel))}
+        if(runnable){item.type='button';item.dataset.runnableModel=entry.model;item.setAttribute('aria-label','Select '+entry.title+' '+timelineDate(entry));item.setAttribute('aria-pressed',String(!state.historyExperiment&&entry.model===state.activeModel))}
         else if(experiment){item.type='button';item.dataset.historyExperiment=entry.experiment;item.setAttribute('aria-label','Run '+entry.title+' on the current Time Machine image');item.setAttribute('aria-pressed',String(entry.experiment===state.historyExperiment))}
         else if(jump){item.type='button';item.dataset.jump=entry.jump;item.setAttribute('aria-label','Open '+entry.title)}
-        const dot=document.createElement('div');dot.className='dot';const year=document.createElement('div');year.className='year';year.textContent=String(entry.year);
+        const dot=document.createElement('div');dot.className='dot';const year=document.createElement('div');year.className='year';year.textContent=timelineDate(entry);
         const strong=document.createElement('strong');strong.textContent=entry.title;const note=document.createElement('span');note.textContent=entry.note||'';
         item.append(dot,year,strong,note);track.appendChild(item);
       }
@@ -119,7 +121,7 @@
       $('history-run').disabled=!state.image||state.running||state.benchmarking||!active;
       document.querySelectorAll('[data-runnable-model]').forEach(button=>{const selected=!active&&button.dataset.runnableModel===state.activeModel;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});
       document.querySelectorAll('[data-history-experiment]').forEach(button=>{const selected=button.dataset.historyExperiment===state.historyExperiment;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});
-      $('timeline-selection').textContent=active&&spec?spec.year+' · '+spec.title:activeModel().year+' · '+activeModel().title;
+      $('timeline-selection').textContent=active&&spec?spec.year+' · '+spec.title:timelineDate(timelineModelEntry(state.activeModel))+' · '+activeModel().title;
       if(active&&spec){
         $('history-experiment-title').textContent=spec.year+' · '+spec.title;
         $('history-experiment-description').textContent=spec.description||'This historical method runs on the selected Time Machine image.';

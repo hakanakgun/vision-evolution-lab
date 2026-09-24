@@ -151,11 +151,12 @@
     const errors=[],timeline=registry.timeline,defaults=registry.defaults||{};
     if(!Array.isArray(timeline)||!timeline.length)errors.push('timeline missing');
     else{
-      const seenModels=new Set();let previousYear=-Infinity;
+      const seenModels=new Set();let previousYear=-Infinity,previousMonth=0;
       for(const entry of timeline){
         if(!Number.isFinite(entry?.year)||!entry?.title)errors.push('timeline entry incomplete');
         if(Number.isFinite(entry?.year)&&entry.year<previousYear)errors.push('timeline must be chronological');
-        if(Number.isFinite(entry?.year))previousYear=entry.year;
+        if(entry?.month!==undefined&&(!Number.isInteger(entry.month)||entry.month<1||entry.month>12))errors.push('timeline month must be an integer from 1 to 12');
+        if(Number.isFinite(entry?.year)){if(entry.year===previousYear&&Number.isInteger(entry.month)&&Number.isInteger(previousMonth)&&entry.month<previousMonth)errors.push('timeline months must be chronological within a year');if(entry.year!==previousYear)previousMonth=0;previousYear=entry.year;if(Number.isInteger(entry.month))previousMonth=entry.month;}
         if(entry?.model){
           if(seenModels.has(entry.model))errors.push(`timeline model duplicated: ${entry.model}`);else seenModels.add(entry.model);
           if(!modelKeys.includes(entry.model))errors.push(`timeline model is not runnable: ${entry.model}`);
