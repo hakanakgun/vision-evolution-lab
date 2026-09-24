@@ -11,13 +11,13 @@ Vision Evolution Lab lets you run and compare object-detection generations witho
 - **Vision Time Machine** opens with YOLOX-Nano as a lightweight fast-inference starting point; all runnable years remain selectable, including SSD 2016 and DETR 2020 reference checkpoints. One image stays selected while early task-specific experiments show pattern responses, handwritten digits, faces, or pedestrians.
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
-- **Live Camera** runs the currently selected Time Machine detector locally, through its runtime adapter, with rolling latency measurements. It processes frames sequentially without a frame queue.
+- **Live Camera** has its own model picker for the five live-capable detectors. It runs the selected detector locally with rolling latency measurements, processes frames sequentially without a frame queue, and can switch models while keeping the camera stream open.
 - **Early history experiments** run inside Time Machine. Their task-specific outputs stay separate from the general-object models in Model Race.
 - **D-FINE-N** runs as a Time Machine-only COCO reference through a pinned Transformers.js ONNX conversion on WASM fp32. Performance and iOS/WebKit compatibility have not been benchmarked.
 - **LW-DETR-tiny** runs in Time Machine through a reproducibly exported, checksum-pinned ONNX checkpoint on ONNX Runtime Web/WASM fp32. It is excluded from Race, Live Camera, individual benchmarks, and Inside the Model. One user-reported iOS 18.7 / Brave-WebKit Benchmark ×20 completed on 2026-09-24; this does not establish broad device performance or user-image accuracy. See the iOS diagnostics.
 - **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
-Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model.
+Selecting a model in Time Machine stays in Time Machine. Inside the Model follows the same active model. Live Camera keeps an independent model selection, so changing either view does not silently change the other.
 
 ## Runnable generations
 

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.24-v0.13.4">
+<html lang="en" data-build="2026.09.24-v0.14.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.24-v0.13.4';
+      const CURRENT_BUILD = '2026.09.24-v0.14.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=0.13.4">
+  <link rel="stylesheet" href="styles.css?v=0.14.0">
 </head>
 <body>
   <main class="shell">
@@ -391,7 +391,12 @@
     <section class="panel" id="live-camera" role="tabpanel">
       <div class="grid">
         <section class="card stage-card camera-wrap">
-          <div class="stage-head"><div><div class="stage-title">Live local detection</div><div class="tiny" id="live-model-name">SSD-MobileNetV1 INT8 · Sequential inference · no frame queue</div></div><div class="tiny" id="live-size">Camera off</div></div>
+          <div class="stage-head"><div><div class="stage-title">Live local detection</div><div class="tiny" id="live-model-name">YOLOX-Nano · Sequential inference · no frame queue</div></div><div class="tiny" id="live-size">Camera off</div></div>
+          <div class="live-model-picker" id="live-model-controls">
+            <label for="live-model-select">Model</label>
+            <select class="live-model-select" id="live-model-select" aria-label="Live Camera model"></select>
+            <span class="tiny live-model-status" id="live-model-status" aria-live="polite">Choose a model, then start the camera.</span>
+          </div>
           <div class="stage">
             <video id="camera-video" playsinline muted></video>
             <canvas id="camera-canvas" hidden></canvas>
@@ -401,7 +406,6 @@
           <div class="controls">
             <button class="btn" id="camera-start">Start camera</button>
             <button class="btn secondary" id="camera-stop" disabled>Stop</button>
-            <div class="live-model-controls" id="live-model-controls" hidden></div>
             <span class="control-spacer"></span>
             <span class="tiny">Confidence uses the Time Machine setting.</span>
           </div>
@@ -423,19 +427,19 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.13.4 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.14.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="runtime-bootstrap.js?v=0.13.4"></script>
-  <script src="preprocessing.js?v=0.13.4"></script>
-  <script src="models.js?v=0.13.4"></script>
-  <script src="detection-metrics.js?v=0.13.4"></script>
-  <script src="model-runtime.js?v=0.13.4"></script>
-  <script src="model-loader.js?v=0.13.4"></script>
-  <script src="app.js?v=0.13.4"></script>
-  <script src="lwdetr-postprocess.js?v=0.13.4"></script>
-  <script src="historical-detectors.js?v=0.13.4"></script>
-  <script src="race.js?v=0.13.4"></script>
-  <script src="history-experiments.js?v=0.13.4"></script>
+  <script src="runtime-bootstrap.js?v=0.14.0"></script>
+  <script src="preprocessing.js?v=0.14.0"></script>
+  <script src="models.js?v=0.14.0"></script>
+  <script src="detection-metrics.js?v=0.14.0"></script>
+  <script src="model-runtime.js?v=0.14.0"></script>
+  <script src="model-loader.js?v=0.14.0"></script>
+  <script src="app.js?v=0.14.0"></script>
+  <script src="lwdetr-postprocess.js?v=0.14.0"></script>
+  <script src="historical-detectors.js?v=0.14.0"></script>
+  <script src="race.js?v=0.14.0"></script>
+  <script src="history-experiments.js?v=0.14.0"></script>
 </body>
 </html>
