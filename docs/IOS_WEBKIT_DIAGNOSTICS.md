@@ -20,6 +20,8 @@ These are user-reported results from one iPhone session, not a cross-device perf
 
 On 2026-09-24, after the v0.13.4 telemetry/input-label correction, the user reported LW-DETR-tiny completing Benchmark ×20 in Brave-WebKit on iOS 18.7 using direct ONNX Runtime Web/WASM fp32: p50 612 ms, p90 616 ms, min–max 590–621 ms, CV 1.1%, p50 end-to-end 617 ms, and 15 visible detections at confidence 0.40. The run used the standard `ort.wasm.min.js` path with WASM SIMD, one thread, and no cross-origin isolation; WebGPU was available but LW-DETR did not use it. The model input was 640×640; the model transfer was 12 ms and ONNX session creation 412 ms, with the model shown as cached. This is one user-reported device/session and image; it does not establish detection accuracy, Safari compatibility, sustained stability, or broad iOS support.
 
+On 2026-09-24, the user verified the v0.15.1 front/rear camera control on a physical iPhone in Brave-WebKit: the front camera opened successfully and Live Camera resumed. The same rear-camera session exposed browser zoom controls with an observed WebKit-reported lower bound around 0.53× and a maximum of 5×; the initial v0.15.1 UI produced intermediate values such as 1.48× because it divided the reported range into 20 equal steps. v0.15.2 replaces that UI stepping policy with clean capability-bounded levels; that new stepping behavior still requires physical-device confirmation.
+
 ## Physical iOS tests still pending
 
 - In Live Camera, use its model picker to run each of the seven live-capable models, including newly enabled D-FINE-N and LW-DETR-tiny; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.
