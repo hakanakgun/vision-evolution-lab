@@ -482,7 +482,7 @@
     function quantizeCameraZoom(range,value){
       let next=Math.max(range.min,Math.min(range.max,value));
       if(range.step>0)next=range.min+Math.round((next-range.min)/range.step)*range.step;
-      return Number(Math.max(range.min,Math.min(range.max,next)).toFixed(4));
+      return Math.max(range.min,Math.min(range.max,next));
     }
     function readCameraZoom(track){
       if(state.cameraFacing!=='environment'||typeof track?.getCapabilities!=='function')return null;
