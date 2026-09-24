@@ -10,7 +10,9 @@ on:
       - models.js
 
 permissions:
+  actions: write
   contents: write
+  pull-requests: write
 
 concurrency:
   group: lwdetr-pages-model-main
@@ -52,4 +54,16 @@ jobs:
             exit 0
           fi
           git commit -m "chore: publish verified LW-DETR Pages asset"
-          git push origin HEAD:main
+          branch="bot/lwdetr-pages-${GITHUB_SHA::12}"
+          git push --force origin "HEAD:refs/heads/$branch"
+          pr_url="$(gh pr view "$branch" --repo "$GITHUB_REPOSITORY" --json url --jq '.url' 2>/dev/null || true)"
+          if [[ -z "$pr_url" ]]; then
+            pr_url="$(gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --base main \
+              --head "$branch" \
+              --title "Publish verified LW-DETR Pages asset" \
+              --body "Adds the 38.3 MB LW-DETR-tiny ONNX file after matching the pinned size and SHA-256. Merge to publish the same-origin Pages asset required by v0.13.1.")"
+          fi
+          echo "Asset PR: $pr_url" >> "$GITHUB_STEP_SUMMARY"
+          gh workflow run validate.yml --repo "$GITHUB_REPOSITORY" --ref "$branch"
