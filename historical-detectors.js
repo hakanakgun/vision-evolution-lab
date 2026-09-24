@@ -37,7 +37,7 @@
     return{run,prepare:load,release,backend:()=> 'WASM fp32',runtimeInfo:()=>({backend:'wasm',dtype:'fp32',initMs:loadMs,bytes:model.runtime.wasm.modelBytes,cacheState:pipe?'pipeline ready':'pipeline released',source:formatSource(model.revision)}),handlesMainUi:false};
   }
   function createLwdetrAdapter(){
-    const model=registry.lwdetr;let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',inFlight=Promise.resolve(),loading=null;
+    const model=registry.lwdetr,sourceLabel=model.sources?.[0]?.label||'Pinned ONNX asset',runtimeSource=`${sourceLabel} · ${formatSource(model.sourceRevision)}`;let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',inFlight=Promise.resolve(),loading=null;
     async function prepare(){
       if(session)return session;if(loading)return loading;
       loading=(async()=>{const started=performance.now(),asset=await loader.load(model,{onState:value=>{cacheState=value.state;if(value.source)cacheState+=` · ${value.source}`},onProgress:value=>api.reportRuntimeEvent('lwdetr',{type:'progress',info:value})});downloadMs=asset.downloadMs;
@@ -46,7 +46,7 @@
         if(hash!==model.sha256){loader.evictMemory(model);throw new Error('Pinned LW-DETR checkpoint SHA-256 verification failed.')}
         const active=await ort.InferenceSession.create(asset.buffer,{executionProviders:['wasm'],graphOptimizationLevel:'all'});
         if(!active.inputNames.includes('pixel_values')||!active.outputNames.includes('logits')||!active.outputNames.includes('pred_boxes')){await active.release();loader.evictMemory(model);throw new Error('Pinned LW-DETR ONNX input/output contract changed.')}
-        session=active;initMs=performance.now()-started;cacheState=asset.cacheState;api.reportRuntimeEvent('lwdetr',{type:'runtime',backend:'WASM',dtype:'fp32',downloadMs,initMs,bytes:model.bytes,cacheState,source:formatSource(model.sourceRevision)});return session;
+        session=active;initMs=performance.now()-started;cacheState=asset.cacheState;api.reportRuntimeEvent('lwdetr',{type:'runtime',backend:'WASM',dtype:'fp32',downloadMs,initMs,bytes:model.bytes,cacheState,source:runtimeSource});return session;
       })().finally(()=>{loading=null});return loading;
     }
     async function infer(source,canvas){
@@ -62,7 +62,7 @@
     }
     function run(source,canvas){const promise=inFlight.catch(()=>{}).then(()=>infer(source,canvas));inFlight=promise;return promise}
     async function release(){await inFlight.catch(()=>{});if(loading)await loading.catch(()=>{});const old=session;session=null;if(old)try{await old.release()}catch(error){console.warn('LW-DETR runtime release failed',error)}loader.evictMemory(model);cacheState='runtime released'}
-    return{run,prepare,release,backend:()=> 'WASM fp32',runtimeInfo:()=>({backend:'wasm',dtype:'fp32',initMs,downloadMs,bytes:model.bytes,cacheState,source:formatSource(model.sourceRevision)}),handlesMainUi:false};
+    return{run,prepare,release,backend:()=> 'WASM fp32',runtimeInfo:()=>({backend:'wasm',dtype:'fp32',initMs,downloadMs,bytes:model.bytes,cacheState,source:runtimeSource}),handlesMainUi:false};
   }
   runtimes.register('lwdetr',createLwdetrAdapter());
   runtimes.register('ssd2016',createSsdAdapter());
