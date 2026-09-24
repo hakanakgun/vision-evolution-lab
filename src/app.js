@@ -535,7 +535,7 @@
       const target=quantizeCameraZoom(zoom,value);if(Math.abs(target-zoom.value)<1e-6)return;
       state.cameraZoomChanging=true;renderCameraControls();
       try{
-        await track.applyConstraints({advanced:[{zoom:target}]});
+        await track.applyConstraints({zoom:target});
         let settings={};try{settings=track.getSettings?.()||{}}catch(_){}
         const actual=Number(settings.zoom);
         state.cameraZoom={...zoom,value:quantizeCameraZoom(zoom,Number.isFinite(actual)?actual:target)};
