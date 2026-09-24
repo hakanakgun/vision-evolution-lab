@@ -70,7 +70,7 @@ The INT8 model file is approximately 58.2 MiB / 61.0 MB and loads only when Alex
 - Historical experiments release registered AI adapters before running. The experiment does not change Time Machine's selected general-object model.
 - Leaving Time Machine, **Release historical runtime**, or page exit terminates the worker and releases any MNIST session. Returning to Time Machine keeps the displayed result but a new run initializes the runtime again.
 
-This separation keeps task-specific historical adapters outside Model Race while the general-object adapter set grows. Model Race still uses 1 warm-up + 20 measured runs, Live Camera remains SSD-only, and the existing ONNX/WebGPU/WASM policies stay model-specific.
+This separation keeps task-specific historical adapters outside Model Race while the general-object adapter set grows. Model Race still uses 1 warm-up + 20 measured runs. Live Camera exposes only the five models with a `live` capability through its own model picker, while the existing ONNX/WebGPU/WASM policies stay model-specific.
 
 ## Future multimodal experiments
 
