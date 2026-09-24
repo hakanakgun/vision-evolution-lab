@@ -27,9 +27,9 @@ Timeline month labels use the first public arXiv paper date when one is availabl
 | 2020 | DETR · ResNet-50 | Runnable | transformer set prediction | pinned Xenova conversion of Apache-2.0 `facebook/detr-resnet-50`; conversion license is not independently declared | Time Machine only; Transformers.js q8/WASM; 43.1 MB; later COCO 2017 reference checkpoint |
 | 2021 | YOLOX-Nano | Runnable | anchor-free decoupled YOLO head | official Megvii project/release, Apache-2.0 | iOS: standard non-JSEP WASM; other platforms: WebGPU-first JSEP bundle with WASM fallback |
 | 2023 | RT-DETR R18 | Runnable | real-time end-to-end DETR | base `PekingU/rtdetr_r18vd`: Apache-2.0, COCO, 20.2M params; HF Staff ONNX conversion `onnx-community/rtdetr_r18vd` | Transformers.js 4.3.0; native WebGPU fp16 first, WASM q8 fallback; physical iPhone/WebKit WebGPU fp16 inference + 20-run warm benchmark verified 2026-09-21 |
-| 2024-06 | LW-DETR-tiny | Runnable historical experiment | lightweight ViT encoder + shallow DETR decoder | Pinned `AnnaZhang/lwdetr_tiny_60e_coco` checkpoint metadata declares Apache-2.0; derived browser export and revisions in `MODEL_SOURCES.md` | Time Machine only · direct ONNX Runtime Web/WASM fp32 · ~38.3 MB; performance, user-image accuracy, and iOS/WebKit compatibility not broadly benchmarked |
-| 2024-07 | RT-DETRv2 R18 | Research preview | improved end-to-end DETR training recipe | base `PekingU/rtdetr_v2_r18vd`; Apache-2.0 ONNX Community conversion pinned in `MODEL_SOURCES.md`; COCO | User-reported iOS/WebKit WebGPU fp16 inference; one run only, broader device/sample validation and warm benchmark pending |
-| 2024-10 | D-FINE-N | Runnable historical experiment | fine-grained distribution refinement for DETR box regression | Apache-2.0 COCO checkpoint and pinned ONNX Community Transformers.js conversion; exact revisions in `MODEL_SOURCES.md` | Time Machine only; WASM fp32; ~15.3 MB; performance and iOS/WebKit compatibility not benchmarked |
+| 2024-06 | LW-DETR-tiny | Runnable | lightweight ViT encoder + shallow DETR decoder | Pinned `AnnaZhang/lwdetr_tiny_60e_coco` checkpoint metadata declares Apache-2.0; derived browser export and revisions in `MODEL_SOURCES.md` | Time Machine only · direct ONNX Runtime Web/WASM fp32 · ~38.3 MB; one user-reported iOS 18.7 / Brave-WebKit ×20 benchmark completed 2026-09-24; broader compatibility and accuracy remain unverified |
+| 2024-07 | RT-DETRv2 R18 | Research preview | improved end-to-end DETR training recipe | base `PekingU/rtdetr_v2_r18vd`; Apache-2.0 ONNX Community conversion pinned in `MODEL_SOURCES.md`; COCO | User-reported iOS 18.7 / Brave-WebKit WebGPU fp16 inference plus ×20 warm benchmark on 2026-09-23; broader device/sample validation remains pending |
+| 2024-10 | D-FINE-N | Runnable | fine-grained distribution refinement for DETR box regression | Apache-2.0 COCO checkpoint and pinned ONNX Community Transformers.js conversion; exact revisions in `MODEL_SOURCES.md` | Time Machine only; WASM fp32; ~15.3 MB; performance and iOS/WebKit compatibility not benchmarked |
 
 ## License policy
 
@@ -44,7 +44,7 @@ Before a candidate becomes runnable, verify:
 5. browser runtime compatibility;
 6. model input/output and postprocessing contract.
 
-The current app avoids redistributing model binaries: runnable models are fetched from pinned or official upstream sources.
+Most runnable checkpoints are fetched from pinned or official upstream sources. LW-DETR-tiny is the deliberate redistribution exception: its verified derived ONNX export is committed under `assets/models/lw-detr-tiny.onnx` for same-origin GitHub Pages delivery after pinned-release size/SHA-256 verification.
 
 ## Early task-specific experiments in Time Machine
 
@@ -97,8 +97,8 @@ This Time Machine-only reference uses the pinned USTC COCO D-FINE-N checkpoint a
 
 ### LW-DETR-tiny browser checkpoint
 
-LW-DETR-tiny is runnable in Time Machine through the pinned ONNX Runtime Web/WASM fp32 export. The model is served as a static file from the app’s same-origin GitHub Pages site to avoid GitHub Release CORS failures. Its size and SHA-256 are verified before session creation; it remains excluded from Model Race, Live Camera, individual benchmarks, and Inside the Model.
+LW-DETR-tiny is runnable in Time Machine through the pinned ONNX Runtime Web/WASM fp32 export. The verified derived ONNX file is committed as `assets/models/lw-detr-tiny.onnx` and served from the app’s same-origin GitHub Pages site to avoid GitHub Release CORS failures. Its size and SHA-256 are verified before session creation; it remains excluded from Model Race, Live Camera, individual Model Race benchmarks, and Inside the Model. A user-reported iOS 18.7 / Brave-WebKit ×20 run on 2026-09-24 measured p50 612 ms and p90 616 ms on WASM fp32; that does not establish broad compatibility or accuracy.
 
 ### RT-DETRv2 R18 research preview
 
-This is the first runnable research-preview detector. It uses an ONNX Community conversion explicitly tagged for Transformers.js and the existing Transformers.js object-detection pipeline, avoiding custom output decoding. Its runtime adapter supports WebGPU fp16 with WASM int8 fallback. A user-reported iOS/WebKit screenshot confirms one WebGPU fp16 inference run; it does not yet provide a 20-run warm benchmark or broad device validation. The single-image ground-truth check is a project measurement; paper metrics remain upstream reports. The exact checkpoint is pinned in `MODEL_SOURCES.md`.
+This is the first runnable research-preview detector. It uses an ONNX Community conversion explicitly tagged for Transformers.js and the existing Transformers.js object-detection pipeline, avoiding custom output decoding. Its runtime adapter supports WebGPU fp16 with WASM int8 fallback. On 2026-09-23, a user-reported iOS 18.7 / Brave-WebKit run completed WebGPU fp16 inference and a 20-run warm benchmark (p50 178 ms, p90 183 ms, p50 end-to-end 178.5 ms, CV 3.2%). This remains one-device/session evidence; broad device and multi-image validation are still pending. The single-image ground-truth check is a project measurement; paper metrics remain upstream reports. The exact checkpoint is pinned in `MODEL_SOURCES.md`.
