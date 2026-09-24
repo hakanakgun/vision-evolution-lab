@@ -18,7 +18,7 @@ On 2026-09-23, the user reported a five-model Benchmark ×20 and Model Race comp
 
 These are user-reported results from one iPhone session, not a cross-device performance guarantee. The Model Race image run is also a one-image comparison, not a dataset-level accuracy evaluation. The completed tests do not cover sustained Live Camera inference.
 
-On 2026-09-24, the user reported LW-DETR-tiny completing Benchmark ×20 in Brave-WebKit on iOS 18.7 using direct ONNX Runtime Web/WASM fp32: p50 586 ms, p90 595 ms, min–max 546–602 ms, CV 2.2%, p50 end-to-end 594.5 ms, and 15 visible detections at confidence 0.40. This is one user-reported device/session and image; it does not establish detection accuracy, Safari compatibility, sustained stability, or broad iOS support. The screenshot was captured before the input-size label correction; the model tensor is 640×640 even though the aspect-preserved display canvas was shown as 288×640.
+On 2026-09-24, after the v0.13.4 telemetry/input-label correction, the user reported LW-DETR-tiny completing Benchmark ×20 in Brave-WebKit on iOS 18.7 using direct ONNX Runtime Web/WASM fp32: p50 612 ms, p90 616 ms, min–max 590–621 ms, CV 1.1%, p50 end-to-end 617 ms, and 15 visible detections at confidence 0.40. The run used the standard `ort.wasm.min.js` path with WASM SIMD, one thread, and no cross-origin isolation; WebGPU was available but LW-DETR did not use it. The model input was 640×640; the model transfer was 12 ms and ONNX session creation 412 ms, with the model shown as cached. This is one user-reported device/session and image; it does not establish detection accuracy, Safari compatibility, sustained stability, or broad iOS support.
 
 ## Physical iOS tests still pending
 
@@ -132,9 +132,9 @@ Deep mode also captures:
 
 The diagnostic export does not claim to know process RSS. `performance.memory` remains unavailable where the browser does not expose it. WASM linear-memory bytes are only valid if an actual runtime object exposes them.
 
-## Important new upstream finding: "forced WASM" is not necessarily standard ORT WASM
+## Historical upstream finding that motivated diag12
 
-The page currently loads:
+Before diag12, the page loaded:
 
 `onnxruntime-web@1.30.0/dist/ort.webgpu.min.js`
 
@@ -150,11 +150,9 @@ References:
 - ORT WebGPU setup explicitly uses `ort.webgpu.min.js`: https://onnxruntime.ai/docs/tutorials/web/ep-webgpu.html
 - jsDelivr 1.30.0 distribution contains both standard and JSEP artifacts: https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/
 
-This matters because the existing all-WASM matrix forces the **execution provider** to WASM, but the page still bootstraps the WebGPU/JSEP-capable ORT distribution.
+This mattered because the diag9 all-WASM matrix forced the **execution provider** to WASM while the page still bootstrapped the WebGPU/JSEP-capable ORT distribution.
 
-Therefore diag9's all-WASM result does **not** yet rule out a JSEP-build-specific Safari/WebKit problem.
-
-This is currently the highest-value new experimental distinction.
+Therefore diag9's all-WASM result did **not** rule out a JSEP-build-specific Safari/WebKit problem. That distinction directly motivated the diag12 standard-WASM architecture change described below.
 
 ## Upstream reports with similar symptoms
 
@@ -259,6 +257,7 @@ On iOS/iPadOS:
 - SSD-MobileNetV1 INT8: WASM
 - YOLOX-Nano: WASM
 - RT-DETR R18: unchanged independent Transformers.js runtime, normally WebGPU fp16 with WASM q8 fallback
+- RT-DETRv2 R18: independent Transformers.js runtime, normally WebGPU fp16 with WASM q8 fallback
 
 On non-iOS platforms, direct ORT keeps `ort.webgpu.min.js` so YOLOX retains WebGPU-first behavior.
 

@@ -1,6 +1,6 @@
 {
-  "version": "0.14.0",
-  "build": "2026.09.24-v0.14.0",
+  "version": "0.14.1",
+  "build": "2026.09.24-v0.14.1",
   "published": "2026-09-24",
   "cacheStrategy": "version-manifest-no-store"
 }
