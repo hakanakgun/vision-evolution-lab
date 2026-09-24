@@ -11,26 +11,26 @@ const check=(condition,message)=>{if(!condition)fail(message)};
 
 const files={
   index:read('index.html'),
-  styles:read('styles.css'),
-  bootstrap:read('runtime-bootstrap.js'),
-  preprocessing:read('preprocessing.js'),
-  metrics:read('detection-metrics.js'),
-  models:read('models.js'),
-  runtime:read('model-runtime.js'),
-  loader:read('model-loader.js'),
-  app:read('app.js'),
-  historicalDetectors:read('historical-detectors.js'),
-  lwdetrPostprocess:read('lwdetr-postprocess.js'),
-  race:read('race.js'),
-  historyExperiments:read('history-experiments.js'),
-  classicalWorker:read('classical-cv-worker.js'),
+  styles:read('assets/css/styles.css'),
+  bootstrap:read('src/core/runtime-bootstrap.js'),
+  preprocessing:read('src/core/preprocessing.js'),
+  metrics:read('src/core/detection-metrics.js'),
+  models:read('src/models/models.js'),
+  runtime:read('src/core/model-runtime.js'),
+  loader:read('src/core/model-loader.js'),
+  app:read('src/app.js'),
+  historicalDetectors:read('src/models/historical-detectors.js'),
+  lwdetrPostprocess:read('src/models/lwdetr-postprocess.js'),
+  race:read('src/models/race.js'),
+  historyExperiments:read('src/history/history-experiments.js'),
+  classicalWorker:read('src/history/classical-cv-worker.js'),
   history:read('docs/MODEL_HISTORY.md'),
   historicalDocs:read('docs/CLASSICAL_CV.md'),
   architecture:read('docs/ARCHITECTURE.md'),
-  methodology:read('BENCHMARK_METHODOLOGY.md'),
-  sources:read('MODEL_SOURCES.md'),
-  licenses:read('THIRD_PARTY_LICENSES.md'),
-  catalog:read('MODEL_CATALOG.md'),
+  methodology:read('docs/BENCHMARK_METHODOLOGY.md'),
+  sources:read('docs/MODEL_SOURCES.md'),
+  licenses:read('docs/THIRD_PARTY_LICENSES.md'),
+  catalog:read('docs/MODEL_CATALOG.md'),
   readme:read('README.md'),
   docsIndex:read('docs/README.md'),
   version:JSON.parse(read('version.json'))
@@ -113,10 +113,10 @@ check(files.app.includes("function liveModelKeys()")&&files.app.includes("state.
 const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
 check(files.index.includes(`const CURRENT_BUILD = '${build}'`),'CURRENT_BUILD does not match version.json');
-for(const asset of ['styles.css','runtime-bootstrap.js','preprocessing.js','detection-metrics.js','models.js','model-runtime.js','model-loader.js','app.js','lwdetr-postprocess.js','historical-detectors.js','race.js','history-experiments.js']){
+for(const asset of ['assets/css/styles.css','src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/core/detection-metrics.js','src/models/models.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/history/history-experiments.js']){
   check(files.index.includes(`${asset}?v=${version}`),`cache-busted asset missing or stale: ${asset}`);
 }
-const scriptOrder=['runtime-bootstrap.js','preprocessing.js','models.js','detection-metrics.js','model-runtime.js','model-loader.js','app.js','lwdetr-postprocess.js','historical-detectors.js','race.js','history-experiments.js'];
+const scriptOrder=['src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/models/models.js','src/core/detection-metrics.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/history/history-experiments.js'];
 let previous=-1;
 for(const script of scriptOrder){
   const current=files.index.indexOf(script);
@@ -345,7 +345,7 @@ const digitStart=files.historyExperiments.indexOf('async function runDigits('),e
 check(digitStart>=0&&digitBody.indexOf("runWorker('digits'")>=0&&digitBody.indexOf("runWorker('digits'")<digitBody.indexOf('disposeWorker(')&&digitBody.indexOf('disposeWorker(')<digitBody.indexOf('loadDigitSession(spec)'),'digit region proposals must finish and release OpenCV before loading MNIST');
 check(files.historyExperiments.includes('function patternResponse(')&&files.historyExperiments.includes('max-pooling')&&historyExperiments.neocognitron.note.includes('not a trained Neocognitron checkpoint'),'1980 experiment must be a disclosed code preview without invented weights');
 check(historyExperiments.neocognitron.runner==='pattern-response'&&historyExperiments['mnist-digits'].runner==='mnist-digit-cnn'&&historyExperiments['viola-jones'].runner==='opencv-face'&&historyExperiments['hog-pedestrians'].runner==='opencv-hog'&&files.historyExperiments.includes("spec.runner==='pattern-response'")&&files.historyExperiments.includes("spec.runner==='mnist-digit-cnn'"),'historical runner adapters must dispatch through task metadata');
-check(files.historyExperiments.includes('classical-cv-worker.js?v=')&&files.historyExperiments.includes('VERSION=registry.version'),'worker cache version must match release metadata');
+check(files.historyExperiments.includes('src/history/classical-cv-worker.js?v=')&&files.historyExperiments.includes('VERSION=registry.version'),'worker cache version must match release metadata');
 check(!files.index.includes('cdn.jsdelivr.net/npm/@techstark/opencv-js')&&!/<script[^>]+src=["'][^"']*opencv(?:\.min)?\.js/i.test(files.index),'OpenCV.js must remain lazy and worker-only');
 check(!/<script[^>]+src=["'][^"']*classical-cv-worker\.js/i.test(files.index),'OpenCV worker must not be loaded as a page script');
 check(files.classicalWorker.includes("@techstark/opencv-js@4.12.0-release.1/dist/opencv.js"),'OpenCV.js runtime pin changed');
