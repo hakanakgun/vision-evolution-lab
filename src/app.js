@@ -474,7 +474,7 @@
     function currentCameraTrack(){return state.stream?.getVideoTracks?.()[0]||null}
     function resetLiveMetrics(){for(const id of ['live-inf','live-total','live-fps','live-count'])$(id).textContent='—';$('live-frames').textContent='0';state.liveSamples=[];state.liveFrameCount=0}
     function setLiveStatus(message,kind=''){const el=$('live-model-status');el.textContent=message||'';el.className=`tiny live-model-status ${kind}`.trim()}
-    function formatZoom(value){return Number.isFinite(value)?Number(value.toFixed(2)).toString()+'×':'—'}
+    function formatZoom(value){return Number.isFinite(value)?Number(value.toFixed(1)).toString()+'×':'—'}
     function cameraFacingName(){return state.cameraFacing==='user'?'Front':'Rear'}
     function stopMediaStream(stream){for(const track of stream?.getTracks?.()||[])try{track.stop()}catch(_){}}
     function cameraConstraints(facing,{exact=false}={}){return{video:{facingMode:exact?{exact:facing}:{ideal:facing},width:{ideal:1280},height:{ideal:720}},audio:false}}
@@ -484,6 +484,19 @@
       if(range.step>0)next=range.min+Math.round((next-range.min)/range.step)*range.step;
       return Math.max(range.min,Math.min(range.max,next));
     }
+    function cameraZoomLevels(range){
+      const epsilon=Math.max(1e-6,range.step/2),levels=[];
+      const add=requested=>{const value=quantizeCameraZoom(range,requested);if(!levels.some(item=>Math.abs(item-value)<=epsilon))levels.push(value)};
+      if(range.min<1)add(0.5);
+      if(range.min<=1&&range.max>=1)add(1);
+      for(let value=Math.max(2,Math.ceil(range.min));value<=Math.floor(range.max+epsilon);value++)add(value);
+      if(levels.length<2){add(range.min);add(range.max)}
+      return levels.sort((a,b)=>a-b);
+    }
+    function nextCameraZoom(range,direction){
+      const epsilon=Math.max(1e-6,range.step/2),levels=cameraZoomLevels(range);
+      return direction>0?levels.find(value=>value>range.value+epsilon):levels.slice().reverse().find(value=>value<range.value-epsilon);
+    }
     function readCameraZoom(track){
       if(state.cameraFacing!=='environment'||typeof track?.getCapabilities!=='function')return null;
       let capabilities={},settings={};try{capabilities=track.getCapabilities()||{}}catch(_){return null}try{settings=track.getSettings?.()||{}}catch(_){}
@@ -491,7 +504,7 @@
       if(!Number.isFinite(min)||!Number.isFinite(max)||max<=min)return null;
       const step=Number.isFinite(rawStep)&&rawStep>0?rawStep:0,base={min,max,step};
       const defaultValue=quantizeCameraZoom(base,1),rawValue=Number(settings.zoom),value=quantizeCameraZoom(base,Number.isFinite(rawValue)?rawValue:defaultValue);
-      return{min,max,step,defaultValue,value,tapStep:Math.max(step,(max-min)/20)};
+      return{min,max,step,defaultValue,value};
     }
     async function refreshCameraTrackState(requestedFacing=state.cameraFacing){
       const track=currentCameraTrack();if(!track){state.cameraCanFlip=false;state.cameraZoom=null;renderCameraControls();return}
@@ -515,9 +528,8 @@
       const zoom=state.cameraFacing==='environment'?state.cameraZoom:null,showZoom=state.live&&Boolean(zoom);
       zoomControls.hidden=!showZoom;
       if(!zoom)return;
-      const epsilon=Math.max(1e-6,zoom.step/2);
-      out.disabled=state.liveSwitching||state.cameraZoomChanging||zoom.value<=zoom.min+epsilon;
-      inc.disabled=state.liveSwitching||state.cameraZoomChanging||zoom.value>=zoom.max-epsilon;
+      out.disabled=state.liveSwitching||state.cameraZoomChanging||!Number.isFinite(nextCameraZoom(zoom,-1));
+      inc.disabled=state.liveSwitching||state.cameraZoomChanging||!Number.isFinite(nextCameraZoom(zoom,1));
       reset.disabled=state.liveSwitching||state.cameraZoomChanging;
       reset.textContent=formatZoom(zoom.value);
       reset.setAttribute('aria-label',`Reset camera zoom to ${formatZoom(zoom.defaultValue)}. Current zoom ${formatZoom(zoom.value)}`);
@@ -545,7 +557,7 @@
         console.error('Camera zoom change failed',error);if(state.live&&currentCameraTrack()===track)setLiveStatus('This camera reported zoom support but rejected the requested zoom value.','error');
       }finally{state.cameraZoomChanging=false;renderCameraControls()}
     }
-    function stepCameraZoom(direction){const zoom=state.cameraZoom;if(!zoom)return;void applyCameraZoom(zoom.value+direction*zoom.tapStep)}
+    function stepCameraZoom(direction){const zoom=state.cameraZoom;if(!zoom)return;const target=nextCameraZoom(zoom,direction);if(Number.isFinite(target))void applyCameraZoom(target)}
     async function switchCamera(){
       if(!state.live||state.liveSwitching||state.cameraZoomChanging||!state.cameraCanFlip)return;
       const adapter=currentLiveAdapter(),modelKey=state.liveModel,previousFacing=state.cameraFacing,targetFacing=previousFacing==='environment'?'user':'environment',token=++state.cameraStartToken;
