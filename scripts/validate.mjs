@@ -39,11 +39,16 @@ const files={
 for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
-let relativeLoaderUrl='';
+let relativeLoaderUrl='',relativeLoaderProgress=[];
 const relativeLoaderWindow={location:{href:'https://hakanakgun.github.io/vision-evolution-lab/'}};
-vm.runInNewContext(files.loader,{window:relativeLoaderWindow,URL,Map,performance,fetch:async url=>{relativeLoaderUrl=String(url);return{ok:true,headers:{get:()=>null},arrayBuffer:async()=>new ArrayBuffer(8)}}},{filename:'model-loader-relative-url-test.js'});
-const relativeLoaderResult=await relativeLoaderWindow.VisionModelLoader.load({id:'relative-model-url-test',sources:[{label:'relative test',url:'assets/models/test.onnx'}]});
+vm.runInNewContext(files.loader,{window:relativeLoaderWindow,URL,Map,performance,fetch:async url=>{
+  relativeLoaderUrl=String(url);let sent=false;
+  return{ok:true,headers:{get:name=>name==='content-length'?'4':null},body:{getReader:()=>({read:async()=>{if(sent)return{done:true};sent=true;return{done:false,value:Uint8Array.from([1,2,3,4,5,6,7,8])}}})}};
+}},{filename:'model-loader-relative-url-test.js'});
+const relativeLoaderResult=await relativeLoaderWindow.VisionModelLoader.load({id:'relative-model-url-test',bytes:8,sources:[{label:'relative test',url:'assets/models/test.onnx'}]},{onProgress:value=>relativeLoaderProgress.push(value)});
+const relativeLoaderFinalProgress=relativeLoaderProgress.at(-1);
 check(relativeLoaderUrl==='https://hakanakgun.github.io/vision-evolution-lab/assets/models/test.onnx'&&relativeLoaderResult.buffer.byteLength===8,'model loader must resolve relative source URLs against the current page origin');
+check(relativeLoaderFinalProgress?.loaded===8&&relativeLoaderFinalProgress.total===8&&relativeLoaderFinalProgress.percent===100,'streamed progress must use expected uncompressed model bytes instead of a smaller content-length');
 
 for(const [index,code] of [...files.index.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(match=>match[1]).entries()){
   try{new Function(code)}catch(error){fail(`index inline script #${index+1}: ${error.message}`)}
@@ -290,6 +295,9 @@ check(lw.sourceModel==='AnnaZhang/lwdetr_tiny_60e_coco'&&lw.sourceRevision==='4b
 check(lw.capabilities.timeMachine&&!lw.capabilities.benchmark&&!lw.capabilities.live&&!lw.capabilities.race&&!lw.capabilities.inspection,'LW-DETR must remain Time Machine only');
 check(files.historicalDetectors.includes("runtimes.register('lwdetr'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("JSON.stringify(logits.dims)!=='[1,100,91]'"),'LW-DETR adapter must use verified WASM and pinned input/output contracts');
 check(files.historicalDetectors.includes("sourceLabel=model.sources?.[0]?.label||'Pinned ONNX asset'")&&files.historicalDetectors.includes('source:runtimeSource'),'LW-DETR runtime must show the actual Pages delivery source separately from checkpoint provenance');
+check(files.historicalDetectors.includes('const sessionStarted=performance.now()')&&files.historicalDetectors.includes('initMs=sessionInitMs'),'LW-DETR session initialization timing must start after transfer and checksum verification');
+check(files.historicalDetectors.includes('totalMs=preMs+infMs+postMs'),'LW-DETR end-to-end must sum only current-run stages, excluding startup');
+check(files.historicalDetectors.includes('inputWidth:640,inputHeight:640')&&files.app.includes('Number.isFinite(result.inputWidth)'),'LW-DETR must report the actual 640×640 model tensor, not the aspect-preserved display canvas');
 const decodeWindow={};vm.runInNewContext(files.lwdetrPostprocess,{window:decodeWindow,Float32Array,TypeError,RangeError,Number,Array,Math,Object},{filename:'lwdetr-postprocess.js'});
 const decoded=decodeWindow.VisionLwDetrPostprocess.decode(new Float32Array([0,1,2,0,1.5,.5]),new Float32Array([.5,.5,.4,.4,.25,.75,.2,.3]),{labels:['N/A','person','cat'],width:640,height:480,threshold:.8,topK:3});
 check(decoded.rawCount===3&&decoded.detections.length===2&&decoded.detections[0].label==='cat'&&decoded.detections[0].classId===2&&decoded.detections[1].label==='person'&&decoded.detections[1].classId===1,'LW-DETR postprocessor must sigmoid and globally rank query/class pairs');
