@@ -31,7 +31,7 @@ Selecting a model in Time Machine stays in Time Machine. Inside the Model follow
 | 2024-07 | RT-DETRv2 R18 · research preview | COCO | Transformers.js / WebGPU fp16 or WASM int8 |
 | 2024-10 | D-FINE-N | COCO | Time Machine only · Transformers.js / WASM fp32 |
 
-Exact model revisions, licenses, provenance, preprocessing, and fallback rules are maintained in [MODEL_SOURCES.md](MODEL_SOURCES.md), [MODEL_CATALOG.md](MODEL_CATALOG.md), and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+Exact model revisions, licenses, provenance, preprocessing, and fallback rules are maintained in [MODEL_SOURCES.md](docs/MODEL_SOURCES.md), [MODEL_CATALOG.md](docs/MODEL_CATALOG.md), and [THIRD_PARTY_LICENSES.md](docs/THIRD_PARTY_LICENSES.md).
 
 ## Earlier task-specific experiments
 
@@ -61,9 +61,9 @@ The benchmark reports p50, p90, min-max, run-to-run timing variation, p50 end-to
 
 Pairwise same-class IoU overlap is a disagreement/overlap diagnostic, not an accuracy metric.
 
-Model Race includes one licensed COCO 2017 validation image for repeatable smoke tests. It reports per-image precision, recall and F1 against 19 official boxes at IoU ≥ 0.50 and the current confidence. Tiny YOLOv2 is scored only on the four boxes from classes shared with Pascal VOC. This is not COCO AP or a dataset-level benchmark. See [Benchmark samples](BENCHMARK_SAMPLES.md) for attribution and scope.
+Model Race includes one licensed COCO 2017 validation image for repeatable smoke tests. It reports per-image precision, recall and F1 against 19 official boxes at IoU ≥ 0.50 and the current confidence. Tiny YOLOv2 is scored only on the four boxes from classes shared with Pascal VOC. This is not COCO AP or a dataset-level benchmark. See [Benchmark samples](docs/BENCHMARK_SAMPLES.md) for attribution and scope.
 
-See [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md).
+See [BENCHMARK_METHODOLOGY.md](docs/BENCHMARK_METHODOLOGY.md).
 
 ## Browser runtime
 
@@ -95,11 +95,11 @@ See [docs/README.md](docs/README.md) for the documentation map.
 
 Stable repository references:
 
-- [Benchmark methodology](BENCHMARK_METHODOLOGY.md)
-- [Benchmark samples](BENCHMARK_SAMPLES.md)
-- [Model catalog](MODEL_CATALOG.md)
-- [Model sources and provenance](MODEL_SOURCES.md)
-- [Third-party licenses](THIRD_PARTY_LICENSES.md)
+- [Benchmark methodology](docs/BENCHMARK_METHODOLOGY.md)
+- [Benchmark samples](docs/BENCHMARK_SAMPLES.md)
+- [Model catalog](docs/MODEL_CATALOG.md)
+- [Model sources and provenance](docs/MODEL_SOURCES.md)
+- [Third-party licenses](docs/THIRD_PARTY_LICENSES.md)
 - [Time Machine historical experiments](docs/CLASSICAL_CV.md)
 
 ## Roadmap
