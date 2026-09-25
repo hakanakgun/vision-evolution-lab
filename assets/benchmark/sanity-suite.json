@@ -36,39 +36,39 @@
       }
     },
     {
-      "id": "1675",
-      "image": "assets/benchmark/coco-val-000000001675.jpg",
-      "annotations": "assets/benchmark/coco-val-000000001675.annotations.json",
+      "id": "17029",
+      "image": "assets/benchmark/coco-val-000000017029.jpg",
+      "annotations": "assets/benchmark/coco-val-000000017029.annotations.json",
       "width": 640,
-      "height": 480,
+      "height": 640,
       "classes": [
-        "cat",
-        "keyboard"
+        "car",
+        "dog",
+        "frisbee"
       ],
-      "instances": 2,
+      "instances": 4,
       "imageLicense": {
-        "id": 1,
-        "name": "Attribution-NonCommercial-ShareAlike License",
-        "url": "http://creativecommons.org/licenses/by-nc-sa/2.0/"
+        "id": 4,
+        "name": "Attribution License",
+        "url": "http://creativecommons.org/licenses/by/2.0/"
       }
     },
     {
-      "id": "2006",
-      "image": "assets/benchmark/coco-val-000000002006.jpg",
-      "annotations": "assets/benchmark/coco-val-000000002006.annotations.json",
+      "id": "13348",
+      "image": "assets/benchmark/coco-val-000000013348.jpg",
+      "annotations": "assets/benchmark/coco-val-000000013348.annotations.json",
       "width": 640,
-      "height": 480,
+      "height": 427,
       "classes": [
-        "bus",
+        "airplane",
         "person",
-        "tie",
-        "traffic light"
+        "truck"
       ],
-      "instances": 8,
+      "instances": 12,
       "imageLicense": {
-        "id": 1,
-        "name": "Attribution-NonCommercial-ShareAlike License",
-        "url": "http://creativecommons.org/licenses/by-nc-sa/2.0/"
+        "id": 4,
+        "name": "Attribution License",
+        "url": "http://creativecommons.org/licenses/by/2.0/"
       }
     },
     {

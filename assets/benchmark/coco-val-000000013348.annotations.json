@@ -1,0 +1,126 @@
+{
+  "source": "COCO 2017 val instances_val2017.json, image_id 13348",
+  "annotationLicense": "CC BY 4.0",
+  "imageId": 13348,
+  "file": "coco-val-000000013348.jpg",
+  "width": 640,
+  "height": 427,
+  "imageLicense": {
+    "id": 4,
+    "name": "Attribution License",
+    "url": "http://creativecommons.org/licenses/by/2.0/"
+  },
+  "cocoUrl": "http://images.cocodataset.org/val2017/000000013348.jpg",
+  "flickrUrl": "http://farm9.staticflickr.com/8286/7733450942_0da3e941b4_z.jpg",
+  "bboxFormat": "COCO xywh pixels",
+  "instances": [
+    {
+      "label": "airplane",
+      "bbox": [
+        0.0,
+        142.01,
+        566.13,
+        143.94
+      ]
+    },
+    {
+      "label": "person",
+      "bbox": [
+        349.82,
+        270.26,
+        6.3,
+        20.77
+      ]
+    },
+    {
+      "label": "person",
+      "bbox": [
+        17.11,
+        280.38,
+        9.12,
+        12.97
+      ]
+    },
+    {
+      "label": "person",
+      "bbox": [
+        117.32,
+        270.57,
+        11.79,
+        19.23
+      ]
+    },
+    {
+      "label": "truck",
+      "bbox": [
+        52.32,
+        269.84,
+        25.16,
+        14.73
+      ]
+    },
+    {
+      "label": "truck",
+      "bbox": [
+        81.33,
+        255.4,
+        33.71,
+        17.82
+      ]
+    },
+    {
+      "label": "airplane",
+      "bbox": [
+        0.0,
+        228.61,
+        54.69,
+        18.23
+      ]
+    },
+    {
+      "label": "truck",
+      "bbox": [
+        16.05,
+        289.31,
+        24.43,
+        19.0
+      ]
+    },
+    {
+      "label": "truck",
+      "bbox": [
+        75.78,
+        271.86,
+        27.72,
+        13.41
+      ]
+    },
+    {
+      "label": "person",
+      "bbox": [
+        173.15,
+        240.08,
+        6.96,
+        11.48
+      ]
+    },
+    {
+      "label": "person",
+      "bbox": [
+        124.96,
+        250.69,
+        4.11,
+        5.63
+      ]
+    },
+    {
+      "label": "person",
+      "bbox": [
+        148.94,
+        244.69,
+        11.13,
+        10.55
+      ]
+    }
+  ]
+}

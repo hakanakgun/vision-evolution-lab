@@ -1,0 +1,54 @@
+{
+  "source": "COCO 2017 val instances_val2017.json, image_id 17029",
+  "annotationLicense": "CC BY 4.0",
+  "imageId": 17029,
+  "file": "coco-val-000000017029.jpg",
+  "width": 640,
+  "height": 640,
+  "imageLicense": {
+    "id": 4,
+    "name": "Attribution License",
+    "url": "http://creativecommons.org/licenses/by/2.0/"
+  },
+  "cocoUrl": "http://images.cocodataset.org/val2017/000000017029.jpg",
+  "flickrUrl": "http://farm8.staticflickr.com/7304/8746020648_f1e2075b86_z.jpg",
+  "bboxFormat": "COCO xywh pixels",
+  "instances": [
+    {
+      "label": "dog",
+      "bbox": [
+        154.84,
+        105.81,
+        250.32,
+        436.13
+      ]
+    },
+    {
+      "label": "car",
+      "bbox": [
+        56.09,
+        25.89,
+        513.44,
+        152.45
+      ]
+    },
+    {
+      "label": "frisbee",
+      "bbox": [
+        319.28,
+        77.66,
+        94.92,
+        44.59
+      ]
+    },
+    {
+      "label": "car",
+      "bbox": [
+        0.0,
+        44.59,
+        21.76,
+        44.26
+      ]
+    }
+  ]
+}
