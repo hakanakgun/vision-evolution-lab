@@ -88,7 +88,7 @@ Both RT-DETR variants use an aspect-preserving staging canvas whose longest side
 
 ### Confidence retention
 
-The slider minimum is also the internal retention floor. Tiny YOLOv2 decoding, YOLOX decoding and the RT-DETR Transformers.js pipeline retain detections down to that floor, while the current UI threshold is applied during draw/comparison. This allows threshold changes within the slider range to re-filter existing outputs without a new inference. SSD already exposes its decoded detections before the UI draw threshold. The retention floor is not an accuracy claim and does not change the benchmark's user-visible confidence contract.
+The Time Machine slider minimum is also the internal retention floor. Tiny YOLOv2 decoding, YOLOX decoding and the RT-DETR Transformers.js pipeline retain detections down to that floor, while the current Time Machine/Model Race UI threshold is applied during draw/comparison. Live Camera has an independent display-confidence slider and passes that value into the same adapter draw path without changing the retention floor. This allows threshold changes within the slider range to re-filter existing outputs without a new inference. SSD already exposes its decoded detections before the UI draw threshold. The retention floor is not an accuracy claim and does not change the benchmark's user-visible confidence contract.
 
 ## 5. Detection overlap is not accuracy
 
@@ -108,6 +108,16 @@ For the bundled COCO 2017 image 397133 only, the page compares visible predictio
 Tiny YOLOv2 is a Pascal VOC 20-class checkpoint, so its score uses only the four COCO annotations whose classes overlap VOC: two persons, one bottle and one dining table. Objects in COCO-only classes are excluded from its false-negative count. All other runnable models are evaluated against all 19 boxes.
 
 This single crowded kitchen image is a smoke test for the current image and threshold. It does not compute COCO AP, represent the validation distribution, resolve annotation ambiguities, or support a general model ranking. Uploading a different image disables ground-truth scoring.
+
+## 6A. Fixed four-image browser accuracy sanity suite
+
+The **Accuracy sanity ×4** action is separate from latency benchmarking and from the single-image visual quality check above. It uses the fixed manifest at `assets/benchmark/sanity-suite.json` and four COCO 2017 validation images: 397133, 17029, 13348, and 872. All four bundled images carry COCO image-license id 4 / CC BY 2.0; their source URLs and per-image license metadata are retained in the adjacent annotation JSON files. The COCO instance annotations are CC BY 4.0.
+
+The suite fixes display confidence at **0.40**, requires the same canonical class and **IoU ≥ 0.50**, and performs one-to-one matching in the same detection-metrics implementation used by the existing ground-truth check. For each race-capable detector, TP/FP/FN are summed across the four images before precision, recall, and F1 are derived. Tiny YOLOv2 is evaluated only on annotations whose classes overlap its Pascal VOC label set.
+
+Models run sequentially and the current model runtime is released before the next model begins. The suite intentionally reports **no latency numbers**: model download, initialization, browser cache state, and inference timing are outside this check's purpose.
+
+This is a small deterministic **browser implementation regression check**. It can reveal preprocessing, decoding, label-mapping, thresholding, or runtime regressions on these four images. It does not implement the COCO evaluation API, does not compute AP/AP50, does not represent the full COCO validation distribution, and must not be used as a general model ranking.
 
 ## 7. Historical task-specific experiment timing
 
