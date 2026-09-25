@@ -129,7 +129,7 @@ Training-dataset terms are separate from code/model licenses and should be revie
 - Model input: float32 NCHW 1×3×416×416 using the official top-left padded preprocessing path with pixel value 114.
 - Primary runtime source: official Megvii GitHub Release asset.
 - Browser fallback source: Hugging Face `Heliosoph/yolox-onnx`, pinned to revision `9206d80cbad9ed54986edeff8d7457eb5333882a`. Its model card identifies the repository as Apache-2.0 and states that the ONNX checkpoints are Megvii's published YOLOX checkpoints rather than local conversions.
-- Postprocessing follows the official ONNX Runtime demo: strides 8/16/32, YOLOX grid decode, objectness × class probability, and class-agnostic NMS at IoU 0.45.
+- Postprocessing follows the official ONNX Runtime demo: strides 8/16/32, YOLOX grid decode, objectness × every class probability, and per-class NMS at IoU 0.45. The browser retains class candidates down to the UI slider floor before the current display threshold is applied.
 - Training/benchmark dataset reported by the official project: MS COCO.
 
 ### License note
