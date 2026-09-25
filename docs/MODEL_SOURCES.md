@@ -93,7 +93,7 @@ The Hugging Face repository metadata currently declares `apache-2.0`, while the 
 
 ## Faster R-CNN 2015 reference
 
-- Purpose: makes the 2015 two-stage Region Proposal Network milestone executable in Time Machine; excluded from Model Race, Live Camera, individual benchmarks, and Inside the Model pending broader portability validation.
+- Purpose: makes the 2015 two-stage Region Proposal Network milestone executable in Time Machine; excluded from Model Race, Live Camera, and individual benchmarks pending broader portability validation. Inside the Model exposes the verified preprocessing/two-stage architecture contract and actual final detection counts, while stating that this pinned graph does not export RPN proposal coordinates.
 - Historical reference: Ren et al., *Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks*, NeurIPS 2015.
 - Browser checkpoint: `onnxmodelzoo/FasterRCNN-12-int8`, pinned revision `c4c979ff5c8043967de03c97daef7b54663182eb`.
 - File: `FasterRCNN-12-int8.onnx`, 44,631,113 bytes; SHA-256 `95f67f5f6249f4804f1302367dd88cee32bf47713b9858cc6d8ba835548f9b8e`.
@@ -162,7 +162,7 @@ RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS 18.7 / Br
 
 ### YOLOS-tiny
 
-- Purpose: adds a 2021 pure/vanilla Vision Transformer detector to Time Machine; excluded from Model Race, Live Camera, individual benchmarks, and Inside the Model pending broader validation.
+- Purpose: adds a 2021 pure/vanilla Vision Transformer detector to Time Machine; excluded from Model Race, Live Camera, and individual benchmarks pending broader validation. Inside the Model exposes the verified processor/transformer detection contract but not unexposed patch-token, detection-token, or attention tensors.
 - Paper: *You Only Look at One Sequence: Rethinking Transformer in Vision through Object Detection* (YOLOS), first public arXiv version June 2021.
 - Official implementation: `hustvl/YOLOS`, MIT-licensed code.
 - Base checkpoint: `hustvl/yolos-tiny`, pinned revision `95a90f3c189fbfca3bcfc6d7315b9e84d95dc2de`; repository metadata declares Apache-2.0. The model was pretrained on ImageNet-1k and fine-tuned on COCO 2017 according to its model card.
@@ -234,7 +234,7 @@ The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Comm
 - Verified input/output contract: direct resize to 640×640, RGB NCHW float32, rescale by 1/255 and normalize with ImageNet mean/std; input `pixel_values`, output `logits [1,100,91]` and `pred_boxes [1,100,4]` in normalized cxcywh.
 - Export checks: ONNX checker and ONNX Runtime 1.23.1 CPU parity passed; logits use rtol/atol 3e-4, boxes use rtol 2e-3 and atol 1e-3 to allow the measured GridSample floating-point difference (maximum absolute box-coordinate delta 0.00084257). A separate ONNX Runtime Web 1.30.0/WASM smoke test opened the graph and ran the same input/output contract.
 - Postprocessing follows the checkpoint’s Deformable DETR image-processor contract: sigmoid each query/class logit, take the global top 100 query/class scores, gather normalized cxcywh boxes, then apply the UI’s score filter. It does not use softmax or add NMS. The 91 class names come from the pinned checkpoint’s `id2label` map; displayed scores are not calibrated confidence.
-- App scope: Time Machine and Live Camera. It remains excluded from Model Race, individual benchmark runs, and Inside the Model. The existing direct ONNX/WASM adapter is reused for camera frames with sequential no-queue inference. Browser speed, sustained camera behavior, user-image detection accuracy, and iOS/WebKit compatibility have not been broadly measured; the paper’s COCO metric is an upstream report, not an evaluation of this browser export.
+- App scope: Time Machine and Live Camera. It remains excluded from Model Race and individual benchmark runs. Inside the Model documents the real ONNX `logits [1,100,91]` and `pred_boxes [1,100,4]` output contract; the adapter consumes those outputs without retaining duplicate tensors for visualization. The existing direct ONNX/WASM adapter is reused for camera frames with sequential no-queue inference. Browser speed, sustained camera behavior, user-image detection accuracy, and iOS/WebKit compatibility have not been broadly measured; the paper’s COCO metric is an upstream report, not an evaluation of this browser export.
 
 ### D-FINE-N
 
@@ -243,5 +243,5 @@ The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Comm
 - Browser conversion: `onnx-community/dfine_n_coco-ONNX`, pinned revision `e2b9c0f0884ee7c90b79feedfd30054e82ed634c`; Transformers.js object-detection pipeline; WASM fp32 only.
 - Upstream ONNX file size: about 15.3 MB; SHA-256 `0f684f409618ee8a822410e754a29caa817d1aa16283ce89cad936d0a48e2f35`.
 - The COCO checkpoint is used; Objects365-derived variants are not.
-- Purpose: Time Machine and Live Camera. It is not in Model Race, individual benchmark runs, or Inside the Model. The existing Transformers.js WASM fp32 adapter is reused for sequential camera-frame inference. Browser performance and iOS/WebKit Live Camera compatibility have not been tested.
+- Purpose: Time Machine and Live Camera. It is not in Model Race or individual benchmark runs. Inside the Model documents the verified processor and DETR-style query/regression pipeline while explicitly withholding internal tensors that the current Transformers.js pipeline does not expose. The existing Transformers.js WASM fp32 adapter is reused for sequential camera-frame inference. Browser performance and iOS/WebKit Live Camera compatibility have not been tested.
 - Month labels use the first public arXiv paper date where verified; this is not necessarily the date weights or software were released.

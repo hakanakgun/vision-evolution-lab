@@ -1,0 +1,54 @@
+{
+  "source": "COCO 2017 val instances_val2017.json, image_id 872",
+  "annotationLicense": "CC BY 4.0",
+  "imageId": 872,
+  "file": "coco-val-000000000872.jpg",
+  "width": 621,
+  "height": 640,
+  "imageLicense": {
+    "id": 4,
+    "name": "Attribution License",
+    "url": "http://creativecommons.org/licenses/by/2.0/"
+  },
+  "cocoUrl": "http://images.cocodataset.org/val2017/000000000872.jpg",
+  "flickrUrl": "http://farm9.staticflickr.com/8447/7805810128_605424213d_z.jpg",
+  "bboxFormat": "COCO xywh pixels",
+  "instances": [
+    {
+      "label": "sports ball",
+      "bbox": [
+        408.03,
+        172.04,
+        19.38,
+        16.53
+      ]
+    },
+    {
+      "label": "person",
+      "bbox": [
+        145.26,
+        100.67,
+        291.95,
+        457.35
+      ]
+    },
+    {
+      "label": "person",
+      "bbox": [
+        163.73,
+        126.42,
+        265.69,
+        480.4
+      ]
+    },
+    {
+      "label": "baseball glove",
+      "bbox": [
+        368.64,
+        157.25,
+        57.45,
+        45.78
+      ]
+    }
+  ]
+}

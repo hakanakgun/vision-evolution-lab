@@ -76,22 +76,25 @@ Most model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetche
 
 The original Vision Evolution Lab source code is licensed under the repository's [MIT License](../LICENSE).
 
-## COCO validation benchmark sample
+## COCO validation benchmark and sanity-suite samples
 
-- File: `assets/benchmark/coco-val-000000397133.jpg` (COCO 2017 validation image 397133, 640 × 427).
-- Original title: “Kitchen”; photographer: Maggie W (`maggiew` on Flickr).
-- Original source: [Flickr photo page](https://www.flickr.com/photos/maggiew/6255196340/); dataset image URL: [COCO val2017](https://images.cocodataset.org/val2017/000000397133.jpg).
-- License: [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). Attribution: “Kitchen” by Maggie W, used under CC BY 2.0.
-- SHA-256: `09e1d25c75f7879bdaa69c327fece5cabacd53939c8c2ef9e87f1c97a2e478c4`.
-- This is a single shared smoke-test input, not a representative validation set or an accuracy benchmark. Pascal VOC test images are not included because their individual Flickr reuse terms must be checked separately.
+The repository bundles four images from the **COCO 2017 validation split** for repeatable browser-regression checks. COCO's image metadata reports image-license id 4 for all four, corresponding to [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). Each adjacent annotation JSON preserves the COCO image URL, original Flickr image URL, dimensions, and image-license metadata so provenance remains inspectable.
+
+- `assets/benchmark/coco-val-000000397133.jpg` — COCO image 397133, 640 × 427. Original title: “Kitchen”; photographer: Maggie W (`maggiew` on Flickr). [Flickr source](https://www.flickr.com/photos/maggiew/6255196340/) · [COCO image](https://images.cocodataset.org/val2017/000000397133.jpg). License: CC BY 2.0. SHA-256: `09e1d25c75f7879bdaa69c327fece5cabacd53939c8c2ef9e87f1c97a2e478c4`.
+- `assets/benchmark/coco-val-000000017029.jpg` — COCO image 17029, 640 × 640. Original Flickr asset recorded by COCO: `farm8.staticflickr.com/7304/8746020648_f1e2075b86_z.jpg`. [COCO image](https://images.cocodataset.org/val2017/000000017029.jpg). License metadata: CC BY 2.0.
+- `assets/benchmark/coco-val-000000013348.jpg` — COCO image 13348, 640 × 427. Original Flickr asset recorded by COCO: `farm9.staticflickr.com/8286/7733450942_0da3e941b4_z.jpg`. [COCO image](https://images.cocodataset.org/val2017/000000013348.jpg). License metadata: CC BY 2.0.
+- `assets/benchmark/coco-val-000000000872.jpg` — COCO image 872, 621 × 640. Original Flickr asset recorded by COCO: `farm9.staticflickr.com/8447/7805810128_605424213d_z.jpg`. [COCO image](https://images.cocodataset.org/val2017/000000000872.jpg). License metadata: CC BY 2.0.
+
+For the three additional images, the COCO instance metadata used to construct the suite does not include creator-name fields; the repository therefore preserves the original Flickr asset URLs rather than inventing creator attribution.
 
 ### COCO validation annotations
 
-- File: `assets/benchmark/coco-val-000000397133.annotations.json`.
-- Source: the 19 `instances_val2017.json` annotations for image 397133, a small derived subset of official COCO box labels.
+- Manifest: `assets/benchmark/sanity-suite.json`.
+- Annotation files: the four adjacent `coco-val-*.annotations.json` files referenced by that manifest.
+- Source: official COCO 2017 `instances_val2017.json` instance boxes for image ids 397133, 17029, 13348, and 872. Crowd annotations are excluded from the fixed suite.
 - Annotation license: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); attribution: COCO Consortium / Microsoft COCO dataset.
-- Image license remains the image-specific CC BY 2.0 term above.
-- The page uses these boxes only for same-image precision/recall/F1 at a stated confidence and IoU threshold; it does not claim to reproduce the COCO evaluation API.
+- Image licenses remain the image-specific CC BY 2.0 terms above.
+- The page uses these boxes for deterministic same-class IoU matching only. The four-image sanity suite is not the COCO evaluation API, does not compute COCO AP, and is not a representative validation set or model ranking.
 
 
 ## Hugging Face Transformers.js 4.3.0

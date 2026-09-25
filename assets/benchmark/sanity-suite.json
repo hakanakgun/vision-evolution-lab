@@ -1,0 +1,93 @@
+{
+  "name": "COCO 2017 val browser accuracy sanity suite",
+  "purpose": "Small fixed regression set for browser detector implementations; not COCO AP and not a model ranking.",
+  "source": "COCO 2017 validation split",
+  "annotationLicense": "CC BY 4.0",
+  "matching": {
+    "confidence": 0.4,
+    "iou": 0.5,
+    "sameClass": true
+  },
+  "samples": [
+    {
+      "id": "397133",
+      "image": "assets/benchmark/coco-val-000000397133.jpg",
+      "annotations": "assets/benchmark/coco-val-000000397133.annotations.json",
+      "width": 640,
+      "height": 427,
+      "classes": [
+        "bottle",
+        "bowl",
+        "broccoli",
+        "carrot",
+        "cup",
+        "dining table",
+        "knife",
+        "oven",
+        "person",
+        "sink",
+        "spoon"
+      ],
+      "instances": 19,
+      "imageLicense": {
+        "id": 4,
+        "name": "Attribution License",
+        "url": "http://creativecommons.org/licenses/by/2.0/"
+      }
+    },
+    {
+      "id": "17029",
+      "image": "assets/benchmark/coco-val-000000017029.jpg",
+      "annotations": "assets/benchmark/coco-val-000000017029.annotations.json",
+      "width": 640,
+      "height": 640,
+      "classes": [
+        "car",
+        "dog",
+        "frisbee"
+      ],
+      "instances": 4,
+      "imageLicense": {
+        "id": 4,
+        "name": "Attribution License",
+        "url": "http://creativecommons.org/licenses/by/2.0/"
+      }
+    },
+    {
+      "id": "13348",
+      "image": "assets/benchmark/coco-val-000000013348.jpg",
+      "annotations": "assets/benchmark/coco-val-000000013348.annotations.json",
+      "width": 640,
+      "height": 427,
+      "classes": [
+        "airplane",
+        "person",
+        "truck"
+      ],
+      "instances": 12,
+      "imageLicense": {
+        "id": 4,
+        "name": "Attribution License",
+        "url": "http://creativecommons.org/licenses/by/2.0/"
+      }
+    },
+    {
+      "id": "872",
+      "image": "assets/benchmark/coco-val-000000000872.jpg",
+      "annotations": "assets/benchmark/coco-val-000000000872.annotations.json",
+      "width": 621,
+      "height": 640,
+      "classes": [
+        "baseball glove",
+        "person",
+        "sports ball"
+      ],
+      "instances": 4,
+      "imageLicense": {
+        "id": 4,
+        "name": "Attribution License",
+        "url": "http://creativecommons.org/licenses/by/2.0/"
+      }
+    }
+  ]
+}
