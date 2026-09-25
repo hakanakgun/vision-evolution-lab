@@ -162,6 +162,9 @@ const standard=loadModelContracts('standard-wasm').VisionModels;
 const jsep=loadModelContracts('jsep').VisionModels;
 check(JSON.stringify(standard.yolox.executionProviders)==='["wasm"]','standard-WASM YOLOX providers regressed');
 check(JSON.stringify(jsep.yolox.executionProviders)==='["webgpu","wasm"]','JSEP YOLOX providers regressed');
+check(metadataRegistry.yolox.capabilities.live?.forceBackend==='wasm','YOLOX Live Camera must stay on the verified WASM path');
+check(files.app.includes("function liveRuntimeOptions(adapter)")&&files.app.includes("adapter.prepare?.(liveRuntimeOptions(adapter))")&&files.app.includes("adapter.run(video,canvas,{updateMain:false,...liveRuntimeOptions(adapter)})"),'Live Camera must honor capability-declared runtime options without model-name branching');
+check(files.race.includes("prepare:(options={})=>createYoloSession(options.forceBackend||'')"),'YOLOX adapter prepare must honor requested live backend');
 check(files.race.includes("for(let c=0;c<80;c++){const score=obj*Number(data[o+5+c])")&&files.race.includes("k.classId!==d.classId||iou(d.box,k.box)<=YOLO.nms")&&!files.race.includes("kept.every(k=>iou(d.box,k.box)<=YOLO.nms)"),'YOLOX postprocessing must preserve per-class scores and use class-aware NMS');
 
 const releaseWindow=loadModelContracts('standard-wasm'),released=[];
