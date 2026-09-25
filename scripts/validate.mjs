@@ -224,7 +224,7 @@ check(!files.app.includes('selectActiveModel(key,{scroll:false})'),'Live Camera 
 check(files.app.includes('state.liveModel!==modelKey')&&files.app.includes('token!==state.cameraStartToken'),'Live Camera start must cancel when its selected model or camera token changes');
 check(files.app.includes('await previousAdapter?.release()')&&files.app.includes('await state.liveInference.catch(()=>{})'),'switching live models must release the old runtime after any current camera inference finishes');
 check(files.app.includes('await state.runtimeTransition.catch(()=>{})')&&files.app.includes('state.liveInference=framePromise'),'Time Machine inference and Live Camera must serialize model-runtime transitions');
-check(files.app.includes('previousAdapter.prepare?.()')&&files.app.includes("if(!restored&&state.live)stopCamera("),'failed live-model switches must attempt rollback and stop the camera if rollback fails');
+check(files.app.includes('previousAdapter.prepare?.(liveRuntimeOptions(previousAdapter))')&&files.app.includes("if(!restored&&state.live)stopCamera("),'failed live-model switches must attempt rollback and stop the camera if rollback fails');
 const benchmarkFunction=files.app.slice(files.app.indexOf('async function runBenchmark()'),files.app.indexOf("$('image-file').addEventListener('change'"));
 const cameraStartFunction=files.app.slice(files.app.indexOf('async function startCamera()'),files.app.indexOf('async function liveLoop('));
 const cameraSwitchFunction=files.app.slice(files.app.indexOf('async function switchCamera()'),files.app.indexOf('function renderLiveModels()'));
