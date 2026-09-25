@@ -162,6 +162,9 @@ const standard=loadModelContracts('standard-wasm').VisionModels;
 const jsep=loadModelContracts('jsep').VisionModels;
 check(JSON.stringify(standard.yolox.executionProviders)==='["wasm"]','standard-WASM YOLOX providers regressed');
 check(JSON.stringify(jsep.yolox.executionProviders)==='["webgpu","wasm"]','JSEP YOLOX providers regressed');
+check(metadataRegistry.yolox.capabilities.live?.forceBackend==='wasm','YOLOX Live Camera must stay on the verified WASM path');
+check(files.app.includes("function liveRuntimeOptions(adapter)")&&files.app.includes("adapter.prepare?.(liveRuntimeOptions(adapter))")&&files.app.includes("adapter.run(video,canvas,{updateMain:false,...liveRuntimeOptions(adapter)})"),'Live Camera must honor capability-declared runtime options without model-name branching');
+check(files.race.includes("prepare:(options={})=>createYoloSession(options.forceBackend||'')"),'YOLOX adapter prepare must honor requested live backend');
 check(files.race.includes("for(let c=0;c<80;c++){const score=obj*Number(data[o+5+c])")&&files.race.includes("k.classId!==d.classId||iou(d.box,k.box)<=YOLO.nms")&&!files.race.includes("kept.every(k=>iou(d.box,k.box)<=YOLO.nms)"),'YOLOX postprocessing must preserve per-class scores and use class-aware NMS');
 
 const releaseWindow=loadModelContracts('standard-wasm'),released=[];
@@ -215,13 +218,13 @@ const liveKeys=metadataWindow.VisionRuntimeRegistry.modelKeys.filter(key=>metada
 check(JSON.stringify(liveKeys)==='["tinyyolo","ssd","yolox","rtdetr","rtdetrv2","lwdetr","dfine"]','the seven approved detectors must be eligible for Live Camera');
 check(metadataRegistry.defaults?.live===metadataRegistry.defaults?.timeMachine,'default Live Camera model must follow the Time Machine default');
 check(files.index.includes('id="live-model-name"')&&files.index.includes('id="live-model-controls"')&&files.index.includes('id="live-model-select"'),'Live Camera metadata/model picker containers missing');
-check(files.app.includes("RuntimeRegistry.validate({capability:'live'}).expected")&&files.app.includes('adapter.run(video,canvas,{updateMain:false,live:true})'),'Live Camera is not capability/runtime-adapter driven');
+check(files.app.includes("RuntimeRegistry.validate({capability:'live'}).expected")&&files.app.includes('adapter.run(video,canvas,{updateMain:false,...liveRuntimeOptions(adapter)})'),'Live Camera is not capability/runtime-adapter driven');
 check(files.app.includes('function currentLiveAdapter(){return RuntimeRegistry.get(state.liveModel)}'),'Live Camera must use its independent live model state');
 check(!files.app.includes('selectActiveModel(key,{scroll:false})'),'Live Camera model choices must not mutate Time Machine selection');
 check(files.app.includes('state.liveModel!==modelKey')&&files.app.includes('token!==state.cameraStartToken'),'Live Camera start must cancel when its selected model or camera token changes');
 check(files.app.includes('await previousAdapter?.release()')&&files.app.includes('await state.liveInference.catch(()=>{})'),'switching live models must release the old runtime after any current camera inference finishes');
 check(files.app.includes('await state.runtimeTransition.catch(()=>{})')&&files.app.includes('state.liveInference=framePromise'),'Time Machine inference and Live Camera must serialize model-runtime transitions');
-check(files.app.includes('previousAdapter.prepare?.()')&&files.app.includes("if(!restored&&state.live)stopCamera("),'failed live-model switches must attempt rollback and stop the camera if rollback fails');
+check(files.app.includes('previousAdapter.prepare?.(liveRuntimeOptions(previousAdapter))')&&files.app.includes("if(!restored&&state.live)stopCamera("),'failed live-model switches must attempt rollback and stop the camera if rollback fails');
 const benchmarkFunction=files.app.slice(files.app.indexOf('async function runBenchmark()'),files.app.indexOf("$('image-file').addEventListener('change'"));
 const cameraStartFunction=files.app.slice(files.app.indexOf('async function startCamera()'),files.app.indexOf('async function liveLoop('));
 const cameraSwitchFunction=files.app.slice(files.app.indexOf('async function switchCamera()'),files.app.indexOf('function renderLiveModels()'));
@@ -236,7 +239,7 @@ check(cameraZoomFunction.includes("track.applyConstraints({zoom:target})")&&file
 check(files.app.includes('function cameraZoomLevels(range)')&&files.app.includes('function nextCameraZoom(range,direction)')&&!files.app.includes('(max-min)/20')&&!files.app.includes('zoom.tapStep'),'camera zoom +/- controls must step through clean capability-bounded levels instead of equal fractional slices');
 check(files.app.includes("Number(value.toFixed(1)).toString()+'×'"),'camera zoom UI must avoid noisy hundredth-level labels');
 check(files.app.includes('prepare:()=>createSession()'),'SSD live adapter does not preserve pre-camera runtime preparation');
-for(const [key,needle] of [['tinyyolo','prepare:()=>createTinySession()'],['yolox','prepare:()=>createYoloSession()'],['rtdetr','prepare:()=>createRT()'],['rtdetrv2','prepare:()=>create()']])check(files.race.includes(needle),`${key}: Live Camera adapter does not prepare its runtime before camera access`);
+for(const [key,needle] of [['tinyyolo','prepare:()=>createTinySession()'],['yolox',"prepare:(options={})=>createYoloSession(options.forceBackend||'')"],['rtdetr','prepare:()=>createRT()'],['rtdetrv2','prepare:()=>create()']])check(files.race.includes(needle),`${key}: Live Camera adapter does not prepare its runtime before camera access`);
 check(files.historicalDetectors.includes("return{run,prepare,release,backend:()=> 'WASM fp32'")&&files.historicalDetectors.includes("return{run,prepare:load,release,backend:()=> 'WASM fp32'"),'LW-DETR and D-FINE Live Camera adapters must prepare their runtime before camera access');
 check(!files.app.includes('inferSource(video,canvas,{updateMain:false})'),'Live Camera still directly calls SSD inference');
 check(files.app.includes('refreshLiveModels:renderLiveModels')&&files.race.includes('api.refreshLiveModels?.()'),'Live Camera registry refresh contract missing');

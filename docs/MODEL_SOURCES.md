@@ -129,7 +129,7 @@ Training-dataset terms are separate from code/model licenses and should be revie
 - Model input: float32 NCHW 1×3×416×416 using the official top-left padded preprocessing path with pixel value 114.
 - Primary runtime source: official Megvii GitHub Release asset.
 - Browser fallback source: Hugging Face `Heliosoph/yolox-onnx`, pinned to revision `9206d80cbad9ed54986edeff8d7457eb5333882a`. Its model card identifies the repository as Apache-2.0 and states that the ONNX checkpoints are Megvii's published YOLOX checkpoints rather than local conversions.
-- Postprocessing follows the official ONNX Runtime demo: strides 8/16/32, YOLOX grid decode, objectness × every class probability, and per-class NMS at IoU 0.45. The browser retains class candidates down to the UI slider floor before the current display threshold is applied.
+- Postprocessing follows the official ONNX Runtime demo: strides 8/16/32, YOLOX grid decode, objectness × every class probability, and per-class NMS at IoU 0.45. The browser retains class candidates down to the UI slider floor before the current display threshold is applied. Live Camera intentionally forces the direct ONNX Runtime WASM backend: on 2026-09-25 a user-reported desktop Chrome/WebGPU camera frame failed to surface the person box while the exact official ONNX asset, current 416×416 BGR/top-left-114 preprocessing, and the captured frame reproduced a person detection at about 0.90 on a CPU/WASM-equivalent path. Time Machine and Model Race keep their configured desktop WebGPU-first path; this evidence is specific to the tested live WebGPU path.
 - Training/benchmark dataset reported by the official project: MS COCO.
 
 ### License note

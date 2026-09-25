@@ -201,7 +201,7 @@ ${tail||'—'}`;}
     });
     if(!runtimeRegistry.get('yolox'))runtimeRegistry.register('yolox',{
       run:(source,canvas,options={})=>{const {benchmarking,...runtimeOptions}=options;return runYolo(source,canvas,runtimeOptions)},
-      prepare:()=>createYoloSession(),
+      prepare:(options={})=>createYoloSession(options.forceBackend||''),
       release:releaseYoloRuntime,
       backend:()=>state.yoloProvider.toUpperCase(),
       runtimeInfo:()=>({backend:state.yoloProvider,downloadMs:state.yoloDownloadMs,initMs:state.yoloInitMs,bytes:YOLO.bytes,cacheState:state.yoloCacheState,source:state.yoloSource}),
