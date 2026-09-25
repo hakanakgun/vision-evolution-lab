@@ -25,7 +25,7 @@ Selecting a model in Time Machine stays in Time Machine. Inside the Model follow
 | --- | --- | --- | --- |
 | 2016 | Tiny YOLOv2 | Pascal VOC 20 | ONNX Runtime Web / WASM |
 | 2017 | SSD-MobileNetV1 INT8 | COCO | ONNX Runtime Web / intentional WASM |
-| 2021 | YOLOX-Nano | COCO | ONNX Runtime Web / standard WASM on iOS; WebGPU-first on desktop |
+| 2021 | YOLOX-Nano | COCO | ONNX Runtime Web / Live Camera WASM; Time Machine + Model Race standard WASM on iOS, WebGPU-first on desktop |
 | 2023 | RT-DETR R18 | COCO | Transformers.js / WebGPU fp16 or WASM q8 |
 | 2024-06 | LW-DETR-tiny | COCO · pinned checkpoint label map | Time Machine + Live Camera · ONNX Runtime Web / WASM fp32 · 38.3 MB |
 | 2024-07 | RT-DETRv2 R18 · research preview | COCO | Transformers.js / WebGPU fp16 or WASM int8 |
