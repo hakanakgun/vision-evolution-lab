@@ -1,0 +1,29 @@
+name: temporary YOLOX model artifact
+
+on:
+  push:
+    branches:
+      - fix/yolox-class-aware-nms
+    paths:
+      - .github/workflows/yolox-model-artifact.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Download official YOLOX-Nano asset
+        run: |
+          curl -L --fail --retry 3             -o yolox_nano.onnx             https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_nano.onnx
+          test "$(stat -c %s yolox_nano.onnx)" = "3659407"
+          sha256sum yolox_nano.onnx
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yolox-nano-official
+          path: yolox_nano.onnx
+          retention-days: 1
