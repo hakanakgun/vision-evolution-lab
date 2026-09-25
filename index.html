@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.25-v0.16.0">
+<html lang="en" data-build="2026.09.25-v0.17.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.25-v0.16.0';
+      const CURRENT_BUILD = '2026.09.25-v0.17.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=0.16.0">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.17.0">
 </head>
 <body>
   <main class="shell">
@@ -89,6 +89,10 @@
           <div class="timeline-track" id="timeline-track"></div>
         </div>
         <p class="timeline-help" id="timeline-help">Choose a local image, then select a milestone. Month labels mark the first public paper date when known; older milestones keep year-only dates. Each experiment keeps its own task and output on the same image.</p>
+        <div class="note timeline-evolution" id="timeline-evolution">
+          <strong id="timeline-evolution-title">What changed in this generation?</strong>
+          <span id="timeline-evolution-text">Anchor-free one-stage detection separates classification and box regression heads while keeping a compact real-time CNN path.</span>
+        </div>
       </div>
 
       <div class="grid">
@@ -352,6 +356,17 @@
         </div>
         <div class="note" id="race-accuracy-note">Load the bundled COCO validation image and run the race to compare detections with its 19 official ground-truth boxes. This single image is a smoke test, not a dataset benchmark or model ranking.</div>
       </div>
+      <div class="card race-summary accuracy-summary">
+        <div class="race-summary-head">
+          <div><div class="eyebrow">Browser implementation sanity suite</div><h2>Fixed COCO validation check</h2></div>
+          <button class="btn secondary" id="race-sanity-run">Accuracy sanity ×4</button>
+        </div>
+        <div class="race-benchmark-table">
+          <div class="race-benchmark-row accuracy-row head"><span>Model</span><b>Precision</b><b>Recall</b><b>F1</b><b>TP / FP / FN</b></div>
+          <div id="race-sanity-body"></div>
+        </div>
+        <div class="note" id="race-sanity-status">Four fixed COCO 2017 validation images · confidence 0.40 · same class · IoU ≥ 0.50. This is a browser regression sanity check, not COCO AP and not a model ranking.</div>
+      </div>
       <div id="race-work-canvases" hidden></div>
     </section>
 
@@ -429,7 +444,7 @@
             <button class="btn" id="camera-start">Start camera</button>
             <button class="btn secondary" id="camera-stop" disabled>Stop</button>
             <span class="control-spacer"></span>
-            <span class="tiny">Confidence uses the Time Machine setting.</span>
+            <label class="range-wrap">Live confidence <input id="live-confidence" type="range" min="0.10" max="0.90" step="0.05" value="0.40"><b id="live-confidence-value">0.40</b></label>
           </div>
         </section>
         <aside class="card">
@@ -449,19 +464,19 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.16.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.17.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="src/core/runtime-bootstrap.js?v=0.16.0"></script>
-  <script src="src/core/preprocessing.js?v=0.16.0"></script>
-  <script src="src/models/models.js?v=0.16.0"></script>
-  <script src="src/core/detection-metrics.js?v=0.16.0"></script>
-  <script src="src/core/model-runtime.js?v=0.16.0"></script>
-  <script src="src/core/model-loader.js?v=0.16.0"></script>
-  <script src="src/app.js?v=0.16.0"></script>
-  <script src="src/models/lwdetr-postprocess.js?v=0.16.0"></script>
-  <script src="src/models/historical-detectors.js?v=0.16.0"></script>
-  <script src="src/models/race.js?v=0.16.0"></script>
-  <script src="src/history/history-experiments.js?v=0.16.0"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.17.0"></script>
+  <script src="src/core/preprocessing.js?v=0.17.0"></script>
+  <script src="src/models/models.js?v=0.17.0"></script>
+  <script src="src/core/detection-metrics.js?v=0.17.0"></script>
+  <script src="src/core/model-runtime.js?v=0.17.0"></script>
+  <script src="src/core/model-loader.js?v=0.17.0"></script>
+  <script src="src/app.js?v=0.17.0"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.17.0"></script>
+  <script src="src/models/historical-detectors.js?v=0.17.0"></script>
+  <script src="src/models/race.js?v=0.17.0"></script>
+  <script src="src/history/history-experiments.js?v=0.17.0"></script>
 </body>
 </html>
