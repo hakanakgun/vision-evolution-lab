@@ -35,7 +35,7 @@ This project currently loads the following runtime dependency from a CDN.
 - License: MIT
 - Upstream: `microsoft/onnxruntime`
 
-Most model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched from a pinned ONNX Model Zoo migration repository on Hugging Face; its repository metadata says Apache-2.0 while the imported model-card body says MIT, so both upstream statements are recorded rather than treated as one definitive weights-license claim. SSD-MobileNetV1, SSD 2016, DETR 2020, RT-DETR variants, D-FINE-N, and the MNIST task-reference model are fetched from pinned or official upstream sources. LW-DETR-tiny is the exception: its pinned Apache-2.0 source checkpoint is exported to a derived ONNX artifact, published in the repository’s GitHub Release, verified by exact size/SHA-256, and committed as `assets/models/lw-detr-tiny.onnx` for same-origin Pages delivery. YOLOX-Nano uses the official Megvii GitHub Release first and a pinned Apache-2.0 Hugging Face mirror only as a browser-fetch fallback. DETR's base model declares Apache-2.0, while its conversion repository has no independent license declaration. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
+Most model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched from a pinned ONNX Model Zoo migration repository on Hugging Face; its repository metadata says Apache-2.0 while the imported model-card body says MIT, so both upstream statements are recorded rather than treated as one definitive weights-license claim. SSD-MobileNetV1, Faster R-CNN 2015, SSD 2016, DETR 2020, YOLOS-tiny, RT-DETR variants, D-FINE-N, and the MNIST task-reference model are fetched from pinned or official upstream sources. LW-DETR-tiny is the exception: its pinned Apache-2.0 source checkpoint is exported to a derived ONNX artifact, published in the repository’s GitHub Release, verified by exact size/SHA-256, and committed as `assets/models/lw-detr-tiny.onnx` for same-origin Pages delivery. YOLOX-Nano uses the official Megvii GitHub Release first and a pinned Apache-2.0 Hugging Face mirror only as a browser-fetch fallback. DETR's base model declares Apache-2.0, while its conversion repository has no independent license declaration. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
 
 ## MNIST digit task-reference checkpoint
 
@@ -98,8 +98,25 @@ The original Vision Evolution Lab source code is licensed under the repository's
 
 - Project: Hugging Face Transformers.js
 - Browser import: jsDelivr, pinned to `@huggingface/transformers@4.3.0`
-- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for DETR, RT-DETR R18, RT-DETRv2 R18 and D-FINE-N. v4 uses the newer native WebGPU runtime/EP; WASM is used by historical references and remains available as fallback.
+- Purpose here: browser preprocessing, ONNX execution, postprocessing, cache/progress integration for DETR, YOLOS-tiny, RT-DETR R18, RT-DETRv2 R18 and D-FINE-N. v4 uses the newer native WebGPU runtime/EP; WASM is used by historical references and remains available as fallback.
 - Upstream package/project terms remain their own.
+
+## Faster R-CNN 2015 browser checkpoint
+
+- Model repository: `onnxmodelzoo/FasterRCNN-12-int8`, pinned revision `c4c979ff5c8043967de03c97daef7b54663182eb`.
+- File: `FasterRCNN-12-int8.onnx`, 44,631,113 bytes; SHA-256 `95f67f5f6249f4804f1302367dd88cee32bf47713b9858cc6d8ba835548f9b8e`.
+- Hugging Face repository metadata says Apache-2.0 while the imported Model Zoo card says MIT. The upstream `facebookresearch/maskrcnn-benchmark` implementation is MIT. These declarations are recorded separately; no definitive weights-license interpretation is asserted here.
+- Training/evaluation dataset reported upstream: MS COCO; dataset terms remain separate.
+- Runtime fetch only; not bundled or redistributed by this repository.
+
+## YOLOS-tiny browser conversion
+
+- Base model: `hustvl/yolos-tiny`, pinned revision `95a90f3c189fbfca3bcfc6d7315b9e84d95dc2de`; base repository metadata declares Apache-2.0.
+- Official HUST YOLOS code repository: MIT.
+- Browser conversion: `Xenova/yolos-tiny`, pinned revision `e2f9c7673f0fa61849efe2b56a0d7774779ebb9d`; the conversion repository does not independently declare a license.
+- q4 ONNX asset: 7,809,003 bytes; SHA-256 `a3e0b7d8931274aee8af01dc31b35d9c379247bdb7c86eaf222090728c4a894b`.
+- Upstream model card reports ImageNet-1k pretraining and COCO 2017 fine-tuning; those dataset terms remain separate from code/model license declarations.
+- Runtime fetch only through Transformers.js; not bundled here.
 
 ## SSD 2016 browser checkpoint
 

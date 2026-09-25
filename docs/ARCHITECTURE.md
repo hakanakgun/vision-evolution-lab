@@ -9,11 +9,11 @@ The current runtime is intentionally client-side so users can compare computer-v
 ## Main modules
 
 - `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints.
-- `src/models/models.js` — five general-object Model Race models, four Time Machine-only detector references, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
+- `src/models/models.js` — five general-object Model Race models, six additional Time Machine runtimes, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
 - `src/core/model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
 - `src/core/model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
 - `src/app.js` — Time Machine state, SSD-MobileNet runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
-- `src/models/historical-detectors.js` — adapters for SSD 2016, DETR 2020, LW-DETR-tiny, and D-FINE-N, including their model loading, preprocessing/postprocessing, Live Camera eligibility where declared, and release paths.
+- `src/models/historical-detectors.js` — adapters for Faster R-CNN 2015, SSD 2016, DETR 2020, YOLOS-tiny, LW-DETR-tiny, and D-FINE-N, including model loading, preprocessing/postprocessing, Live Camera eligibility where declared, and release paths.
 - `src/models/race.js` — Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
 - `src/history/history-experiments.js` — Time Machine historical experiment runners for a pattern-response preview, MNIST digit crops, frontal-face cascade, HOG pedestrian detection, and AlexNet ImageNet classification.
 - `src/history/classical-cv-worker.js` — lazy OpenCV.js WASM runtime, frontal-face cascade, HOG pedestrian detection, and explicit OpenCV object cleanup.
@@ -37,7 +37,7 @@ Runtime behavior is registered through `src/core/model-runtime.js`. Every runnab
 - optional `prepare()` for pre-run initialization
 - optional `runtimeInfo()`, inspection data, and diagnostic backend choices
 
-SSD registers its adapter in `src/app.js`; Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 register in `src/models/race.js`; SSD 2016, DETR 2020, LW-DETR-tiny, and D-FINE-N register in `src/models/historical-detectors.js`. Time Machine and Model Race resolve runtimes through this registry instead of selecting implementations with model-name branches.
+SSD registers its adapter in `src/app.js`; Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 register in `src/models/race.js`; Faster R-CNN 2015, SSD 2016, DETR 2020, YOLOS-tiny, LW-DETR-tiny, and D-FINE-N register in `src/models/historical-detectors.js`. Time Machine and Model Race resolve runtimes through this registry instead of selecting implementations with model-name branches.
 
 Model Race presentation is also capability-driven. Each `race` capability declares deterministic order, DOM prefix, work-canvas ownership, timing boundary, card/metric presentation, and architecture summary. `src/models/race.js` generates result cards, benchmark rows, pairwise-overlap cells, unmatched counters, architecture cards, and hidden work canvases from that metadata. Adding another model to the `general-object` comparison group no longer requires adding another static result card or pairwise overlap cell to `index.html`.
 
@@ -74,7 +74,7 @@ Direct ORT models no longer use one bundle on every platform.
 
 The bootstrap uses a parser-ordered script insertion. It intentionally avoids loading both ORT distributions into one page/process because that would add another WASM/native runtime and contaminate the memory question.
 
-Tiny YOLOv2 and SSD-MobileNetV1 INT8 always request the WASM execution provider. YOLOX requests WebGPU first only when the selected direct-ORT bundle is JSEP-capable; under the standard WASM bundle its provider list is WASM-only.
+Tiny YOLOv2, SSD-MobileNetV1 INT8, Faster R-CNN 2015, SSD 2016, and LW-DETR-tiny request WASM for their direct-ORT paths. Faster R-CNN uses WASM deliberately for operator coverage and follows the upstream 800/1333 resize plus 32-pixel padding contract; it remains Time Machine-only because the upstream export has a documented dynamic-shape portability issue. YOLOX requests WebGPU first only when the selected direct-ORT bundle is JSEP-capable; under the standard WASM bundle its provider list is WASM-only.
 
 The application pins `ort.env.wasm.wasmPaths` to the matching 1.30.0 distribution directory. When the page is not cross-origin isolated, `ort.env.wasm.numThreads` is forced to 1. With cross-origin isolation, the app may use up to four threads based on `navigator.hardwareConcurrency`.
 
@@ -82,6 +82,8 @@ This policy is an iOS memory-safety mitigation based on upstream ONNX Runtime ev
 
 
 ### Transformers.js
+
+YOLOS-tiny is loaded through pinned Transformers.js 4.3.0 from a pinned `Xenova/yolos-tiny` q4 conversion and runs on WASM only. It is staged at up to 640 px before the YOLOS processor applies its own 512/1333 resize and ImageNet normalization contract. It remains Time Machine-only pending broader browser and physical-device validation.
 
 RT-DETR R18 is loaded through pinned Transformers.js 4.3.0 using the pinned `onnx-community/rtdetr_r18vd` revision declared in `src/models/models.js`.
 

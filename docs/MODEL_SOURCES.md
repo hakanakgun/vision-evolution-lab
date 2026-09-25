@@ -91,6 +91,23 @@ For Model Race overlap only, legacy VOC label synonyms such as `aeroplane`, `mot
 
 The Hugging Face repository metadata currently declares `apache-2.0`, while the imported ONNX Model Zoo model-card body states `MIT`. This is internally inconsistent upstream. Both are permissive, but Vision Evolution Lab does not infer a single definitive weights license from that conflict. The binary is not redistributed by this repository; the browser fetches the exact pinned upstream asset. Re-check canonical terms before bundling, mirroring, modifying, or commercially redistributing the checkpoint. Pascal VOC dataset terms are separate from model/code terms.
 
+## Faster R-CNN 2015 reference
+
+- Purpose: makes the 2015 two-stage Region Proposal Network milestone executable in Time Machine; excluded from Model Race, Live Camera, individual benchmarks, and Inside the Model pending broader portability validation.
+- Historical reference: Ren et al., *Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks*, NeurIPS 2015.
+- Browser checkpoint: `onnxmodelzoo/FasterRCNN-12-int8`, pinned revision `c4c979ff5c8043967de03c97daef7b54663182eb`.
+- File: `FasterRCNN-12-int8.onnx`, 44,631,113 bytes; SHA-256 `95f67f5f6249f4804f1302367dd88cee32bf47713b9858cc6d8ba835548f9b8e`.
+- Upstream lineage: ONNX Model Zoo migration of an R50-FPN Faster R-CNN model from Facebook Research's `maskrcnn-benchmark`. The checkpoint is a later COCO reference, not the original 2015 paper weights.
+- Training/evaluation data reported by the imported model card: MS COCO. Dataset terms are separate from model/code licenses.
+- Preprocessing follows the upstream deployment card: keep 0–255 image values, resize aspect-preservingly toward an 800 px short side while capping the long side at 1333 px, convert RGB canvas pixels to BGR, subtract `[102.9801, 115.9465, 122.7717]`, convert HWC to CHW, then zero-pad the bottom/right to dimensions divisible by 32.
+- Output contract: three tensors representing xyxy boxes, one-based COCO labels, and scores. The migrated graph currently exposes numeric output-node names, so the browser validates and decodes them by tensor shape/type rather than inventing semantic names. No page-side NMS is added.
+- Runtime: ONNX Runtime Web 1.30.0, WASM only. A Chrome/Ubuntu browser smoke on 2026-09-24 executed the pinned graph and returned finite detections on the bundled COCO image; this is one browser/image smoke test, not broad compatibility, accuracy, or performance evidence.
+- Known portability risk: ONNX Model Zoo issue [#691](https://github.com/onnx/models/issues/691) documents shape/broadcast failures for Faster R-CNN exports at some dynamic image dimensions. Vision Evolution Lab follows the documented resize/padding contract but keeps this model Time Machine-only until more browser/device inputs are exercised.
+
+### License note
+
+The migrated Hugging Face repository metadata declares Apache-2.0 while the imported Model Zoo card says MIT. The upstream `facebookresearch/maskrcnn-benchmark` codebase is MIT. Vision Evolution Lab records all three source-level statements rather than collapsing them into a definitive checkpoint-license claim. The binary is fetched from the pinned upstream repository at runtime and is not bundled here. Re-check canonical terms before redistribution or mirroring.
+
 ## SSD-MobileNetV1-12 INT8
 
 - Purpose: first runnable object-detection baseline.
@@ -142,6 +159,19 @@ If this project later redistributes or modifies YOLOX weights instead of referen
 ## Transformer-era model sources
 
 RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS 18.7 / Brave-WebKit WebGPU fp16 inference result and 20-run warm benchmark, but remains a research preview pending broader device/sample validation. D-FINE-N and LW-DETR-tiny run in Time Machine and Live Camera through their existing pinned ONNX browser paths; LW-DETR has one user-reported iOS ×20 timing sample, while sustained camera behavior, broad user-image accuracy, and cross-device validation remain outstanding.
+
+### YOLOS-tiny
+
+- Purpose: adds a 2021 pure/vanilla Vision Transformer detector to Time Machine; excluded from Model Race, Live Camera, individual benchmarks, and Inside the Model pending broader validation.
+- Paper: *You Only Look at One Sequence: Rethinking Transformer in Vision through Object Detection* (YOLOS), first public arXiv version June 2021.
+- Official implementation: `hustvl/YOLOS`, MIT-licensed code.
+- Base checkpoint: `hustvl/yolos-tiny`, pinned revision `95a90f3c189fbfca3bcfc6d7315b9e84d95dc2de`; repository metadata declares Apache-2.0. The model was pretrained on ImageNet-1k and fine-tuned on COCO 2017 according to its model card.
+- Browser conversion: `Xenova/yolos-tiny`, pinned revision `e2f9c7673f0fa61849efe2b56a0d7774779ebb9d`. The conversion repository does not independently declare a model license, so the base-model and code licenses are recorded separately.
+- Browser asset: q4 ONNX, 7,809,003 bytes; SHA-256 `a3e0b7d8931274aee8af01dc31b35d9c379247bdb7c86eaf222090728c4a894b`.
+- Processor contract: RGB input, rescale by 1/255, ImageNet mean/std normalization, shortest edge 512 with longest edge capped at 1333. Vision Evolution Lab first stages the source image at most 640 px on its longest side to bound browser memory; Transformers.js then owns the model-specific processor/postprocessor path.
+- Runtime: Transformers.js 4.3.0 object-detection pipeline, WASM q4 only. The q4 path is deliberate because the pinned conversion history documents JavaScript end-to-end issues for an int8 variant.
+- A Chrome/Ubuntu browser smoke on 2026-09-24 executed the pinned q4 pipeline and returned finite detections on the bundled COCO image. This validates one browser/image execution path only; iOS/WebKit, multi-image accuracy, sustained memory behavior, and generalized performance are unverified.
+- ImageNet and COCO dataset terms remain separate from the model/code license declarations. Vision Evolution Lab does not redistribute training datasets or this model binary.
 
 ### RT-DETR R18
 
