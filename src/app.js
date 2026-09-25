@@ -74,6 +74,12 @@
     }
     function timelineDate(entry){const month=Number(entry?.month),names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return Number.isInteger(month)&&month>=1&&month<=12?`${names[month-1]} ${entry.year}`:String(entry?.year??'');}
     function timelineModelEntry(key){return (REGISTRY.timeline||[]).find(entry=>entry.model===key)||REGISTRY[key]||{};}
+    function timelineExperimentEntry(key){return (REGISTRY.timeline||[]).find(entry=>entry.experiment===key)||REGISTRY.historyExperiments?.[key]||{};}
+    function updateEvolutionNote(){
+      const entry=state.historyExperiment?timelineExperimentEntry(state.historyExperiment):timelineModelEntry(state.activeModel),text=entry?.evolution||'This milestone keeps its native task and runtime contract; no broader capability is inferred.';
+      $('timeline-evolution-title').textContent='What changed in this generation?';
+      $('timeline-evolution-text').textContent=text;
+    }
     function renderTimeline(){
       const track=$('timeline-track'),entries=timeMachineEntries();if(!track)return;
       track.replaceChildren();
@@ -120,6 +126,7 @@
       document.querySelectorAll('[data-runnable-model]').forEach(button=>{const selected=!active&&button.dataset.runnableModel===state.activeModel;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});
       document.querySelectorAll('[data-history-experiment]').forEach(button=>{const selected=button.dataset.historyExperiment===state.historyExperiment;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});
       $('timeline-selection').textContent=active&&spec?spec.year+' · '+spec.title:timelineDate(timelineModelEntry(state.activeModel))+' · '+activeModel().title;
+      updateEvolutionNote();
       if(active&&spec){
         $('history-experiment-title').textContent=spec.year+' · '+spec.title;
         $('history-experiment-description').textContent=spec.description||'This historical method runs on the selected Time Machine image.';
@@ -274,7 +281,7 @@
       const dims=prepareInsidePreview(modelKey,source);if(dims)$('inside-size').textContent=insideShape(spec,dims);else{$('inside-size').textContent='No image yet';$('inside-source-preview').hidden=true;$('inside-input-preview').hidden=true;$('inside-source-empty').hidden=false;$('inside-input-empty').hidden=false;setMetric('inside-source-size','—');setMetric('inside-model-size',spec.input)}
       const adapter=RuntimeRegistry.get(modelKey),inspectionData=result?adapter?.inspectionData?.():null,expectsData=spec.intermediate.data==='adapter',hasRenderedData=expectsData&&renderInspectionData(spec,inspectionData);
       if(!expectsData)renderInspectionData(spec,null);$('inside-intermediate-title').textContent=spec.intermediate.title;$('inside-intermediate-subtitle').textContent=spec.intermediate.subtitle;$('inside-intermediate-note').textContent=spec.intermediate.note;
-      $('inside-intermediate-empty').textContent=expectsData?(spec.intermediate.statusEmpty||'Run the model to populate real inspection data.'):'This model exposes its real preprocessing contract and detections, but no registered intermediate activation tensor.';
+      $('inside-intermediate-empty').textContent=expectsData?(spec.intermediate.statusEmpty||'Run the model to populate real inspection data.'):(spec.intermediate.emptyText||'This model exposes its real preprocessing contract and detections, but no registered intermediate activation tensor.');
       $('feature-map-status').textContent=expectsData?(hasRenderedData?(spec.intermediate.statusReady||'Live inspection data available'):(spec.intermediate.statusEmpty||'Run the model to populate real inspection data.')):(spec.intermediate.status||'Intermediate activations not exposed');
       if(result){const retained=Number.isFinite(result.retained)?result.retained:(result.detections?result.detections.length:0),visible=Number.isFinite(result.visible)?result.visible:0,inf=Number.isFinite(result.infMs)?' · inference '+ms(result.infMs):'',invalid=Number.isFinite(result.droppedInvalid)&&result.droppedInvalid>0?' · dropped '+result.droppedInvalid+' invalid boxes':'';$('inside-summary').textContent=model.title+': '+visible+' visible at UI confidence '+Number($('confidence').value).toFixed(2)+' · '+retained+' retained outputs'+invalid+inf+'. '+spec.resultNote}else $('inside-summary').textContent=model.title+' selected. The preview reflects its native preprocessing contract; run the model to populate runtime output details.';
     }
@@ -300,9 +307,9 @@
       return out;
     }
 
-    function drawDetections(canvas,detections){
+    function drawDetections(canvas,detections,confidence=Number($('confidence').value)){
       const ctx=canvas.getContext('2d');
-      const threshold=Number($('confidence').value);
+      const threshold=Number(confidence);
       const kept=detections.filter(d=>d.score>=threshold);
       ctx.lineWidth=Math.max(2,canvas.width/280);
       ctx.font=`600 ${Math.max(12,Math.round(canvas.width/42))}px system-ui,sans-serif`;
@@ -338,7 +345,7 @@
       }
     }
 
-    async function inferSource(source,targetCanvas,{updateMain=true}={}){
+    async function inferSource(source,targetCanvas,{updateMain=true,confidence}={}){
       const session=await createSession(),firstForSession=baselineSessionRuns===0;
       const totalStart=performance.now();
       const preStart=performance.now();if(firstForSession)traceDiagnostic('ssd-first-preprocess-start',{provider:state.provider||''});
@@ -353,7 +360,7 @@
       baselineSessionRuns++;
       const postStart=performance.now();
       const detections=decode(results);
-      const visible=drawDetections(targetCanvas,detections);
+      const visible=drawDetections(targetCanvas,detections,confidence);
       const postMs=performance.now()-postStart;
       if(firstForSession)traceDiagnostic('ssd-first-postprocess-complete',{provider:state.provider||'',retained:detections.length,visible});
       const totalMs=performance.now()-totalStart;
@@ -468,10 +475,11 @@
     $('rerun').addEventListener('click',runUploaded);
     $('benchmark').addEventListener('click',runBenchmark);
     $('confidence').addEventListener('input',()=>{$('confidence-value').textContent=Number($('confidence').value).toFixed(2);if(!state.historyExperiment)redrawUploaded();});
+    $('live-confidence').addEventListener('input',()=>{$('live-confidence-value').textContent=Number($('live-confidence').value).toFixed(2);});
 
     function liveModelKeys(){return RuntimeRegistry.validate({capability:'live'}).expected}
     function currentLiveAdapter(){return RuntimeRegistry.get(state.liveModel)}
-    function liveRuntimeOptions(adapter){const meta=RuntimeRegistry.liveMeta(adapter?.model),forceBackend=meta?.forceBackend||'';return forceBackend?{live:true,forceBackend,allowFallback:false}:{live:true}}
+    function liveRuntimeOptions(adapter){const meta=RuntimeRegistry.liveMeta(adapter?.model),forceBackend=meta?.forceBackend||'',confidence=Number($('live-confidence').value);return forceBackend?{live:true,confidence,forceBackend,allowFallback:false}:{live:true,confidence}}
     function currentCameraTrack(){return state.stream?.getVideoTracks?.()[0]||null}
     function resetLiveMetrics(){for(const id of ['live-inf','live-total','live-fps','live-count'])$(id).textContent='—';$('live-frames').textContent='0';state.liveSamples=[];state.liveFrameCount=0}
     function setLiveStatus(message,kind=''){const el=$('live-model-status');el.textContent=message||'';el.className=`tiny live-model-status ${kind}`.trim()}
@@ -727,7 +735,7 @@
     });
 
     RuntimeRegistry.register('ssd',{
-      run:(source,canvas,{updateMain=false}={})=>inferSource(source,canvas,{updateMain}),
+      run:(source,canvas,{updateMain=false,confidence}={})=>inferSource(source,canvas,{updateMain,confidence}),
       prepare:()=>createSession(),
       release:releaseBaselineRuntime,
       backend:()=>(state.provider||'wasm').toUpperCase(),
