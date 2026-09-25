@@ -6,29 +6,29 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.16.0',
+    version:'0.17.0',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),
     timeline:Object.freeze([
-      Object.freeze({year:1980,title:'Neocognitron',note:'run · early pattern-response demo',kind:'history-experiment',experiment:'neocognitron'}),
-      Object.freeze({year:1998,title:'LeNet-era MNIST CNN',note:'run · handwritten digits only',kind:'history-experiment',experiment:'mnist-digits'}),
-      Object.freeze({year:2001,title:'Viola–Jones',note:'run · frontal-face cascade',kind:'history-experiment',experiment:'viola-jones'}),
-      Object.freeze({year:2005,title:'HOG + SVM',note:'run · pedestrian detector',kind:'history-experiment',experiment:'hog-pedestrians'}),
-      Object.freeze({year:2012,title:'AlexNet',note:'run · ImageNet top-5 classification',kind:'history-experiment',experiment:'alexnet-classification'}),
+      Object.freeze({year:1980,title:'Neocognitron',note:'run · early pattern-response demo',kind:'history-experiment',experiment:'neocognitron',evolution:'Hierarchical local receptive fields and pooling introduced a shift-tolerant pattern-recognition idea before modern supervised CNN object detectors.'}),
+      Object.freeze({year:1998,title:'LeNet-era MNIST CNN',note:'run · handwritten digits only',kind:'history-experiment',experiment:'mnist-digits',evolution:'Learned convolutional features replaced hand-written image rules for a narrow recognition task: isolated handwritten digits.'}),
+      Object.freeze({year:2001,title:'Viola–Jones',note:'run · frontal-face cascade',kind:'history-experiment',experiment:'viola-jones',evolution:'Hand-designed Haar-like features, an AdaBoost-selected cascade and fast rejection made real-time frontal-face detection practical, but the detector remains task-specific.'}),
+      Object.freeze({year:2005,title:'HOG + SVM',note:'run · pedestrian detector',kind:'history-experiment',experiment:'hog-pedestrians',evolution:'Local gradient-orientation histograms describe human shape more robustly than raw pixels, while a linear SVM and sliding window still target one hand-engineered task.'}),
+      Object.freeze({year:2012,title:'AlexNet',note:'run · ImageNet top-5 classification',kind:'history-experiment',experiment:'alexnet-classification',evolution:'Deep learned visual representations scaled to large-category image classification; this milestone recognizes whole images rather than localizing objects.'}),
       Object.freeze({year:2014,title:'R-CNN',note:'history only · region proposals + CNN',kind:'historical'}),
-      Object.freeze({year:2015,model:'fasterrcnn',title:'Faster R-CNN',note:'run · two-stage RPN · WASM INT8',kind:'runnable'}),
+      Object.freeze({year:2015,model:'fasterrcnn',title:'Faster R-CNN',note:'run · two-stage RPN · WASM INT8',kind:'runnable',evolution:'Region proposals became learned: a Region Proposal Network shares convolutional features with a second-stage RoI classifier/regressor instead of relying on an external proposal algorithm.'}),
       Object.freeze({year:2016,title:'YOLOv1',note:'history only · single-stage detector',kind:'historical'}),
-      Object.freeze({year:2016,model:'ssd2016',title:'SSD · ResNet-34 INT8',note:'reference checkpoint · COCO · WASM',kind:'runnable'}),
-      Object.freeze({year:2016,model:'tinyyolo',title:'Tiny YOLOv2',note:'tap to run · VOC20',kind:'runnable'}),
-      Object.freeze({year:2017,model:'ssd',title:'SSD + MobileNet',note:'tap to run',kind:'runnable'}),
-      Object.freeze({year:2020,month:5,model:'detr',title:'DETR · ResNet-50',note:'reference checkpoint · COCO · WASM q8',kind:'runnable',className:'transformer'}),
-      Object.freeze({year:2021,month:6,model:'yolos',title:'YOLOS-tiny',note:'run · pure ViT detector · WASM q4',kind:'runnable',className:'transformer'}),
-      Object.freeze({year:2021,month:7,model:'yolox',title:'YOLOX-Nano',note:'tap to run',kind:'runnable'}),
-      Object.freeze({year:2023,month:4,model:'rtdetr',title:'RT-DETR R18',note:'tap to run',kind:'runnable',className:'transformer'}),
-      Object.freeze({year:2024,month:6,model:'lwdetr',title:'LW-DETR-tiny',note:'run · Time Machine · WASM fp32',kind:'runnable',className:'transformer'}),
-      Object.freeze({year:2024,month:7,model:'rtdetrv2',title:'RT-DETRv2 R18',note:'research preview · tap to run',kind:'runnable',className:'transformer'}),
-      Object.freeze({year:2024,month:10,model:'dfine',title:'D-FINE-N',note:'tap to run · Time Machine',kind:'runnable',className:'transformer'})
+      Object.freeze({year:2016,model:'ssd2016',title:'SSD · ResNet-34 INT8',note:'reference checkpoint · COCO · WASM',kind:'runnable',evolution:'Single-shot dense prediction removes a separate proposal stage and predicts classes and boxes across multiple feature scales.'}),
+      Object.freeze({year:2016,model:'tinyyolo',title:'Tiny YOLOv2',note:'tap to run · VOC20',kind:'runnable',evolution:'A compact one-stage grid-and-anchor detector predicts boxes, objectness and classes in one network pass, trading some accuracy for real-time efficiency.'}),
+      Object.freeze({year:2017,model:'ssd',title:'SSD + MobileNet',note:'tap to run',kind:'runnable',evolution:'MobileNet makes single-shot object detection practical on constrained devices by pairing lightweight depthwise-separable CNN features with SSD heads.'}),
+      Object.freeze({year:2020,month:5,model:'detr',title:'DETR · ResNet-50',note:'reference checkpoint · COCO · WASM q8',kind:'runnable',className:'transformer',evolution:'Detection becomes direct set prediction: learned object queries and bipartite matching replace anchor design and the traditional page-side NMS pipeline.'}),
+      Object.freeze({year:2021,month:6,model:'yolos',title:'YOLOS-tiny',note:'run · pure ViT detector · WASM q4',kind:'runnable',className:'transformer',evolution:'A plain Vision Transformer is used as the detector itself: image patches and detection tokens share one transformer sequence instead of relying on a CNN backbone.'}),
+      Object.freeze({year:2021,month:7,model:'yolox',title:'YOLOX-Nano',note:'tap to run',kind:'runnable',evolution:'Modern one-stage YOLO becomes anchor-free and separates classification from box regression in a decoupled head, retaining a compact real-time CNN path.'}),
+      Object.freeze({year:2023,month:4,model:'rtdetr',title:'RT-DETR R18',note:'tap to run',kind:'runnable',className:'transformer',evolution:'Query-based end-to-end DETR detection is redesigned for real-time use, keeping set prediction while reducing the latency gap to one-stage detectors.'}),
+      Object.freeze({year:2024,month:6,model:'lwdetr',title:'LW-DETR-tiny',note:'run · Time Machine · WASM fp32',kind:'runnable',className:'transformer',evolution:'A lightweight DETR design reduces encoder/decoder cost while retaining query-based end-to-end predictions for smaller deployment targets.'}),
+      Object.freeze({year:2024,month:7,model:'rtdetrv2',title:'RT-DETRv2 R18',note:'research preview · tap to run',kind:'runnable',className:'transformer',evolution:'RT-DETRv2 refines the real-time DETR training and deployment recipe while preserving end-to-end query-based detection without page-side NMS.'}),
+      Object.freeze({year:2024,month:10,model:'dfine',title:'D-FINE-N',note:'tap to run · Time Machine',kind:'runnable',className:'transformer',evolution:'A compact modern end-to-end detector focuses on finer box-regression modeling while keeping a deployment-oriented transformer detection pipeline.'})
     ]),
     historyExperiments:Object.freeze({
       'neocognitron':Object.freeze({
@@ -139,7 +139,20 @@
     fasterrcnn:Object.freeze({
       id:'fasterrcnn-r50-fpn-12-int8',title:'Faster R-CNN · ResNet-50 FPN INT8',year:2015,status:'runnable',family:'Faster R-CNN · two-stage region proposal network',task:'object-detection',
       license:'HF metadata Apache-2.0; model-card body MIT; upstream maskrcnn-benchmark MIT; see docs/MODEL_SOURCES.md',bytes:44631113,sha256:'95f67f5f6249f4804f1302367dd88cee32bf47713b9858cc6d8ba835548f9b8e',revision:'c4c979ff5c8043967de03c97daef7b54663182eb',
-      capabilities:Object.freeze({timeMachine:true,benchmark:false,live:false,race:false,inspection:false}),
+      capabilities:Object.freeze({timeMachine:true,benchmark:false,live:false,race:false,inspection:Object.freeze({
+        mode:'two-stage-output-contract',stages:Object.freeze(['preprocessing','rpn-internal','final-detections']),
+        input:'short edge 800 · long edge ≤1333 · pad to ×32',resize:'aspect preserve · short 800 / long ≤1333',tensor:'float32 · CHW',channels:'BGR',normalization:'subtract [102.9801,115.9465,122.7717]',
+        preview:Object.freeze({mode:'short-long-pad32',shortSide:800,longSide:1333,multiple:32,caption:'Faster R-CNN resized + zero-padded input preview'}),
+        shape:Object.freeze({layout:'NCHW',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'Resize + pad',text:'The source is resized toward an 800 px short edge, capped at 1333 px on the long edge, then zero-padded to multiples of 32.'}),
+          step3:Object.freeze({title:'Shared features + RPN',text:'BGR pixels are mean-subtracted. Inside the model, the Region Proposal Network proposes candidate regions from shared backbone/FPN features.'}),
+          step4:Object.freeze({title:'RoI heads → final detections',text:'Second-stage RoI heads classify and refine proposals. This pinned ONNX export exposes final boxes, labels and scores; it does not expose proposal coordinates.'})
+        }),
+        comparison:Object.freeze({label:'Faster R-CNN',input:'dynamic · 800/1333',resize:'aspect preserve',padding:'bottom/right · ×32',layout:'CHW',dtype:'float32 input · INT8 weights',channels:'BGR · mean subtraction'}),
+        intermediate:Object.freeze({title:'RPN proposals are internal to this export',subtitle:'The two-stage architecture uses learned proposals, but the pinned browser graph exports only final boxes, labels and scores.',note:'Proposal coordinates or RoI feature tensors are not fabricated. An inspectable export with those outputs is required to visualize them.',emptyText:'Real final detections are available after a run; RPN proposal tensors are not exported by this checkpoint.',data:'none',status:'Final detections exposed · RPN proposals not exported'}),
+        resultNote:'The runtime summary above reports the actual final detections returned by the pinned graph; no synthetic proposals are shown.'
+      })}),
       executionProviders:Object.freeze(['wasm']),
       providerNote:'WASM is intentional for operator coverage. The upstream dynamic-shape export has a known portability issue; this adapter follows the documented 800/1333 resize and 32-pixel padding contract and remains Time Machine-only pending broader browser/device validation.',
       preprocessing:Object.freeze({resize:'aspect preserve · shortest edge target 800 · longest edge capped at 1333',layout:'CHW',dtype:'float32 input / INT8 weights',channels:'BGR',normalization:'raw 0–255 minus [102.9801,115.9465,122.7717]',padding:'bottom/right zeros to multiples of 32'}),
@@ -156,14 +169,27 @@
     }),
     detr:Object.freeze({
       id:'detr-resnet50-xenova-q8',title:'DETR · ResNet-50',year:2020,status:'runnable',family:'DETR · Transformer set prediction',task:'object-detection',license:'Apache-2.0 base model; conversion license not independently declared',modelId:'Xenova/detr-resnet-50',baseModel:'facebook/detr-resnet-50',revision:'8be7ab59ff663484ee9ba2e8d8f267330d5ad03e',input:640,
-      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:false,race:false,inspection:Object.freeze({mode:'processor-contract-only',stages:Object.freeze(['preprocessing']),input:'source staging ≤640; processor-managed',resize:'aspect-preserving stage; Transformers.js processor resize',tensor:'float32 · NCHW',channels:'RGB',normalization:'processor-managed',preview:Object.freeze({mode:'aspect-max',maxSide:640,caption:'DETR staged image · processor resizes internally'}),shape:Object.freeze({layout:'NCHW',channels:3}),pipeline:Object.freeze({step2:Object.freeze({title:'Stage image',text:'The source is aspect-preservingly staged at up to 640 px; the Transformers.js processor performs model-specific resizing.'}),step3:Object.freeze({title:'Processor tensor',text:'Transformers.js handles RGB conversion, normalization and tensor layout.'}),step4:Object.freeze({title:'DETR set prediction',text:'ResNet-50 encoder-decoder predicts scored object sets; the pipeline performs postprocessing.'})}),comparison:Object.freeze({label:'DETR · ResNet-50',input:'processor-managed',resize:'processor-managed',padding:'processor-managed',layout:'NCHW',dtype:'float32',channels:'RGB'}),intermediate:Object.freeze({title:'DETR intermediate tensors not exposed',subtitle:'The production pipeline exposes final detections only.',note:'Encoder/decoder activations are not available from this pipeline.',data:'none',status:'Intermediate activations not exposed'}),resultNote:'Transformers.js performs DETR postprocessing; no page-side NMS is added.'})}),
+      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:false,race:false,inspection:Object.freeze({mode:'processor-contract-only',stages:Object.freeze(['preprocessing']),input:'source staging ≤640; processor-managed',resize:'aspect-preserving stage; Transformers.js processor resize',tensor:'float32 · NCHW',channels:'RGB',normalization:'processor-managed',preview:Object.freeze({mode:'aspect-max',maxSide:640,caption:'DETR staged image · processor resizes internally'}),shape:Object.freeze({layout:'NCHW',channels:3}),pipeline:Object.freeze({step2:Object.freeze({title:'Stage image',text:'The source is aspect-preservingly staged at up to 640 px; the Transformers.js processor performs model-specific resizing.'}),step3:Object.freeze({title:'Processor tensor',text:'Transformers.js handles RGB conversion, normalization and tensor layout.'}),step4:Object.freeze({title:'Object-query set prediction',text:'Learned object queries are decoded into a fixed prediction set and trained with bipartite matching; the Transformers.js pipeline returns postprocessed detections without page-side NMS.'})}),comparison:Object.freeze({label:'DETR · ResNet-50',input:'processor-managed',resize:'processor-managed',padding:'processor-managed',layout:'NCHW',dtype:'float32',channels:'RGB'}),intermediate:Object.freeze({title:'DETR query tensors not exposed',subtitle:'The active Transformers.js pipeline returns final detections, not per-query logits, boxes, decoder states or attention tensors.',note:'The query-based architecture is described from the verified model/runtime contract; no query or attention visualization is fabricated.',emptyText:'Final detections are observable, but individual object-query tensors are not exposed by this production pipeline.',data:'none',status:'Query internals not exposed'}),resultNote:'Transformers.js performs DETR postprocessing; no page-side NMS is added.'})}),
       preprocessing:Object.freeze({resize:'processor-managed after max-640 staging',layout:'NCHW',dtype:'float32 input / q8 weights',channels:'RGB',padding:'processor-managed'}),runtime:Object.freeze({wasm:Object.freeze({device:'wasm',dtype:'q8',modelBytes:43102531})}),decoder:'Transformers.js DETR object-detection pipeline',
       ui:Object.freeze({subtitle:'DETR 2020 · ResNet-50 · COCO · Transformers.js',provenance:'Pinned Xenova Transformers.js conversion of facebook/detr-resnet-50, whose base checkpoint is Apache-2.0. The conversion repository does not independently state a license. This is a later COCO 2017 reference checkpoint, not the exact paper weights.',runtime:Object.freeze({initLabel:'Pipeline load',bytesText:'43.1 MB q8',cacheInitial:'managed by pipeline',managedTransferWhenMissing:true,inferenceBoundaryNote:'Inference includes Transformers.js processor, model and postprocessor work.'}),links:Object.freeze([Object.freeze({label:'DETR paper ↗',url:'https://arxiv.org/abs/2005.12872'}),Object.freeze({label:'Pinned Transformers.js model ↗',url:'https://huggingface.co/Xenova/detr-resnet-50/tree/8be7ab59ff663484ee9ba2e8d8f267330d5ad03e'}),Object.freeze({label:'Base model ↗',url:'https://huggingface.co/facebook/detr-resnet-50'}),Object.freeze({label:'License/provenance ↗',url:'docs/MODEL_SOURCES.md#detr-2020-reference'})])})
     }),
     yolos:Object.freeze({
       id:'yolos-tiny-transformersjs-q4',title:'YOLOS-tiny',year:2021,status:'runnable',family:'YOLOS · vanilla Vision Transformer',task:'object-detection',
       license:'Apache-2.0 base checkpoint; HUST code MIT; conversion license not independently declared',modelId:'Xenova/yolos-tiny',baseModel:'hustvl/yolos-tiny',revision:'e2f9c7673f0fa61849efe2b56a0d7774779ebb9d',baseRevision:'95a90f3c189fbfca3bcfc6d7315b9e84d95dc2de',sha256:'a3e0b7d8931274aee8af01dc31b35d9c379247bdb7c86eaf222090728c4a894b',
-      capabilities:Object.freeze({timeMachine:true,benchmark:false,live:false,race:false,inspection:false}),
+      capabilities:Object.freeze({timeMachine:true,benchmark:false,live:false,race:false,inspection:Object.freeze({
+        mode:'transformer-contract-only',stages:Object.freeze(['preprocessing','patch-sequence','set-prediction']),
+        input:'≤640 stage · processor short edge 512 / long ≤1333',resize:'processor-managed after aspect-preserving stage',tensor:'float32 · NCHW',channels:'RGB',normalization:'1/255 + ImageNet mean/std',
+        preview:Object.freeze({mode:'aspect-max',maxSide:640,caption:'YOLOS browser staging preview · processor resizes internally'}),
+        shape:Object.freeze({layout:'NCHW',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'Processor resize',text:'The browser stages the source at up to 640 px; the YOLOS processor then applies its model-specific aspect resize and normalization.'}),
+          step3:Object.freeze({title:'Patch + detection tokens',text:'Image patches and learned detection tokens enter a plain Vision Transformer sequence rather than a CNN feature pyramid.'}),
+          step4:Object.freeze({title:'Transformer set prediction',text:'Detection tokens produce scored boxes through the Transformers.js object-detection pipeline.'})
+        }),
+        comparison:Object.freeze({label:'YOLOS-tiny',input:'processor-managed',resize:'short 512 / long ≤1333',padding:'processor-managed',layout:'NCHW',dtype:'float32 input · q4 weights',channels:'RGB · ImageNet normalization'}),
+        intermediate:Object.freeze({title:'YOLOS token/attention tensors not exposed',subtitle:'The current Transformers.js production pipeline returns postprocessed detections, not patch-token, detection-token or attention activations.',note:'No attention map or token activation is synthesized. A separately inspectable model/export is required for that view.',emptyText:'The transformer pipeline is shown from its verified contract; internal token and attention tensors are not exposed.',data:'none',status:'Transformer internals not exposed'}),
+        resultNote:'Final detections are real pipeline outputs; internal transformer activations are not displayed.'
+      })}),
       executionProviders:Object.freeze(['wasm']),
       preprocessing:Object.freeze({resize:'processor-managed · shortest edge 512, longest edge 1333 after ≤640 staging',layout:'NCHW',dtype:'float32 input / q4 weights',channels:'RGB',normalization:'1/255 + ImageNet mean/std',padding:'processor-managed'}),
       runtime:Object.freeze({wasm:Object.freeze({device:'wasm',dtype:'q4',modelBytes:7809003})}),
@@ -226,10 +252,10 @@
         pipeline:Object.freeze({
           step2:Object.freeze({title:'Processor resize',text:'Transformers.js resizes the source to 640×640 without page-side padding.'}),
           step3:Object.freeze({title:'Processor tensor',text:'RGB pixels are rescaled by 1/255 and arranged as float NCHW input.'}),
-          step4:Object.freeze({title:'RT-DETR',text:'End-to-end transformer set prediction returns scored boxes without page-side NMS.'})
+          step4:Object.freeze({title:'Query-based RT-DETR decoder',text:'The end-to-end detector turns decoder queries into a prediction set and returns scored boxes without page-side NMS.'})
         }),
         comparison:Object.freeze({label:'RT-DETR R18',input:'640×640',resize:'processor resize',padding:'none',layout:'NCHW',dtype:'float input',channels:'RGB · 1/255'}),
-        intermediate:Object.freeze({title:'RT-DETR intermediate tensors not exposed',subtitle:'The production pipeline exposes detections but not selected encoder/decoder activations.',note:'A separate inspectable ONNX export is required for truthful RT-DETR intermediate activation visualization.',data:'none',status:'Intermediate activations not exposed'}),
+        intermediate:Object.freeze({title:'RT-DETR query tensors not exposed',subtitle:'The production pipeline exposes final detections but not decoder-query logits, boxes, states or attention tensors.',note:'Query-based set prediction is described from the model contract; an inspectable export is required before any query/attention tensor can be visualized.',emptyText:'Final detections are observable; individual RT-DETR query tensors are not exposed by this production pipeline.',data:'none',status:'Query internals not exposed'}),
         resultNote:'No page-side NMS is added.'
       })}),
       preprocessing:Object.freeze({resize:'640×640 processor-managed',layout:'NCHW',dtype:'float32 input / quantized weights',channels:'RGB',rescale:'1/255',normalize:false,padding:'none'}),
@@ -257,10 +283,10 @@
         pipeline:Object.freeze({
           step2:Object.freeze({title:'Processor resize',text:'Transformers.js resizes the source to 640×640 without page-side padding.'}),
           step3:Object.freeze({title:'Processor tensor',text:'RGB pixels are rescaled by 1/255 and arranged as float NCHW input, without mean/std normalization.'}),
-          step4:Object.freeze({title:'RT-DETRv2',text:'The end-to-end transformer predicts scored boxes; page-side NMS is not added.'})
+          step4:Object.freeze({title:'RT-DETRv2 query decoder',text:'The end-to-end query decoder predicts a set of scored boxes; page-side NMS is not added.'})
         }),
         comparison:Object.freeze({label:'RT-DETRv2 R18',input:'640×640',resize:'processor resize',padding:'none',layout:'NCHW',dtype:'float input',channels:'RGB · 1/255'}),
-        intermediate:Object.freeze({title:'RT-DETRv2 intermediate tensors not exposed',subtitle:'The production pipeline exposes detections but not selected encoder/decoder activations.',note:'Intermediate activations are not fabricated; an inspectable ONNX export is required to expose them.',data:'none',status:'Intermediate activations not exposed'}),
+        intermediate:Object.freeze({title:'RT-DETRv2 query tensors not exposed',subtitle:'The production pipeline returns detections without exposing individual decoder-query logits, boxes, states or attention tensors.',note:'No query or attention visualization is fabricated; a separately inspectable export is required.',emptyText:'Final detections are observable; individual RT-DETRv2 query tensors are not exposed.',data:'none',status:'Query internals not exposed'}),
         resultNote:'No page-side NMS is added.'
       })}),
       preprocessing:Object.freeze({resize:'640×640 processor-managed',layout:'NCHW',dtype:'float32 input / quantized weights',channels:'RGB',rescale:'1/255',normalize:false,padding:'none'}),
@@ -272,7 +298,19 @@
     lwdetr:Object.freeze({
       id:'lw-detr-tiny-coco-onnx',title:'LW-DETR-tiny',year:2024,status:'runnable',family:'LW-DETR',task:'object-detection',license:'Apache-2.0',parameters:'12.1M',input:640,bytes:38313297,sha256:'dadac1a335e108a5d1a52c4ac0280cd9b71ea2f7c39400e2d532f3a1f663dea0',
       sourceModel:'AnnaZhang/lwdetr_tiny_60e_coco',sourceRevision:'4b636b514dcf623f6eafc9e1ab63b8ad5c513925',labels:Object.freeze(["N/A","person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","street sign","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","hat","backpack","umbrella","shoe","eye glasses","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","plate","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","mirror","dining table","window","desk","toilet","door","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator","blender","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"]),
-      capabilities:Object.freeze({timeMachine:true,benchmark:false,live:Object.freeze({enabled:true,order:70,summary:'WASM fp32 · slow on tested iPhone · no frame queue'}),race:false,inspection:false}),
+      capabilities:Object.freeze({timeMachine:true,benchmark:false,live:Object.freeze({enabled:true,order:70,summary:'WASM fp32 · slow on tested iPhone · no frame queue'}),race:false,inspection:Object.freeze({
+        mode:'query-output-contract',stages:Object.freeze(['preprocessing','query-output-contract']),
+        input:'640×640',resize:'direct stretch',tensor:'float32 · NCHW',channels:'RGB',normalization:'1/255 + ImageNet mean/std',
+        preview:Object.freeze({mode:'stretch',width:640,height:640,caption:'LW-DETR 640×640 prepared-input preview'}),shape:Object.freeze({layout:'NCHW',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'640×640 preprocessing',text:'The direct ONNX path stretches to 640×640 and applies the verified ImageNet normalization contract.'}),
+          step3:Object.freeze({title:'Lightweight encoder + queries',text:'LW-DETR reduces transformer cost while retaining a query-based DETR-style prediction path.'}),
+          step4:Object.freeze({title:'logits + pred_boxes',text:'The pinned ONNX graph returns real logits and normalized predicted boxes; the adapter decodes top query/class pairs without page-side NMS.'})
+        }),
+        comparison:Object.freeze({label:'LW-DETR-tiny',input:'640×640',resize:'direct stretch',padding:'none',layout:'NCHW',dtype:'float32',channels:'RGB · ImageNet normalization'}),
+        intermediate:Object.freeze({title:'LW-DETR raw query outputs are consumed, not visualized',subtitle:'The ONNX graph exposes logits and pred_boxes, but the current adapter decodes them immediately and does not retain copies for the inspector.',note:'No synthetic query map is shown. A future inspector may retain a bounded summary of those real outputs without changing inference.',emptyText:'Real logits and pred_boxes feed the decoder, but this inspector currently shows the verified output contract rather than duplicating those tensors.',data:'none',status:'Real query outputs consumed · not retained for visualization'}),
+        resultNote:'Final detections are decoded from the graph’s real logits and pred_boxes; no page-side NMS is applied.'
+      })}),
       runtime:Object.freeze({wasm:Object.freeze({device:'wasm',dtype:'fp32',modelBytes:38313297})}),executionProviders:Object.freeze(['wasm']),
       preprocessing:Object.freeze({resize:'direct stretch to 640×640',layout:'NCHW',dtype:'float32',channels:'RGB',rescale:'1/255 then ImageNet mean/std',padding:'none'}),
       decoder:'Deformable DETR: sigmoid scores · global top 100 query/class pairs · normalized cxcywh · no NMS',
@@ -282,7 +320,19 @@
     dfine:Object.freeze({
       id:'dfine-n-coco-transformersjs',title:'D-FINE-N',year:2024,status:'runnable',family:'D-FINE',task:'object-detection',license:'Apache-2.0',
       modelId:'onnx-community/dfine_n_coco-ONNX',baseModel:'ustc-community/dfine-nano-coco',baseRevision:'066438d3d8f0da137a37b38fdf3368fd4afceced',revision:'e2b9c0f0884ee7c90b79feedfd30054e82ed634c',parameters:'3.8M',input:640,bytes:15300000,sha256:'0f684f409618ee8a822410e754a29caa817d1aa16283ce89cad936d0a48e2f35',
-      capabilities:Object.freeze({timeMachine:true,benchmark:false,live:Object.freeze({enabled:true,order:60,summary:'WASM fp32 · mobile performance unverified · no frame queue'}),race:false,inspection:false}),
+      capabilities:Object.freeze({timeMachine:true,benchmark:false,live:Object.freeze({enabled:true,order:60,summary:'WASM fp32 · mobile performance unverified · no frame queue'}),race:false,inspection:Object.freeze({
+        mode:'transformer-contract-only',stages:Object.freeze(['preprocessing','end-to-end-detection']),
+        input:'640×640',resize:'processor resize',tensor:'float32 · NCHW',channels:'RGB',normalization:'1/255 + ImageNet mean/std',
+        preview:Object.freeze({mode:'stretch',width:640,height:640,caption:'D-FINE processor-equivalent 640×640 preview'}),shape:Object.freeze({layout:'NCHW',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'Processor resize',text:'Transformers.js prepares a 640×640 normalized RGB tensor for the pinned D-FINE-N conversion.'}),
+          step3:Object.freeze({title:'End-to-end detector',text:'The model follows a DETR-style query-based detection path with fine-grained box-regression modeling.'}),
+          step4:Object.freeze({title:'Postprocessed detections',text:'The production Transformers.js pipeline returns scored boxes to the browser overlay.'})
+        }),
+        comparison:Object.freeze({label:'D-FINE-N',input:'640×640',resize:'processor resize',padding:'none',layout:'NCHW',dtype:'float32',channels:'RGB · ImageNet normalization'}),
+        intermediate:Object.freeze({title:'D-FINE query/regression tensors not exposed',subtitle:'The current Transformers.js pipeline returns final detections rather than internal query states or regression distributions.',note:'No internal tensor visualization is fabricated.',emptyText:'The verified pipeline contract is shown; internal query and regression tensors are not exposed by this runtime surface.',data:'none',status:'Query/regression internals not exposed'}),
+        resultNote:'Final detections are real pipeline outputs; internal query/regression tensors are not displayed.'
+      })}),
       runtime:Object.freeze({wasm:Object.freeze({device:'wasm',dtype:'fp32',modelBytes:15300000})}),
       preprocessing:Object.freeze({resize:'640×640 processor resize',layout:'NCHW',dtype:'float32',channels:'RGB',rescale:'1/255 then ImageNet mean/std',padding:'none'}),
       decoder:'Transformers.js D-FINE postprocessor',
