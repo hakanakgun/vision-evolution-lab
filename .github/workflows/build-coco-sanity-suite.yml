@@ -31,8 +31,10 @@ jobs:
           cats={c['id']:c['name'] for c in data['categories']}
           images={i['id']:i for i in data['images']}
           by_image={}
+          crowd_images=set()
           for a in data['annotations']:
-              if a.get('iscrowd'): continue
+              if a.get('iscrowd'):
+                  crowd_images.add(a['image_id']); continue
               by_image.setdefault(a['image_id'],[]).append(a)
           licenses={x['id']:x for x in data.get('licenses',[])}
           existing=397133
@@ -45,7 +47,7 @@ jobs:
           ]
           chosen=[existing]
           for _,rule in rules:
-              candidate=next(i for i in sorted(images) if i not in chosen and 2<=count(i)<=12 and rule(labels(i)))
+              candidate=next(i for i in sorted(images) if i not in chosen and images[i].get('license')==4 and i not in crowd_images and 2<=count(i)<=12 and rule(labels(i)))
               chosen.append(candidate)
           outdir=root/'assets/benchmark'; outdir.mkdir(parents=True,exist_ok=True)
           samples=[]
