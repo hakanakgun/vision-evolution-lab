@@ -1,0 +1,105 @@
+name: temporary build COCO sanity suite
+
+on:
+  push:
+    branches:
+      - feat/live-confidence-accuracy-inspection
+    paths:
+      - .github/workflows/build-coco-sanity-suite.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: feat/live-confidence-accuracy-inspection
+      - name: Download official COCO 2017 annotations
+        run: |
+          curl -L --fail --retry 3 -o "$RUNNER_TEMP/annotations.zip" http://images.cocodataset.org/annotations/annotations_trainval2017.zip
+          unzip -q "$RUNNER_TEMP/annotations.zip" annotations/instances_val2017.json -d "$RUNNER_TEMP"
+      - name: Select four deterministic validation samples
+        run: |
+          python3 <<'PY'
+          import json, pathlib, subprocess
+          root=pathlib.Path('.')
+          data=json.load(open(pathlib.Path(__import__('os').environ['RUNNER_TEMP'])/'annotations/instances_val2017.json'))
+          cats={c['id']:c['name'] for c in data['categories']}
+          images={i['id']:i for i in data['images']}
+          by_image={}
+          for a in data['annotations']:
+              if a.get('iscrowd'): continue
+              by_image.setdefault(a['image_id'],[]).append(a)
+          licenses={x['id']:x for x in data.get('licenses',[])}
+          existing=397133
+          def labels(i): return {cats[a['category_id']] for a in by_image.get(i,[])}
+          def count(i): return len(by_image.get(i,[]))
+          rules=[
+              ('animal', lambda ls:'cat' in ls or 'dog' in ls),
+              ('road', lambda ls:'person' in ls and ('car' in ls or 'bus' in ls or 'truck' in ls)),
+              ('activity', lambda ls:'person' in ls and bool(ls & {'bicycle','sports ball','skateboard','tennis racket','frisbee'})),
+          ]
+          chosen=[existing]
+          for _,rule in rules:
+              candidate=next(i for i in sorted(images) if i not in chosen and 2<=count(i)<=12 and rule(labels(i)))
+              chosen.append(candidate)
+          outdir=root/'assets/benchmark'; outdir.mkdir(parents=True,exist_ok=True)
+          samples=[]
+          for image_id in chosen:
+              meta=images[image_id]
+              name=f"coco-val-{image_id:012d}"
+              jpg=outdir/f"{name}.jpg"
+              url=meta.get('coco_url') or f"http://images.cocodataset.org/val2017/{image_id:012d}.jpg"
+              if not jpg.exists():
+                  subprocess.run(['curl','-L','--fail','--retry','3','-o',str(jpg),url],check=True)
+              license_info=licenses.get(meta.get('license'),{})
+              instances=[]
+              for a in by_image.get(image_id,[]):
+                  instances.append({
+                      'label':cats[a['category_id']],
+                      'bbox':[round(float(v),2) for v in a['bbox']]
+                  })
+              ann={
+                  'source':f'COCO 2017 val instances_val2017.json, image_id {image_id}',
+                  'annotationLicense':'CC BY 4.0',
+                  'imageId':image_id,
+                  'file':jpg.name,
+                  'width':meta['width'],'height':meta['height'],
+                  'imageLicense':{'id':meta.get('license'),'name':license_info.get('name',''),'url':license_info.get('url','')},
+                  'cocoUrl':meta.get('coco_url',''),'flickrUrl':meta.get('flickr_url',''),
+                  'bboxFormat':'COCO xywh pixels','instances':instances
+              }
+              ann_path=outdir/f"{name}.annotations.json"
+              ann_path.write_text(json.dumps(ann,indent=2,ensure_ascii=False)+'\n')
+              samples.append({
+                  'id':str(image_id),
+                  'image':f'assets/benchmark/{jpg.name}',
+                  'annotations':f'assets/benchmark/{ann_path.name}',
+                  'width':meta['width'],'height':meta['height'],
+                  'classes':sorted({x['label'] for x in instances}),
+                  'instances':len(instances),
+                  'imageLicense':ann['imageLicense']
+              })
+          manifest={
+              'name':'COCO 2017 val browser accuracy sanity suite',
+              'purpose':'Small fixed regression set for browser detector implementations; not COCO AP and not a model ranking.',
+              'source':'COCO 2017 validation split',
+              'annotationLicense':'CC BY 4.0',
+              'matching':{'confidence':0.4,'iou':0.5,'sameClass':True},
+              'samples':samples
+          }
+          (outdir/'sanity-suite.json').write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n')
+          print(json.dumps(manifest,indent=2))
+          PY
+      - name: Commit suite assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/benchmark
+          git diff --cached --stat
+          git commit -m "Add fixed COCO accuracy sanity suite"
+          git push origin HEAD:feat/live-confidence-accuracy-inspection
