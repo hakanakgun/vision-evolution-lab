@@ -23,7 +23,7 @@ The **Accuracy sanity ×4** action fixes confidence at 0.40, matches the same ca
 
 ## Scope
 
-The four-image suite is deliberately small. It is intended to catch browser implementation regressions in preprocessing, decoding, label mapping, thresholding, or runtime behavior. It does **not** reproduce the COCO evaluation API, compute COCO AP/AP50, represent the validation distribution, or establish a general model ranking.
+The four-image suite is deliberately small. It is intended to catch browser implementation regressions in preprocessing, decoding, label mapping, thresholding, or runtime behavior. It is **not COCO AP** or AP50, does **not** reproduce the COCO evaluation API, does not represent the validation distribution, and does not establish a general model ranking.
 
 The original single-image quality card remains useful for inspecting one visible scene; the four-image sanity suite adds a slightly broader deterministic regression surface. Neither should be presented as paper-level or dataset-level accuracy.
 
