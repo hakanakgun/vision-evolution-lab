@@ -1,0 +1,78 @@
+name: temporary PR51 reconciled smoke
+
+on:
+  push:
+    branches:
+      - feat/more-runnable-technologies
+    paths:
+      - .github/workflows/pr51-reconciled-smoke.yml
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install browser driver
+        run: npm install --prefix "$RUNNER_TEMP/pr51-smoke" --no-save --no-audit --no-fund puppeteer-core@24.26.1
+      - name: Serve app
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >"$RUNNER_TEMP/http.log" 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:8000/version.json >/dev/null && exit 0; sleep 1; done
+          cat "$RUNNER_TEMP/http.log"
+          exit 1
+      - name: Run current Faster R-CNN and YOLOS adapters
+        env:
+          NODE_PATH: ${{ runner.temp }}/pr51-smoke/node_modules
+        run: |
+          CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_PATH"
+          export CHROME_PATH
+          node <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+            try{
+              const page=await browser.newPage();
+              page.on('console',msg=>console.log('[browser]',msg.type(),msg.text()));
+              page.on('pageerror',err=>console.error('[pageerror]',err.message));
+              await page.goto('http://127.0.0.1:8000/?ort=wasm',{waitUntil:'networkidle2',timeout:120000});
+              await page.waitForFunction(()=>Boolean(window.VisionRuntimeRegistry?.get?.('fasterrcnn')&&window.VisionRuntimeRegistry?.get?.('yolos')),{timeout:30000});
+              const result=await page.evaluate(async()=>{
+                const confidence=document.getElementById('confidence');
+                confidence.value='0.10';
+                confidence.dispatchEvent(new Event('input',{bubbles:true}));
+                const image=new Image();
+                image.src='assets/benchmark/coco-val-000000397133.jpg';
+                await image.decode();
+                const results={};
+                for(const key of ['fasterrcnn','yolos']){
+                  const adapter=window.VisionRuntimeRegistry.get(key);
+                  const canvas=document.createElement('canvas');
+                  await adapter.prepare();
+                  try{
+                    const run=await adapter.run(image,canvas,{});
+                    results[key]={
+                      backend:adapter.runtimeInfo?.().backend||adapter.backend?.()||'',
+                      rawCount:run.rawCount,
+                      retained:run.retained,
+                      visible:run.visible,
+                      droppedInvalid:run.droppedInvalid
+                    };
+                  }finally{
+                    await adapter.release();
+                  }
+                }
+                return results;
+              });
+              console.log(JSON.stringify(result));
+              if(!(result.fasterrcnn.retained>0))throw new Error('Faster R-CNN returned no retained detections');
+              if(!(result.yolos.retained>0))throw new Error('YOLOS returned no retained detections');
+              if(result.fasterrcnn.droppedInvalid!==0)throw new Error('Faster R-CNN returned invalid decoded boxes');
+              if(result.yolos.droppedInvalid!==0)throw new Error('YOLOS returned invalid decoded boxes');
+            }finally{await browser.close()}
+          })().catch(error=>{console.error(error);process.exitCode=1});
+          NODE
