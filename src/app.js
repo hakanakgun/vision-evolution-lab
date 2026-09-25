@@ -471,6 +471,7 @@
 
     function liveModelKeys(){return RuntimeRegistry.validate({capability:'live'}).expected}
     function currentLiveAdapter(){return RuntimeRegistry.get(state.liveModel)}
+    function liveRuntimeOptions(adapter){const meta=RuntimeRegistry.liveMeta(adapter?.model),forceBackend=meta?.forceBackend||'';return forceBackend?{live:true,forceBackend,allowFallback:false}:{live:true}}
     function currentCameraTrack(){return state.stream?.getVideoTracks?.()[0]||null}
     function resetLiveMetrics(){for(const id of ['live-inf','live-total','live-fps','live-count'])$(id).textContent='—';$('live-frames').textContent='0';state.liveSamples=[];state.liveFrameCount=0}
     function setLiveStatus(message,kind=''){const el=$('live-model-status');el.textContent=message||'';el.className=`tiny live-model-status ${kind}`.trim()}
@@ -619,7 +620,7 @@
           await state.runtimeTransition.catch(()=>{});
           await state.liveInference.catch(()=>{});
           await previousAdapter?.release();
-          try{await adapter.prepare?.()}catch(error){try{await adapter.release?.()}catch(_){}throw error}
+          try{await adapter.prepare?.(liveRuntimeOptions(adapter))}catch(error){try{await adapter.release?.()}catch(_){}throw error}
           state.liveModel=key;resetLiveMetrics();setLiveBackend(adapter);renderLiveModels();
           if(state.live)liveLoop(adapter,key,++state.liveLoopToken);
         });
@@ -630,7 +631,7 @@
         let restored=false;
         if(wasLive&&state.live&&previousAdapter){
           try{
-            await previousAdapter.prepare?.();
+            await previousAdapter.prepare?.(liveRuntimeOptions(previousAdapter));
             state.liveModel=previousKey;resetLiveMetrics();setLiveBackend(previousAdapter);liveLoop(previousAdapter,previousKey,++state.liveLoopToken);restored=true;
           }catch(rollbackError){console.error('Live Camera rollback failed',rollbackError)}
         }else state.liveModel=previousKey;
@@ -654,7 +655,7 @@
         await state.liveTransition.catch(()=>{});
         await state.runtimeTransition.catch(()=>{});
         if(token!==state.cameraStartToken||state.liveModel!==modelKey)return;
-        await adapter.prepare?.();
+        await adapter.prepare?.(liveRuntimeOptions(adapter));
         if(token!==state.cameraStartToken||state.liveModel!==modelKey)return;
         setLiveBackend(adapter);
         const stream=await requestCameraStream(state.cameraFacing,{exact:false});
@@ -680,7 +681,7 @@
         if(!state.live||state.liveModel!==modelKey||state.liveLoopToken!==loopToken||video.readyState<2)continue;
         let framePromise;
         try{
-          framePromise=Promise.resolve(adapter.run(video,canvas,{updateMain:false,live:true}));state.liveInference=framePromise;
+          framePromise=Promise.resolve(adapter.run(video,canvas,{updateMain:false,...liveRuntimeOptions(adapter)}));state.liveInference=framePromise;
           const r=await framePromise;
           if(!state.live||state.liveModel!==modelKey||state.liveLoopToken!==loopToken)continue;
           state.liveFrameCount++;
