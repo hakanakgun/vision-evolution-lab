@@ -243,6 +243,7 @@
       const cfg=spec.preview||{},ctx=preview.getContext('2d');let iw,ih;
       if(cfg.mode==='aspect-max'){const scale=Math.min(1,(cfg.maxSide||640)/Math.max(w,h));iw=Math.max(1,Math.round(w*scale));ih=Math.max(1,Math.round(h*scale));preview.width=iw;preview.height=ih;ctx.drawImage(source,0,0,iw,ih)}
       else if(cfg.mode==='letterbox-top-left'){iw=cfg.width||416;ih=cfg.height||416;preview.width=iw;preview.height=ih;const fill=Number.isFinite(cfg.fill)?cfg.fill:114;ctx.fillStyle=`rgb(${fill},${fill},${fill})`;ctx.fillRect(0,0,iw,ih);const ratio=Math.min(iw/w,ih/h),rw=Math.max(1,Math.floor(w*ratio)),rh=Math.max(1,Math.floor(h*ratio));ctx.drawImage(source,0,0,rw,rh)}
+      else if(cfg.mode==='short-long-pad32'){const shortSide=cfg.shortSide||800,longSide=cfg.longSide||1333,ratio=Math.min(shortSide/Math.min(w,h),longSide/Math.max(w,h)),rw=Math.max(1,Math.floor(w*ratio)),rh=Math.max(1,Math.floor(h*ratio)),multiple=cfg.multiple||32;iw=Math.ceil(rw/multiple)*multiple;ih=Math.ceil(rh/multiple)*multiple;preview.width=iw;preview.height=ih;ctx.fillStyle='rgb(0,0,0)';ctx.fillRect(0,0,iw,ih);ctx.drawImage(source,0,0,rw,rh)}
       else{iw=cfg.width||640;ih=cfg.height||640;preview.width=iw;preview.height=ih;ctx.drawImage(source,0,0,iw,ih)}
       src.hidden=false;preview.hidden=false;$('inside-source-empty').hidden=true;$('inside-input-empty').hidden=true;setMetric('inside-source-size',w+'×'+h);setMetric('inside-model-size',iw+'×'+ih);return{w,h,iw,ih};
     }
