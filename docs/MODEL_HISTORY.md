@@ -16,15 +16,16 @@ For older milestones, the timeline shows the year only. Recent model entries sho
 | 2005 | HOG + linear SVM | Hand-crafted gradient descriptor with a sliding-window pedestrian classifier; the app uses OpenCV's default people detector. | Runnable · pedestrian boxes | Pedestrian detection, not general-object detection or the exact original paper weights. |
 | 2012 | AlexNet | Deep CNN for 1,000-class ImageNet classification. | Runnable · top-five class labels | BVLC AlexNet-family INT8 checkpoint, not the exact 2012 paper weights; full-image classification, no object boxes. |
 | 2014 | R-CNN | Selective-search region proposals classified with CNN features and class-specific SVMs. | History only | A region-based detector, not a one-pass detector or a runnable app model. |
-| 2015 | Faster R-CNN | A learned Region Proposal Network shares convolutional features with a two-stage detection network. | History only | A distinct two-stage design, not a directly comparable speed/accuracy result to the current browser models. |
+| 2015 | Faster R-CNN · ResNet-50 FPN INT8 | A learned Region Proposal Network shares convolutional features with a two-stage detection network. | Runnable · Time Machine only | Later ONNX Model Zoo COCO reference checkpoint, not original 2015 paper weights; known dynamic-shape portability risk remains. |
 | 2016 | YOLOv1 | Unified grid-based, single-stage object detection. | History only | The timeline reference is paper-only; the runnable 2016 model in this app is Tiny YOLOv2. |
 | 2016 | SSD · ResNet-34 INT8 | Single-shot multi-scale object detection. | Runnable · COCO reference checkpoint | Later ONNX Model Zoo COCO 2017 ResNet-34 export, not the original paper weights; Time Machine only. |
 | 2020 | DETR · ResNet-50 | Transformer-based set prediction for object detection. | Runnable · q8/WASM reference checkpoint | Pinned Xenova conversion of the Apache-2.0 Facebook base, not asserted to be the exact paper weights; Time Machine only. |
+| 2021-06 | YOLOS-tiny | Vanilla Vision Transformer transferred directly to object detection. | Runnable · Time Machine only | Pinned q4 Transformers.js conversion; iOS/WebKit and broad browser validation pending. |
 | 2021-07 | YOLOX-Nano | Anchor-free detector with a decoupled head. | Runnable | Month follows the first public arXiv paper; not a release date. |
 | 2023-04 | RT-DETR R18 | Real-time end-to-end DETR detector. | Runnable | Month follows the first public arXiv paper. |
-| 2024-06 | LW-DETR-tiny | Lightweight ViT encoder and shallow DETR decoder. | Runnable · Time Machine only | Pinned Apache-2.0 checkpoint exported to a verified ONNX graph; WASM fp32; speed, user-image accuracy and iOS/WebKit compatibility not broadly tested. |
+| 2024-06 | LW-DETR-tiny | Lightweight ViT encoder and shallow DETR decoder. | Runnable · Time Machine + Live Camera | Pinned Apache-2.0 checkpoint exported to a verified ONNX graph; WASM fp32; physical iPhone/Brave execution confirmed, but sustained camera stability and broad compatibility remain unverified. |
 | 2024-07 | RT-DETRv2 R18 | Revised real-time DETR training recipe. | Research preview · runnable | Month follows the first public arXiv paper. |
-| 2024-10 | D-FINE-N | Fine-grained distribution refinement for DETR box regression. | Runnable · Time Machine only | Pinned COCO ONNX conversion; WASM fp32; browser speed and iOS compatibility not tested. |
+| 2024-10 | D-FINE-N | Fine-grained distribution refinement for DETR box regression. | Runnable · Time Machine + Live Camera | Pinned COCO ONNX conversion; WASM fp32; physical iPhone/Brave Live Camera execution confirmed, but sustained and broad cross-device behavior remains unverified. |
 
 ## Primary papers
 
@@ -38,5 +39,6 @@ For older milestones, the timeline shows the year only. Recent model entries sho
 - Redmon et al., “You Only Look Once: Unified, Real-Time Object Detection,” CVPR (2016), [paper](https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html).
 - Liu et al., “SSD: Single Shot MultiBox Detector,” ECCV (2016), [Google Research publication record](https://research.google/pubs/ssd-single-shot-multibox-detector/).
 - Carion et al., “End-to-End Object Detection with Transformers,” ECCV (2020), [ECVA paper](https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php).
+- Fang et al., “You Only Look at One Sequence: Rethinking Transformer in Vision through Object Detection,” arXiv (2021), [paper](https://arxiv.org/abs/2106.00666).
 
-These are bibliographic links. Historical detector references fetch their separately pinned ONNX/Transformers.js assets only when selected; the SSD and DETR references are later checkpoints, not the original paper weights. Task-specific MNIST and OpenCV assets are likewise loaded only when their experiment is selected.
+These are bibliographic links. Historical detector references fetch their separately pinned ONNX/Transformers.js assets only when selected; the Faster R-CNN, SSD and DETR references are later checkpoints, not the original paper weights. Task-specific MNIST and OpenCV assets are likewise loaded only when their experiment is selected.
