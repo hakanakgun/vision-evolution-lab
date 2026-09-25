@@ -218,7 +218,7 @@ const liveKeys=metadataWindow.VisionRuntimeRegistry.modelKeys.filter(key=>metada
 check(JSON.stringify(liveKeys)==='["tinyyolo","ssd","yolox","rtdetr","rtdetrv2","lwdetr","dfine"]','the seven approved detectors must be eligible for Live Camera');
 check(metadataRegistry.defaults?.live===metadataRegistry.defaults?.timeMachine,'default Live Camera model must follow the Time Machine default');
 check(files.index.includes('id="live-model-name"')&&files.index.includes('id="live-model-controls"')&&files.index.includes('id="live-model-select"'),'Live Camera metadata/model picker containers missing');
-check(files.app.includes("RuntimeRegistry.validate({capability:'live'}).expected")&&files.app.includes('adapter.run(video,canvas,{updateMain:false,live:true})'),'Live Camera is not capability/runtime-adapter driven');
+check(files.app.includes("RuntimeRegistry.validate({capability:'live'}).expected")&&files.app.includes('adapter.run(video,canvas,{updateMain:false,...liveRuntimeOptions(adapter)})'),'Live Camera is not capability/runtime-adapter driven');
 check(files.app.includes('function currentLiveAdapter(){return RuntimeRegistry.get(state.liveModel)}'),'Live Camera must use its independent live model state');
 check(!files.app.includes('selectActiveModel(key,{scroll:false})'),'Live Camera model choices must not mutate Time Machine selection');
 check(files.app.includes('state.liveModel!==modelKey')&&files.app.includes('token!==state.cameraStartToken'),'Live Camera start must cancel when its selected model or camera token changes');
