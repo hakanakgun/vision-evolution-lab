@@ -8,12 +8,14 @@ Live: https://hakanakgun.github.io/vision-evolution-lab/
 
 Vision Evolution Lab lets you run and compare object-detection generations without an application backend.
 
-- **Vision Time Machine** opens with YOLOX-Nano as a lightweight fast-inference starting point; all runnable years remain selectable, including SSD 2016 and DETR 2020 reference checkpoints. One image stays selected while early task-specific experiments show pattern responses, handwritten digits, faces, or pedestrians.
+- **Vision Time Machine** opens with YOLOX-Nano as a lightweight fast-inference starting point; all runnable years remain selectable, including the 2015 Faster R-CNN two-stage reference, SSD 2016, DETR 2020, and 2021 YOLOS-tiny pure-ViT detector. One image stays selected while early task-specific experiments show pattern responses, handwritten digits, faces, or pedestrians.
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities.
 - **Inside the Model** explains each model's real preprocessing contract and only shows intermediate tensors that are actually exposed.
 - **Live Camera** has its own model picker for seven live-capable detectors. It runs the selected detector locally with rolling latency measurements and no frame queue. Model switching keeps the camera stream open; camera-facing switching reopens the requested front/rear camera while keeping the model runtime loaded. When the active rear-camera track reports a zoom capability, in-frame zoom controls are generated from that track's reported range.
 - **Early history experiments** run inside Time Machine. Their task-specific outputs stay separate from the general-object models in Model Race.
-- **D-FINE-N** runs in Time Machine and Live Camera through a pinned Transformers.js ONNX conversion on WASM fp32. It remains excluded from Model Race, individual benchmarks, and Inside the Model; mobile Live Camera performance is still unverified.
+- **Faster R-CNN R50-FPN INT8** turns the 2015 two-stage RPN milestone into a runnable Time Machine reference on ONNX Runtime Web/WASM. It remains outside Model Race, Live Camera, individual benchmarks, and Inside the Model while dynamic-shape/browser portability is validated more broadly.
+- **YOLOS-tiny** adds a pure Vision Transformer detector through a pinned Transformers.js q4/WASM conversion. It is Time Machine-only pending broader browser and physical-device validation.
+- **D-FINE-N** runs in Time Machine and Live Camera through a pinned Transformers.js ONNX conversion on WASM fp32. It remains excluded from Model Race, individual benchmarks, and Inside the Model; physical iPhone/Brave Live Camera execution has been confirmed, while sustained and broad cross-device behavior remains unverified.
 - **LW-DETR-tiny** runs in Time Machine and Live Camera through a reproducibly exported, checksum-pinned ONNX checkpoint on ONNX Runtime Web/WASM fp32. It remains excluded from Model Race, individual benchmarks, and Inside the Model. One user-reported iOS 18.7 / Brave-WebKit Benchmark ×20 completed on 2026-09-24 at about 612 ms p50 inference; sustained Live Camera stability and broad device performance remain unverified. See the iOS diagnostics.
 - **Runtime diagnostics** expose browser/engine/runtime capabilities conservatively; hidden diagnostic-only modes remain available for iOS/WebKit regression analysis.
 
@@ -23,9 +25,13 @@ Selecting a model in Time Machine stays in Time Machine. Inside the Model follow
 
 | Year | Model | Dataset / labels | Main browser path |
 | --- | --- | --- | --- |
+| 2015 | Faster R-CNN · ResNet-50 FPN INT8 | COCO | Time Machine · ONNX Runtime Web / WASM |
+| 2016 | SSD · ResNet-34 INT8 reference | COCO | Time Machine · ONNX Runtime Web / WASM |
 | 2016 | Tiny YOLOv2 | Pascal VOC 20 | ONNX Runtime Web / WASM |
 | 2017 | SSD-MobileNetV1 INT8 | COCO | ONNX Runtime Web / intentional WASM |
-| 2021 | YOLOX-Nano | COCO | ONNX Runtime Web / Live Camera WASM; Time Machine + Model Race standard WASM on iOS, WebGPU-first on desktop |
+| 2020 | DETR · ResNet-50 reference | COCO | Time Machine · Transformers.js / WASM q8 |
+| 2021-06 | YOLOS-tiny | COCO | Time Machine · Transformers.js / WASM q4 |
+| 2021-07 | YOLOX-Nano | COCO | ONNX Runtime Web / Live Camera WASM; Time Machine + Model Race standard WASM on iOS, WebGPU-first on desktop |
 | 2023 | RT-DETR R18 | COCO | Transformers.js / WebGPU fp16 or WASM q8 |
 | 2024-06 | LW-DETR-tiny | COCO · pinned checkpoint label map | Time Machine + Live Camera · ONNX Runtime Web / WASM fp32 · 38.3 MB |
 | 2024-07 | RT-DETRv2 R18 · research preview | COCO | Transformers.js / WebGPU fp16 or WASM int8 |
@@ -83,7 +89,7 @@ The repeated four-model benchmark reload issue is mitigated by using the standar
 
 On 2026-09-22, the updated iOS path completed five consecutive full four-model Benchmark ×20 runs on the user's physical iPhone/Brave session without an abrupt reload. On 2026-09-23, the user also completed a five-model ×20 run and Model Race, including the RT-DETRv2 R18 research preview, on iOS 18.7 / Brave-WebKit. These results support the tested device path; they do not prove the historical WebKit/JSEP root cause or universal stability across iOS devices and versions.
 
-Live Camera has an independent selector for seven eligible detectors; changing Time Machine no longer changes the active camera model. Front/rear camera switching is explicit and reacquires the camera stream without releasing the selected model runtime. Rear-camera zoom controls appear only when the active track reports a numeric zoom range; `−/+` step through clean capability-bounded levels (0.5× when available, then 1×, 2×, 3× …) instead of equal fractional slices. Unsupported cameras do not get synthetic zoom. SSD 2016 and DETR remain intentionally Time Machine-only. Sustained physical-iOS camera testing is still pending. See [the iOS test checklist](docs/IOS_WEBKIT_DIAGNOSTICS.md#physical-ios-tests-still-pending).
+Live Camera has an independent selector for seven eligible detectors; changing Time Machine no longer changes the active camera model. Front/rear camera switching is explicit and reacquires the camera stream without releasing the selected model runtime. Rear-camera zoom controls appear only when the active track reports a numeric zoom range; `−/+` step through clean capability-bounded levels (0.5× when available, then 1×, 2×, 3× …) instead of equal fractional slices. Unsupported cameras do not get synthetic zoom. Faster R-CNN, SSD 2016, DETR, and YOLOS-tiny remain intentionally Time Machine-only. Sustained physical-iOS camera testing is still pending. See [the iOS test checklist](docs/IOS_WEBKIT_DIAGNOSTICS.md#physical-ios-tests-still-pending).
 
 The normal 1 warm-up + 20 measured-run benchmark contract is unchanged. The diagnostic modes remain available for regression analysis.
 
