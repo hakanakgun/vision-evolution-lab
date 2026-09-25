@@ -33,6 +33,8 @@ const files={
   catalog:read('docs/MODEL_CATALOG.md'),
   readme:read('README.md'),
   docsIndex:read('docs/README.md'),
+  benchmarkSamples:read('docs/BENCHMARK_SAMPLES.md'),
+  sanitySuite:JSON.parse(read('assets/benchmark/sanity-suite.json')),
   version:JSON.parse(read('version.json'))
 };
 
@@ -108,12 +110,15 @@ const literalRefs=[...new Set([
 const missingIds=literalRefs.filter(id=>!idSet.has(id)&&!generatedIds.has(id));
 check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
 check(idSet.has('live-model-select')&&idSet.has('live-model-status'),'Live Camera model picker controls are missing');
+check(idSet.has('live-confidence')&&idSet.has('live-confidence-value'),'Live Camera independent confidence controls are missing');
+check(!files.index.includes('Confidence uses the Time Machine setting.'),'Live Camera must not depend on the Time Machine confidence label');
 for(const id of ['camera-flip','camera-zoom-controls','camera-zoom-out','camera-zoom-reset','camera-zoom-in'])check(idSet.has(id),'Live Camera device control missing: '+id);
 check(files.app.includes("function liveModelKeys()")&&files.app.includes("state.liveModel===modelKey"),'Live Camera must use its independent live model state');
 
 const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
 check(files.index.includes(`const CURRENT_BUILD = '${build}'`),'CURRENT_BUILD does not match version.json');
+check(metadataRegistry.version===version,'VisionModels.version does not match version.json');
 for(const asset of ['assets/css/styles.css','src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/core/detection-metrics.js','src/models/models.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/history/history-experiments.js']){
   check(files.index.includes(`${asset}?v=${version}`),`cache-busted asset missing or stale: ${asset}`);
 }
@@ -163,6 +168,10 @@ const jsep=loadModelContracts('jsep').VisionModels;
 check(JSON.stringify(standard.yolox.executionProviders)==='["wasm"]','standard-WASM YOLOX providers regressed');
 check(JSON.stringify(jsep.yolox.executionProviders)==='["webgpu","wasm"]','JSEP YOLOX providers regressed');
 check(metadataRegistry.yolox.capabilities.live?.forceBackend==='wasm','YOLOX Live Camera must stay on the verified WASM path');
+check(files.app.includes("confidence=Number($('live-confidence').value)")&&files.app.includes("{live:true,confidence")&&files.app.includes("$('live-confidence').addEventListener('input'"),'Live Camera confidence must be independent and passed through generic runtime options');
+check(files.app.includes("function drawDetections(canvas,detections,confidence=Number($('confidence').value))")&&files.app.includes("drawDetections(targetCanvas,detections,confidence)"),'shared detection drawing must accept an explicit per-surface confidence override');
+check((files.race.match(/api\.drawDetections\(canvas,detections,confidence\)/g)||[]).length>=4,'race/live-capable adapters must honor explicit confidence during drawing');
+check((files.historicalDetectors.match(/api\.drawDetections\(canvas,(?:decoded\.)?detections,confidence\)/g)||[]).length>=6,'historical/live adapters must honor explicit confidence during drawing');
 check(files.app.includes("function liveRuntimeOptions(adapter)")&&files.app.includes("adapter.prepare?.(liveRuntimeOptions(adapter))")&&files.app.includes("adapter.run(video,canvas,{updateMain:false,...liveRuntimeOptions(adapter)})"),'Live Camera must honor capability-declared runtime options without model-name branching');
 check(files.race.includes("prepare:(options={})=>createYoloSession(options.forceBackend||'')"),'YOLOX adapter prepare must honor requested live backend');
 check(files.race.includes("for(let c=0;c<80;c++){const score=obj*Number(data[o+5+c])")&&files.race.includes("k.classId!==d.classId||iou(d.box,k.box)<=YOLO.nms")&&!files.race.includes("kept.every(k=>iou(d.box,k.box)<=YOLO.nms)"),'YOLOX postprocessing must preserve per-class scores and use class-aware NMS');
@@ -201,6 +210,9 @@ check(files.index.includes('id="timeline-track"')&&files.index.includes('id="pre
 check(files.index.includes('class="timeline-scroll" data-scroll-area role="region" tabindex="0"')&&files.index.includes('aria-describedby="timeline-help"')&&files.index.includes('id="timeline-selection"'),'timeline scroll region and selection label must be accessible');
 check(files.index.includes('id="active-model-title">YOLOX-Nano')&&files.index.includes('id="rerun" disabled>Run YOLOX-Nano')&&files.index.includes('id="inside-active-model">YOLOX-Nano'),'initial Time Machine and inspector labels must match the default model');
 check(files.app.includes("button.setAttribute('aria-pressed',String(selected))")&&files.app.includes("$('timeline-selection').textContent=")&&!files.app.includes('track.style.minWidth'),'timeline selection state must stay synchronized without page-width expansion');
+check(idSet.has('timeline-evolution-title')&&idSet.has('timeline-evolution-text')&&files.app.includes('function updateEvolutionNote()'),'Time Machine generation-difference explanation surface is missing');
+check((metadataRegistry.timeline||[]).filter(entry=>entry.model||entry.experiment).every(entry=>typeof entry.evolution==='string'&&entry.evolution.length>30),'every selectable Time Machine milestone must explain what changed in that generation');
+check(files.app.includes("state.historyExperiment?timelineExperimentEntry(state.historyExperiment):timelineModelEntry(state.activeModel)")&&files.app.includes('updateEvolutionNote();'),'generation explanation must follow both historical experiments and runnable model selection');
 check(files.styles.includes('.timeline .milestone{appearance:none')&&files.styles.includes('.timeline .timeline-scroll{')&&files.styles.includes('scroll-snap-type:x proximity')&&files.styles.includes('prefers-reduced-motion:reduce'),'timeline controls must use the responsive, reduced-motion rail styles');
 check(!files.index.includes('data-runnable-model=')&&!files.index.includes('class="preprocess-row'),'static Time Machine timeline or preprocessing rows returned');
 check(files.app.includes('function renderTimeline()')&&files.app.includes('function renderPreprocessingComparison()'),'Time Machine presentation is not registry-driven');
@@ -247,6 +259,14 @@ for(const item of timeMachineModels){
   if(item.inspection===false)continue;
   check(item.inspection&&item.inspection.preview&&item.inspection.pipeline&&item.inspection.comparison&&item.inspection.intermediate,`${item.key}: inspection presentation contract incomplete`);
 }
+check(files.app.includes("cfg.mode==='short-long-pad32'")&&files.app.includes('Math.ceil(rw/multiple)*multiple'),'Faster R-CNN inspection preview must use capability-driven 800/1333 + ×32 padding');
+check(metadataRegistry.fasterrcnn.capabilities.inspection?.intermediate?.data==='none'&&metadataRegistry.fasterrcnn.capabilities.inspection.intermediate.title.includes('RPN proposals are internal'),'Faster R-CNN inspector must disclose that RPN proposals are not exported');
+check(metadataRegistry.yolos.capabilities.inspection?.intermediate?.data==='none'&&metadataRegistry.yolos.capabilities.inspection.intermediate.title.includes('token/attention tensors not exposed'),'YOLOS inspector must not fabricate transformer token or attention tensors');
+check(metadataRegistry.yolox.capabilities.inspection?.intermediate?.data==='adapter'&&metadataRegistry.yolox.capabilities.inspection.intermediate.renderer==='scalar-heatmaps','YOLOX must keep real adapter-backed objectness maps');
+for(const key of ['detr','rtdetr','rtdetrv2'])check(metadataRegistry[key].capabilities.inspection?.intermediate?.data==='none'&&metadataRegistry[key].capabilities.inspection.intermediate.title.toLowerCase().includes('query'),'DETR-family inspector must state query tensors are not exposed: '+key);
+check(metadataRegistry.lwdetr.capabilities.inspection?.intermediate?.data==='none'&&metadataRegistry.lwdetr.capabilities.inspection.intermediate.status.includes('Real query outputs consumed'),'LW-DETR inspector must describe real query outputs without fabricating a visualization');
+check(metadataRegistry.dfine.capabilities.inspection?.intermediate?.data==='none','D-FINE inspector must remain architecture/contract-only without fake internal tensors');
+check(files.app.includes("spec.intermediate.emptyText||'This model exposes its real preprocessing contract"),'Inside the Model must support model-specific truthful unavailable-output explanations');
 
 
 const historyExperiments=metadataRegistry.historyExperiments||{};
@@ -308,7 +328,7 @@ check(metadataRegistry.detr.revision==='8be7ab59ff663484ee9ba2e8d8f267330d5ad03e
 const faster=metadataRegistry.fasterrcnn,fasterEntry=metadataRegistry.timeline.find(item=>item.model==='fasterrcnn');
 check(fasterEntry?.year===2015&&fasterEntry.kind==='runnable','Faster R-CNN 2015 runnable Time Machine entry is missing');
 check(faster?.revision==='c4c979ff5c8043967de03c97daef7b54663182eb'&&faster.bytes===44631113&&faster.sha256==='95f67f5f6249f4804f1302367dd88cee32bf47713b9858cc6d8ba835548f9b8e','Faster R-CNN pinned artifact integrity metadata changed');
-check(faster.capabilities.timeMachine&&!faster.capabilities.benchmark&&faster.capabilities.live===false&&faster.capabilities.race===false&&faster.capabilities.inspection===false,'Faster R-CNN must remain Time Machine-only pending broader validation');
+check(faster.capabilities.timeMachine&&!faster.capabilities.benchmark&&faster.capabilities.live===false&&faster.capabilities.race===false&&faster.capabilities.inspection?.mode==='two-stage-output-contract','Faster R-CNN must remain Time Machine-only while exposing a truthful inspection contract');
 check(faster.sources?.some(source=>source.url.includes('/onnxmodelzoo/FasterRCNN-12-int8/resolve/c4c979ff5c8043967de03c97daef7b54663182eb/')),'Faster R-CNN runtime source must stay revision-pinned');
 check(files.historicalDetectors.includes("runtimes.register('fasterrcnn'")&&files.historicalDetectors.includes("const scale=Math.min(800/Math.min(sourceSize.w,sourceSize.h),1333/Math.max(sourceSize.w,sourceSize.h))")&&files.historicalDetectors.includes("mean=[102.9801,115.9465,122.7717]"),'Faster R-CNN adapter preprocessing or registry contract changed');
 
@@ -316,7 +336,7 @@ const yolos=metadataRegistry.yolos,yolosEntry=metadataRegistry.timeline.find(ite
 check(yolosEntry?.year===2021&&yolosEntry.month===6&&yolosEntry.kind==='runnable','YOLOS-tiny June 2021 runnable Time Machine entry is missing');
 check(yolos?.modelId==='Xenova/yolos-tiny'&&yolos.revision==='e2f9c7673f0fa61849efe2b56a0d7774779ebb9d'&&yolos.baseRevision==='95a90f3c189fbfca3bcfc6d7315b9e84d95dc2de','YOLOS-tiny source revisions changed');
 check(yolos.sha256==='a3e0b7d8931274aee8af01dc31b35d9c379247bdb7c86eaf222090728c4a894b'&&yolos.runtime.wasm.device==='wasm'&&yolos.runtime.wasm.dtype==='q4'&&yolos.runtime.wasm.modelBytes===7809003,'YOLOS-tiny q4 browser asset contract changed');
-check(yolos.capabilities.timeMachine&&!yolos.capabilities.benchmark&&yolos.capabilities.live===false&&yolos.capabilities.race===false&&yolos.capabilities.inspection===false,'YOLOS-tiny must remain Time Machine-only pending broader validation');
+check(yolos.capabilities.timeMachine&&!yolos.capabilities.benchmark&&yolos.capabilities.live===false&&yolos.capabilities.race===false&&yolos.capabilities.inspection?.mode==='transformer-contract-only','YOLOS-tiny must remain Time Machine-only while exposing a truthful inspection contract');
 check(files.historicalDetectors.includes("runtimes.register('yolos'")&&files.historicalDetectors.includes("const model=registry.yolos")&&files.historicalDetectors.includes("dtype:model.runtime.wasm.dtype"),'YOLOS-tiny adapter must use the pinned Transformers.js q4 runtime contract');
 
 const lw=metadataRegistry.lwdetr,lwEntry=metadataRegistry.timeline.find(item=>item.model==='lwdetr');
@@ -325,7 +345,7 @@ check(lw.bytes===38313297&&lw.sha256==='dadac1a335e108a5d1a52c4ac0280cd9b71ea2f7
 check(lw.sources?.some(source=>source.url===`assets/models/lw-detr-tiny.onnx?sha256=${lw.sha256}`),'LW-DETR must use the checksum-pinned same-origin Pages asset');
 check(lw.sourceModel==='AnnaZhang/lwdetr_tiny_60e_coco'&&lw.sourceRevision==='4b636b514dcf623f6eafc9e1ab63b8ad5c513925'&&lw.labels.length===91,'LW-DETR checkpoint revision or label map changed');
 const lwLive=metadataWindow.VisionRuntimeRegistry.liveMeta(lw);
-check(lw.capabilities.timeMachine&&!lw.capabilities.benchmark&&lwLive?.order===70&&!lw.capabilities.race&&!lw.capabilities.inspection,'LW-DETR must remain Time Machine + Live Camera only');
+check(lw.capabilities.timeMachine&&!lw.capabilities.benchmark&&lwLive?.order===70&&!lw.capabilities.race&&lw.capabilities.inspection?.mode==='query-output-contract','LW-DETR must remain Time Machine + Live Camera only while exposing its query-output contract');
 check(files.historicalDetectors.includes("runtimes.register('lwdetr'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("JSON.stringify(logits.dims)!=='[1,100,91]'"),'LW-DETR adapter must use verified WASM and pinned input/output contracts');
 check(files.historicalDetectors.includes("sourceLabel=model.sources?.[0]?.label||'Pinned ONNX asset'")&&files.historicalDetectors.includes('source:runtimeSource'),'LW-DETR runtime must show the actual Pages delivery source separately from checkpoint provenance');
 check(files.historicalDetectors.includes('const sessionStarted=performance.now()')&&files.historicalDetectors.includes('initMs=sessionInitMs'),'LW-DETR session initialization timing must start after transfer and checksum verification');
@@ -340,7 +360,7 @@ check(dfineEntry?.year===2024&&dfineEntry.month===10&&dfineEntry.kind==='runnabl
 check(dfine.modelId==='onnx-community/dfine_n_coco-ONNX'&&dfine.revision==='e2b9c0f0884ee7c90b79feedfd30054e82ed634c'&&dfine.baseRevision==='066438d3d8f0da137a37b38fdf3368fd4afceced','D-FINE-N base/conversion revisions must stay pinned');
 check(dfine.bytes===15300000&&dfine.sha256==='0f684f409618ee8a822410e754a29caa817d1aa16283ce89cad936d0a48e2f35'&&dfine.runtime.wasm.device==='wasm'&&dfine.runtime.wasm.dtype==='fp32','D-FINE-N size/source integrity metadata or WASM fp32 path changed');
 const dfineLive=metadataWindow.VisionRuntimeRegistry.liveMeta(dfine);
-check(dfine.capabilities.timeMachine&&!dfine.capabilities.benchmark&&dfineLive?.order===60&&!dfine.capabilities.race&&!dfine.capabilities.inspection,'D-FINE-N must remain Time Machine + Live Camera only');
+check(dfine.capabilities.timeMachine&&!dfine.capabilities.benchmark&&dfineLive?.order===60&&!dfine.capabilities.race&&dfine.capabilities.inspection?.mode==='transformer-contract-only','D-FINE-N must remain Time Machine + Live Camera only while exposing a truthful pipeline contract');
 check(files.historicalDetectors.includes("runtimes.register('lwdetr'")&&files.historicalDetectors.includes("runtimes.register('dfine'")&&files.historicalDetectors.includes("model.modelId,{device:'wasm',dtype:'fp32',revision:model.revision"),'D-FINE-N and LW-DETR adapters must use their pinned runtime paths');
 check(files.historicalDetectors.includes("const keepLiveKey=event.detail?.tab==='live-camera'?api.getLiveModel?.()||'':''")&&files.historicalDetectors.includes('releaseHistoricalRuntimes(keepLiveKey)'),'Live Camera must preserve its selected historical-detector runtime while releasing the others');
 check(files.historicalDetectors.includes("runtimes.register('fasterrcnn'")&&files.historicalDetectors.includes("runtimes.register('ssd2016'")&&files.historicalDetectors.includes("runtimes.register('detr'")&&files.historicalDetectors.includes("runtimes.register('yolos'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("subtle.digest('SHA-256'"),'Time Machine-only model adapters must remain registered with their pinned WASM/integrity contracts');
@@ -399,6 +419,21 @@ check(files.race.includes('function renderRaceScaffold()')&&files.race.includes(
 check(files.race.includes('for(let i=0;i<specs.length;i++)for(let j=i+1;j<specs.length;j++)'),'pairwise overlap is not generated from the runtime model set');
 check(!files.race.includes('state.lastRun.tiny')&&!files.race.includes('state.lastRun.yolo')&&!files.race.includes("for(const k of['tiny','ssd','yolo','rt'])"),'four-model result aliases returned');
 check(files.race.includes('await releaseRaceRuntimes();')&&files.race.includes('finally{await spec.release();'),'normal Model Race is not sequentially releasing adapters');
+
+const sanity=files.sanitySuite;
+check(sanity?.matching?.confidence===0.4&&sanity?.matching?.iou===0.5&&sanity?.matching?.sameClass===true,'accuracy sanity suite matching contract changed');
+check(JSON.stringify((sanity.samples||[]).map(sample=>Number(sample.id)))===JSON.stringify([397133,17029,13348,872]),'accuracy sanity suite image set changed');
+for(const sample of sanity.samples||[]){
+  check(exists(sample.image)&&exists(sample.annotations),'sanity-suite asset missing: '+sample.id);
+  check(sample.imageLicense?.id===4&&String(sample.imageLicense.url).includes('creativecommons.org/licenses/by/2.0'),'sanity-suite image must retain attribution-only CC BY 2.0 metadata: '+sample.id);
+  const annotations=JSON.parse(read(sample.annotations));
+  check(annotations.imageId===Number(sample.id)&&annotations.annotationLicense==='CC BY 4.0'&&annotations.bboxFormat==='COCO xywh pixels','sanity annotation contract invalid: '+sample.id);
+  check(Array.isArray(annotations.instances)&&annotations.instances.length===sample.instances,'sanity annotation count mismatch: '+sample.id);
+}
+check(!exists('assets/benchmark/coco-val-000000001675.jpg')&&!exists('assets/benchmark/coco-val-000000002006.jpg'),'superseded noncommercial sanity samples must not remain bundled');
+for(const id of ['race-sanity-run','race-sanity-body','race-sanity-status'])check(idSet.has(id),'accuracy sanity UI missing: '+id);
+check(files.race.includes("const SANITY_SUITE_URL='assets/benchmark/sanity-suite.json'")&&files.race.includes('async function runAccuracySanity()')&&files.race.includes('totals.truePositives+=measured.truePositives')&&files.race.includes('await adapter.release?.()'),'accuracy sanity suite must aggregate fixed ground truth and release each runtime');
+check(files.methodology.includes('Fixed four-image browser accuracy sanity suite')&&files.benchmarkSamples.includes('not COCO AP')&&files.readme.includes('fixed four-image COCO 2017 validation sanity suite'),'accuracy sanity limitations must stay explicit in documentation');
 
 check(files.index.includes('id="race-diagnostics" hidden'),'diagnostic UI parent must be hidden by default');
 check(files.index.includes('id="race-blackbox-tools" hidden'),'black-box tools must be hidden independently of diagnostic status');
