@@ -162,6 +162,7 @@ const standard=loadModelContracts('standard-wasm').VisionModels;
 const jsep=loadModelContracts('jsep').VisionModels;
 check(JSON.stringify(standard.yolox.executionProviders)==='["wasm"]','standard-WASM YOLOX providers regressed');
 check(JSON.stringify(jsep.yolox.executionProviders)==='["webgpu","wasm"]','JSEP YOLOX providers regressed');
+check(files.race.includes("for(let c=0;c<80;c++){const score=obj*Number(data[o+5+c])")&&files.race.includes("k.classId!==d.classId||iou(d.box,k.box)<=YOLO.nms")&&!files.race.includes("kept.every(k=>iou(d.box,k.box)<=YOLO.nms)"),'YOLOX postprocessing must preserve per-class scores and use class-aware NMS');
 
 const releaseWindow=loadModelContracts('standard-wasm'),released=[];
 for(const key of releaseWindow.VisionRuntimeRegistry.modelKeys){
