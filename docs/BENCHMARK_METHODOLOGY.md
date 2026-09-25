@@ -21,7 +21,9 @@ The UI reports startup and per-run costs separately.
 
 ## 2. Warm benchmark
 
-The Time Machine benchmark runs **20 sequential warm executions** for whichever runnable model is active after its model/session or pipeline already exists. The selected model, source image, and UI confidence threshold are locked for the full 20-run sample so interaction cannot mix benchmark populations.
+The Time Machine benchmark runs **20 sequential warm executions** only for models that explicitly opt into the `benchmark` capability, after their model/session or pipeline already exists. The selected model, source image, and UI confidence threshold are locked for the full 20-run sample so interaction cannot mix benchmark populations.
+
+Faster R-CNN R50-FPN INT8 and YOLOS-tiny initially remain Time Machine-only with `benchmark:false`, like other intentionally scoped research/reference runtimes. A successful single browser inference smoke does not establish that a 20-run benchmark is stable or meaningful on mobile/WebKit, so they must not be silently added to Model Race or the warm-benchmark population.
 
 Reported values:
 
