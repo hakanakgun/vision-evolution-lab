@@ -95,7 +95,14 @@
       preprocessing:Object.freeze({resize:'direct stretch to 448×448',layout:'NCHW',dtype:'float32 input / dynamic INT8 weights',channels:'RGB',normalization:'divide by 255',padding:'none'}),
       decoder:'98 decoded xyxy candidates · Pascal VOC 20 scores · class-aware NMS IoU 0.45',
       ui:Object.freeze({subtitle:'Pascal VOC 20-class detection · original YOLOv1 architecture · ONNX/WASM',provenance:'Derived browser export of the full original YOLOv1 architecture. A pinned LibreYOLO checkpoint is exported at a pinned converter revision, dynamically INT8-quantized, checked on the canonical dog/bicycle/car image, and opened with ONNX Runtime Web WASM in the same publication workflow. The exact published asset is pinned by byte size and SHA-256.',runtime:Object.freeze({initLabel:'Session init',bytesText:'516.3 MB · INT8 weights · large download',cacheInitial:'checking large model cache',benchmarkBoundary:'20 warm ONNX Runtime Web/WASM runs after the one-time model transfer and session initialization.'}),links:Object.freeze([Object.freeze({label:'YOLOv1 paper ↗',url:'https://arxiv.org/abs/1506.02640'}),Object.freeze({label:'Pinned source checkpoint ↗',url:'https://huggingface.co/LibreYOLO/LibreYOLO1b/tree/4349c7a823974cea5d29c5f306a99bcf441ef437'}),Object.freeze({label:'Converter source ↗',url:'https://github.com/LibreYOLO/libreyolo/tree/c25f6dffb521ea60bc0f63ae3dffb168a7edc466'}),Object.freeze({label:'License/provenance ↗',url:'docs/MODEL_SOURCES.md#yolov1'})])}),
-      sources:Object.freeze([Object.freeze({label:'GitHub Release · verified YOLOv1 INT8',url:'https://github.com/hakanakgun/vision-evolution-lab/releases/download/yolov1-browser-int8-122bf7462747/yolov1-voc20-int8.onnx',provenance:'Vision Evolution Lab reproducible export · SHA-256 122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49'})])
+      sources:Object.freeze([Object.freeze({label:'GitHub Pages · verified YOLOv1 INT8 chunks',provenance:'Same-origin chunks reconstructed from GitHub Release yolov1-browser-int8-122bf7462747 · final SHA-256 122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49',parts:Object.freeze([
+        Object.freeze({url:'assets/models/yolov1/part-00.bin',bytes:95000000}),
+        Object.freeze({url:'assets/models/yolov1/part-01.bin',bytes:95000000}),
+        Object.freeze({url:'assets/models/yolov1/part-02.bin',bytes:95000000}),
+        Object.freeze({url:'assets/models/yolov1/part-03.bin',bytes:95000000}),
+        Object.freeze({url:'assets/models/yolov1/part-04.bin',bytes:95000000}),
+        Object.freeze({url:'assets/models/yolov1/part-05.bin',bytes:66358513})
+      ])})])
     }),
     tinyyolo:Object.freeze({
       id:'tiny-yolov2-voc-opset8',title:'Tiny YOLOv2',year:2016,status:'runnable',family:'Tiny YOLOv2',task:'object-detection',
