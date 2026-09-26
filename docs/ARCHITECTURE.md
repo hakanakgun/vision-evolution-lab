@@ -165,7 +165,7 @@ See [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md) for the stable benchmar
 
 ## Model assets, cache, and provenance
 
-Most model binaries are fetched at runtime. LW-DETR-tiny is the deliberate same-origin exception: a verified derived ONNX export is committed as `assets/models/lw-detr-tiny.onnx`. YOLOv1 is another derived export. Its canonical 516.3 MiB dynamic-INT8 artifact stays checksum-pinned in a GitHub Release, while six sub-100-MB byte chunks are committed under `assets/models/yolov1/` only for same-origin Pages delivery because browser fetches of GitHub Release assets fail CORS.
+Most model binaries are fetched at runtime. LW-DETR-tiny is the deliberate same-origin exception: a verified derived ONNX export is committed as `assets/models/lw-detr-tiny.onnx`. YOLOv1 is another derived export. Its canonical 133.9 MiB mixed INT8/INT4 artifact stays checksum-pinned in GitHub Release `yolov1-browser-compact-b0ebae01b947`, while two sub-100-MB chunks are committed under `assets/models/yolov1/` for same-origin Pages delivery because browser fetches of GitHub Release assets fail CORS. The compact transform preserves the original 49 independently weighted local positions by replacing the exported `lok,nkl->nol` Einsum with 49 equivalent per-location MatMuls, then applies MatMulNBits INT4 only to those local weights; this is not a shared-convolution approximation.
 
 `src/core/model-loader.js` distinguishes:
 
