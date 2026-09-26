@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Build smaller YOLOv1 browser candidates for the iOS/WebKit memory investigation.
+"""Build compact YOLOv1 browser candidates for the iOS/WebKit memory investigation.
 
-Experiment-only. Regenerates the pinned full YOLOv1 export, keeps the current
-dynamic-INT8 artifact as a baseline, then tries a mixed compact path:
-- Conv weights: dynamic INT8, matching the current browser artifact.
-- Final fully-connected Gemm: rewritten to MatMul + Add, then block-wise INT4.
+Experiment-only. The published dynamic-INT8 export still contains the enormous
+YOLOv1 locally-connected layer as FP32 because it exports as Einsum. This script
+rewrites the exact local operation lok,nkl->nol into 49 independent
+constant-weight MatMul operations and applies ORT MatMulNBits INT4 weight-only
+quantization to those matrices. All other layers stay on the existing
+dynamic-INT8 path.
 
 No candidate is published by this script.
 """
@@ -25,7 +27,7 @@ import onnxruntime as ort
 from PIL import Image
 from huggingface_hub import hf_hub_download
 from onnx import helper, numpy_helper
-from onnxruntime.quantization import QuantType, quantize_dynamic
+from onnxruntime.quantization import QuantFormat, QuantType, quantize_dynamic
 from onnxruntime.quantization.matmul_nbits_quantizer import (
     DefaultWeightOnlyQuantConfig,
     MatMulNBitsQuantizer,
@@ -126,16 +128,15 @@ def tensor_bytes(tensor) -> int:
 def graph_stats(path: Path) -> dict:
     model = onnx.load(str(path), load_external_data=False)
     ops = Counter(node.op_type for node in model.graph.node)
-    initializers = []
-    for tensor in model.graph.initializer:
-        initializers.append(
-            {
-                "name": tensor.name,
-                "bytes": tensor_bytes(tensor),
-                "data_type": int(tensor.data_type),
-                "dims": list(tensor.dims),
-            }
-        )
+    initializers = [
+        {
+            "name": tensor.name,
+            "bytes": tensor_bytes(tensor),
+            "data_type": int(tensor.data_type),
+            "dims": list(tensor.dims),
+        }
+        for tensor in model.graph.initializer
+    ]
     initializers.sort(key=lambda item: item["bytes"], reverse=True)
     return {
         "op_counts": dict(sorted(ops.items())),
@@ -149,6 +150,7 @@ def validate_candidate(path: Path, dog: Path) -> dict:
     session_options = ort.SessionOptions()
     session_options.enable_cpu_mem_arena = False
     session_options.enable_mem_pattern = False
+    session_options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
     session_options.add_session_config_entry("session.disable_prepacking", "1")
     started = time.perf_counter()
     session = ort.InferenceSession(str(path), sess_options=session_options, providers=["CPUExecutionProvider"])
@@ -194,119 +196,173 @@ def record(report: dict, key: str, path: Path, dog: Path, started: float) -> Non
     print(f"{key}: {value['mib']} MiB · golden={value['ort']['dog_labels']}", flush=True)
 
 
-def rewrite_gemm_to_matmul(model_path: Path, output_path: Path) -> dict:
+def _attribute(node, name: str):
+    for attribute in node.attribute:
+        if attribute.name == name:
+            value = helper.get_attribute_value(attribute)
+            return value.decode("utf-8") if isinstance(value, bytes) else value
+    return None
+
+
+def rewrite_local_einsum_to_matmuls(model_path: Path, output_path: Path) -> dict:
+    """Replace YOLOv1's local-layer Einsum with 49 equivalent 2-D MatMuls."""
     model = onnx.load(str(model_path))
     graph = model.graph
     initializer_by_name = {item.name: item for item in graph.initializer}
     consumers = Counter(name for node in graph.node for name in node.input if name)
-    new_nodes = []
-    replaced = []
-    remove_initializers = set()
 
+    target = None
+    weight_name = None
+    activation_name = None
     for node in graph.node:
-        if node.op_type != "Gemm":
-            new_nodes.append(node)
+        if node.op_type != "Einsum" or _attribute(node, "equation") != "lok,nkl->nol":
             continue
+        for index, input_name in enumerate(node.input):
+            tensor = initializer_by_name.get(input_name)
+            if tensor is not None and list(tensor.dims) == [49, 256, 9216]:
+                target = node
+                weight_name = input_name
+                activation_name = node.input[1 - index]
+                break
+        if target is not None:
+            break
 
-        attrs = {attr.name: helper.get_attribute_value(attr) for attr in node.attribute}
-        alpha = float(attrs.get("alpha", 1.0))
-        beta = float(attrs.get("beta", 1.0))
-        trans_a = int(attrs.get("transA", 0))
-        trans_b = int(attrs.get("transB", 0))
-        if alpha != 1.0 or beta != 1.0 or trans_a != 0:
-            raise RuntimeError(
-                f"Unsupported Gemm attributes for safe rewrite: alpha={alpha}, beta={beta}, transA={trans_a}"
-            )
-        if len(node.input) < 2 or node.input[1] not in initializer_by_name:
-            raise RuntimeError("YOLOv1 Gemm weight is not a constant initializer.")
+    if target is None or weight_name is None or activation_name is None:
+        equations = [
+            {"name": node.name, "equation": _attribute(node, "equation"), "inputs": list(node.input)}
+            for node in graph.node
+            if node.op_type == "Einsum"
+        ]
+        raise RuntimeError(f"YOLOv1 local Einsum contract changed: {equations}")
 
-        a_name, b_name = node.input[0], node.input[1]
-        bias_name = node.input[2] if len(node.input) > 2 and node.input[2] else None
-        weight = numpy_helper.to_array(initializer_by_name[b_name])
-        if weight.ndim != 2:
-            raise RuntimeError(f"YOLOv1 Gemm weight rank changed: {weight.shape}")
-        matmul_weight = weight.T.copy() if trans_b else weight.copy()
-        q_name = b_name + "_matmul"
-        graph.initializer.append(numpy_helper.from_array(matmul_weight, name=q_name))
-        if consumers[b_name] == 1:
-            remove_initializers.add(b_name)
+    if consumers[weight_name] != 1:
+        raise RuntimeError(f"YOLOv1 local weight has {consumers[weight_name]} consumers; expected 1.")
 
-        matmul_output = node.output[0] if not bias_name else node.output[0] + "_matmul"
-        new_nodes.append(
-            helper.make_node(
-                "MatMul",
-                [a_name, q_name],
-                [matmul_output],
-                name=(node.name or "yolov1_gemm") + "_MatMul",
-            )
+    weight_tensor = initializer_by_name[weight_name]
+    source_weight_bytes = tensor_bytes(weight_tensor)
+    weight = numpy_helper.to_array(weight_tensor)
+    if weight.shape != (49, 256, 9216):
+        raise RuntimeError(f"YOLOv1 local weight shape changed: {weight.shape}")
+
+    output_name = target.output[0]
+    prefix = (target.name or "yolov1_local_einsum").replace("/", "_")
+    axes_name = prefix + "_unsqueeze_axes"
+    generated_initializers = [
+        numpy_helper.from_array(np.array([2], dtype=np.int64), name=axes_name)
+    ]
+    generated_nodes = []
+    location_outputs = []
+
+    for location in range(weight.shape[0]):
+        index_name = f"{prefix}_index_{location}"
+        local_weight_name = f"{prefix}_weight_{location}"
+        gather_output = f"{prefix}_gather_{location}"
+        matmul_output = f"{prefix}_matmul_{location}"
+        unsqueeze_output = f"{prefix}_unsqueeze_{location}"
+
+        generated_initializers.append(
+            numpy_helper.from_array(np.array(location, dtype=np.int64), name=index_name)
         )
-        if bias_name:
-            new_nodes.append(
+        local_weight = np.ascontiguousarray(weight[location].T, dtype=np.float32)
+        generated_initializers.append(
+            numpy_helper.from_array(local_weight, name=local_weight_name)
+        )
+        generated_nodes.extend(
+            [
                 helper.make_node(
-                    "Add",
-                    [matmul_output, bias_name],
-                    [node.output[0]],
-                    name=(node.name or "yolov1_gemm") + "_BiasAdd",
-                )
-            )
-        replaced.append(
-            {
-                "node": node.name,
-                "weight": b_name,
-                "weight_shape": list(weight.shape),
-                "weight_bytes_fp32": int(weight.nbytes),
-                "transB": trans_b,
-            }
+                    "Gather",
+                    [activation_name, index_name],
+                    [gather_output],
+                    axis=2,
+                    name=f"{prefix}_Gather_{location}",
+                ),
+                helper.make_node(
+                    "MatMul",
+                    [gather_output, local_weight_name],
+                    [matmul_output],
+                    name=f"{prefix}_MatMul_{location}",
+                ),
+                helper.make_node(
+                    "Unsqueeze",
+                    [matmul_output, axes_name],
+                    [unsqueeze_output],
+                    name=f"{prefix}_Unsqueeze_{location}",
+                ),
+            ]
         )
-        del weight, matmul_weight
-        gc.collect()
+        location_outputs.append(unsqueeze_output)
 
-    if not replaced:
-        raise RuntimeError("No Gemm node found in YOLOv1 export.")
+    generated_nodes.append(
+        helper.make_node(
+            "Concat",
+            location_outputs,
+            [output_name],
+            axis=2,
+            name=prefix + "_Concat",
+        )
+    )
 
-    kept_initializers = [item for item in graph.initializer if item.name not in remove_initializers]
+    rewritten_nodes = []
+    for node in graph.node:
+        if node is target:
+            rewritten_nodes.extend(generated_nodes)
+        else:
+            rewritten_nodes.append(node)
+
+    kept_initializers = [item for item in graph.initializer if item.name != weight_name]
+    del graph.node[:]
+    graph.node.extend(rewritten_nodes)
     del graph.initializer[:]
     graph.initializer.extend(kept_initializers)
-    del graph.node[:]
-    graph.node.extend(new_nodes)
+    graph.initializer.extend(generated_initializers)
+
     onnx.checker.check_model(model)
     onnx.save(model, str(output_path))
-    return {"replaced": replaced}
+    del model, weight
+    gc.collect()
+    return {
+        "equation": "lok,nkl->nol",
+        "locations": 49,
+        "outputs_per_location": 256,
+        "patch": 9216,
+        "source_weight": weight_name,
+        "source_weight_bytes_fp32": source_weight_bytes,
+        "matmuls": 49,
+    }
 
 
-def build_conv8_fc4(fp32: Path, output_path: Path, block_size: int, report: dict, dog: Path) -> None:
-    conv8 = OUT / f"yolov1-voc20-conv-int8-fc-fp32-b{block_size}.onnx"
-    matmul_ready = OUT / f"yolov1-voc20-conv-int8-fc-matmul-b{block_size}.onnx"
+def build_local_int4(
+    dynamic_int8_path: Path,
+    output_path: Path,
+    block_size: int,
+    report: dict,
+    dog: Path,
+) -> None:
+    rewritten = OUT / f"yolov1-voc20-dynamic-int8-local-matmuls-b{block_size}.onnx"
     try:
-        print(f"Building Conv INT8 + FC INT4 block={block_size} candidate…", flush=True)
+        print(f"Building dynamic INT8 + local INT4 block={block_size} candidate…", flush=True)
         started = time.perf_counter()
-        quantize_dynamic(
-            model_input=str(fp32),
-            model_output=str(conv8),
-            weight_type=QuantType.QInt8,
-            per_channel=True,
-            op_types_to_quantize=["Conv"],
-        )
-        rewrite = rewrite_gemm_to_matmul(conv8, matmul_ready)
+        rewrite = rewrite_local_einsum_to_matmuls(dynamic_int8_path, rewritten)
         config = DefaultWeightOnlyQuantConfig(
             block_size=block_size,
             is_symmetric=True,
             accuracy_level=4,
+            quant_format=QuantFormat.QOperator,
             op_types_to_quantize=("MatMul",),
+            quant_axes=(("MatMul", 0),),
             bits=4,
         )
-        quantizer = MatMulNBitsQuantizer(model=str(matmul_ready), algo_config=config)
+        quantizer = MatMulNBitsQuantizer(model=str(rewritten), algo_config=config)
         quantizer.process()
         quantizer.model.save_model_to_file(str(output_path))
-        key = f"conv8_fc4_b{block_size}"
+        key = f"dynamic_int8_local_int4_b{block_size}"
         record(report, key, output_path, dog, started)
         report["artifacts"][key]["rewrite"] = rewrite
     finally:
-        for temp in [conv8, matmul_ready]:
-            try:
-                temp.unlink()
-            except FileNotFoundError:
-                pass
+        try:
+            rewritten.unlink()
+        except FileNotFoundError:
+            pass
         gc.collect()
 
 
@@ -354,7 +410,7 @@ def main() -> None:
 
     dynamic_path = OUT / "yolov1-voc20-dynamic-int8.onnx"
     try:
-        print("Building dynamic INT8 baseline…", flush=True)
+        print("Building published dynamic INT8 baseline…", flush=True)
         started = time.perf_counter()
         quantize_dynamic(
             model_input=str(fp32),
@@ -366,12 +422,15 @@ def main() -> None:
     except Exception as error:
         report["errors"]["dynamic_int8"] = f"{type(error).__name__}: {error}"
         print(report["errors"]["dynamic_int8"], flush=True)
+        report_path = OUT / "report.json"
+        report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        return
 
     for block_size in (32, 128):
-        output = OUT / f"yolov1-voc20-conv8-fc4-b{block_size}.onnx"
-        key = f"conv8_fc4_b{block_size}"
+        output = OUT / f"yolov1-voc20-dynamic-int8-local-int4-b{block_size}.onnx"
+        key = f"dynamic_int8_local_int4_b{block_size}"
         try:
-            build_conv8_fc4(fp32, output, block_size, report, dog)
+            build_local_int4(dynamic_path, output, block_size, report, dog)
         except Exception as error:
             report["errors"][key] = f"{type(error).__name__}: {error}"
             print(report["errors"][key], flush=True)
