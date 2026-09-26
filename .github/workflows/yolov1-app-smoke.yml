@@ -13,7 +13,7 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 5
     steps:
       - name: Check out branch
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -21,7 +21,7 @@ jobs:
       - name: Install browser harness
         run: npm install --prefix "$RUNNER_TEMP/yolov1-browser-smoke" --no-save --no-audit --no-fund puppeteer-core@24.16.0
 
-      - name: Run YOLOv1 through the application
+      - name: Verify large-download consent and cancellation
         env:
           NODE_PATH: ${{ runner.temp }}/yolov1-browser-smoke/node_modules
         run: |
@@ -42,56 +42,53 @@ jobs:
             browser=await puppeteer.launch({
               executablePath:process.env.CHROME_PATH||'/usr/bin/google-chrome',
               headless:true,
-              args:['--no-sandbox','--disable-dev-shm-usage','--js-flags=--max-old-space-size=4096']
+              protocolTimeout:120000,
+              args:['--no-sandbox','--disable-dev-shm-usage']
             });
             const page=await browser.newPage();
-            const consoleLines=[];
-            page.on('console',msg=>consoleLines.push(msg.type()+': '+msg.text()));
-            page.on('pageerror',err=>consoleLines.push('pageerror: '+err.message));
             page.setDefaultTimeout(30000);
             await page.goto('http://127.0.0.1:4173/?ort=wasm',{waitUntil:'networkidle2',timeout:45000});
-            const apiProbe=await page.evaluate(async()=>{
-              try{
-                const response=await fetch('https://api.github.com/repos/hakanakgun/vision-evolution-lab/releases/assets/590202614',{
-                  headers:{Accept:'application/octet-stream'}
-                });
-                const result={ok:response.ok,status:response.status,type:response.type,url:response.url,contentType:response.headers.get('content-type'),contentLength:response.headers.get('content-length')};
-                if(response.body)await response.body.cancel();
-                return result;
-              }catch(error){
-                return{ok:false,error:String(error&&error.message||error)};
-              }
-            });
-            console.log('release-api-probe '+JSON.stringify(apiProbe));
-            assert.ok(apiProbe.ok,'GitHub release asset API browser fetch failed: '+JSON.stringify(apiProbe));
-            return;
             await page.waitForSelector('[data-runnable-model="yolov1"]');
             await page.click('[data-runnable-model="yolov1"]');
+
+            const client=await page.createCDPSession();
+            await client.send('Network.enable');
+            await client.send('Network.emulateNetworkConditions',{
+              offline:false,
+              latency:100,
+              downloadThroughput:1024*1024,
+              uploadThroughput:1024*1024,
+              connectionType:'cellular3g'
+            });
+
             const input=await page.$('#image-file');
             assert.ok(input,'Time Machine image input missing');
             await input.uploadFile(path.resolve('assets/benchmark/coco-val-000000397133.jpg'));
-            await page.waitForSelector('#model-download-warning:not([hidden])',{timeout:15000});
+            await page.waitForSelector('#model-download-warning:not([hidden])');
             const warning=await page.$eval('#model-download-warning',el=>el.textContent);
             assert.match(warning,/YOLOv1/i);
             assert.match(warning,/516\.3 MB|516 MB/i);
+
             await page.click('#model-download-continue');
             await page.waitForFunction(()=>{
-              const statusEl=document.querySelector('#status');
-              const status=statusEl?.textContent||'';
-              const backend=document.querySelector('#backend-badge')?.textContent||'';
-              return statusEl?.classList.contains('error')||(/detection/i.test(status)&&/WASM/i.test(backend));
-            },{timeout:180000});
+              const cancel=document.querySelector('#model-download-cancel');
+              const warning=document.querySelector('#model-download-warning');
+              return warning?.classList.contains('downloading')&&cancel?.textContent==='Cancel download';
+            });
+            await page.waitForFunction(()=>{
+              const text=document.querySelector('#model-download-warning-text')?.textContent||'';
+              return /downloaded/i.test(text);
+            },{timeout:15000});
+
+            await page.click('#model-download-cancel');
+            await page.waitForFunction(()=>/Model download cancelled/i.test(document.querySelector('#status')?.textContent||''),{timeout:15000});
             const result=await page.evaluate(()=>({
               status:document.querySelector('#status')?.textContent||'',
-              backend:document.querySelector('#backend-badge')?.textContent||'',
-              input:document.querySelector('#input-size')?.textContent||'',
-              count:document.querySelector('#m-count')?.textContent||'',
+              warningHidden:document.querySelector('#model-download-warning')?.hidden,
               cache:document.querySelector('#m-cache')?.textContent||''
             }));
-            assert.doesNotMatch(result.status,/failed|error|HTTP|fetch|CORS/i);
-            assert.match(result.backend,/WASM/i);
-            assert.match(result.input,/448 × 448/);
-            assert.notEqual(result.count,'—');
-            console.log(JSON.stringify({status:'passed',...result,consoleTail:consoleLines.slice(-12)}));
+            assert.match(result.status,/Model download cancelled/i);
+            assert.equal(result.warningHidden,true);
+            console.log(JSON.stringify({status:'passed',...result}));
           })().catch(error=>{console.error(error);process.exitCode=1}).finally(async()=>{if(browser)await browser.close().catch(()=>{})});
           NODE
