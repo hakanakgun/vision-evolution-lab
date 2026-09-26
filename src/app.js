@@ -209,7 +209,7 @@
       if(!warning||!title||!text||!go||!cancel)return true;
       title.textContent=hint.cellular?'Large model · cellular data warning':'Large model download';
       const prefix=`${model.title} requires about ${bytes(model.bytes)} before local inference can start.`;
-      const iosNote=window.VisionRuntimeBootstrap?.isIOS&&model.id==='yolov1-voc20-int8-browser'?' On iPhone/iPad this model uses an experimental low-memory WASM path; a browser reload is still possible until physical-device validation passes.':'';
+      const iosNote=window.VisionRuntimeBootstrap?.isIOS&&model.id==='yolov1-voc20-int8-local-int4-browser'?' On iPhone/iPad this compact model still uses the low-memory WASM session policy; physical-device validation is pending.':'';
       text.textContent=`${prefix} ${hint.text}${iosNote} The transfer stays on your device cache; your selected image is not uploaded.`;
       go.textContent=`Download ${bytes(model.bytes)}`;go.hidden=false;cancel.textContent='Not now';warning.classList.remove('downloading');warning.hidden=false;
       return await new Promise(resolve=>{state.modelDownloadConsentResolver=resolve});
