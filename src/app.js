@@ -42,8 +42,11 @@
       state.historyExperiment='';state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.clear?.());state.activeModel=key;syncHistoryControls();
       if(previousKey!==key){const previousAdapter=RuntimeRegistry.get(previousKey);state.runtimeTransition=state.runtimeTransition.catch(()=>{}).then(async()=>{if(state.live&&state.liveModel===previousKey)return;await state.liveInference.catch(()=>{});await previousAdapter?.release();}).catch(error=>console.warn('Previous model runtime release failed',error));}
       resetRunMetrics();resetBenchmark();resetStartupMetrics();updateActiveModelUI();updateActiveCacheState();renderLiveModels();
-      if(state.image){drawSourceOnly();setStatus(activeModel().title+' selected. Run the current image when ready.');}
-      else setStatus(activeModel().title+' selected. Choose an image to run this generation.');
+      if(state.image){
+        drawSourceOnly();
+        setStatus('Running '+activeModel().title+' on the current Time Machine image…','loading');
+        void runUploaded();
+      }else setStatus(activeModel().title+' selected. Choose an image to run this generation.');
       if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});
     }
     function reportRuntimeEvent(model,event){if(model!==state.activeModel||!event)return;if(event.type==='progress')updateMainModelProgress(event.info||{});if(event.type==='cache')setMetric('m-cache',event.text||'checking…');if(event.type==='runtime'){if(event.backend)$('backend-badge').textContent=event.dtype?`${String(event.backend).toUpperCase()} · ${event.dtype}`:String(event.backend).toUpperCase();if(Number.isFinite(event.downloadMs))setMetric('m-download',ms(event.downloadMs));if(Number.isFinite(event.initMs))setMetric('m-init',ms(event.initMs));if(event.bytes)setMetric('m-bytes',bytes(event.bytes));if(event.source)setMetric('m-cache',event.cacheState?`${event.cacheState} · ${event.source}`:event.source);}}
