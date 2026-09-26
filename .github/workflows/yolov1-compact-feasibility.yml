@@ -77,7 +77,7 @@ jobs:
         run: |
           mkdir -p artifacts/yolov1-compact/web-smoke
           set +e
-          for name in dynamic-int8 conv8-fc4-b32 conv8-fc4-b128; do
+          for name in dynamic-int8 dynamic-int8-local-int4-b32 dynamic-int8-local-int4-b128; do
             model="artifacts/yolov1-compact/yolov1-voc20-${name}.onnx"
             log="artifacts/yolov1-compact/web-smoke/${name}.log"
             if [ ! -f "$model" ]; then
