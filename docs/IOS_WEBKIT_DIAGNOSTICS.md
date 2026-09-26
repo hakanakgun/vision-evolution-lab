@@ -6,6 +6,8 @@ Mitigation validated on the current physical-device test, while the historical r
 
 On a physical iPhone running an iOS browser, repeated sequential benchmarking of all four detector runtimes can silently recreate the page. Most observed failures do not include an orderly `pagehide` and do not produce a catchable JavaScript exception before the new page instance starts.
 
+On 2026-09-26, the user reported a separate YOLOv1 failure on a physical iPhone: the ~516.3 MiB model transfer completed, then the browser recreated the page while detection/session work was starting. The current code path reconstructs the six Pages chunks into one 541,358,513-byte `Uint8Array`; ONNX Runtime Web then copies model bytes into the WASM heap during session creation. v0.21.1 reduces avoidable peak memory by verifying the six already-pinned chunk SHA-256 values incrementally instead of hashing the full reconstructed buffer again, and by disabling `enableCpuMemArena`, `enableMemPattern`, and ORT weight prepacking for the YOLOv1 iOS/WASM session. This remains an unverified mitigation until the same physical iPhone completes inference without a page reload.
+
 On 2026-09-23, the user reported a five-model Benchmark ×20 and Model Race completing on iOS 18.7 / Brave-WebKit, including RT-DETRv2 R18. The measured warm inference results were:
 
 | Model | Backend | p50 | p90 | p50 end-to-end | Timing variation |
@@ -25,6 +27,8 @@ On 2026-09-24, the user verified the v0.15.1 front/rear camera control on a phys
 A later physical-iPhone smoke test confirmed YOLOX-Nano could run in Live Camera on the tested session. This is functional device evidence for that model/path only; it does not replace the pending seven-model matrix, multi-minute soak, Safari comparison, or fallback tests.
 
 ## Physical iOS tests still pending
+
+- Re-test YOLOv1 on the same iPhone after v0.21.1: use the already cached chunks if available, confirm that session creation completes, one detection run returns without a page reload, then repeat once after a fresh page load. Record whether the reload occurs before session-ready, during the first `run()`, or after detections render.
 
 - In Live Camera, use its model picker to run each of the seven live-capable models, including newly enabled D-FINE-N and LW-DETR-tiny; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.
 - While the camera is running, switch models from the Live Camera picker and confirm the camera stream stays open, inference resumes on the new model, and a failed switch restores the previous model when possible. Also stop and restart the camera for each model.

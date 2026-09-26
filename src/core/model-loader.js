@@ -7,6 +7,7 @@
   const formatBytes=v=>{if(!Number.isFinite(v)||v<=0)return '—';const mb=v/1048576;return mb>=1?`${mb.toFixed(mb<10?2:1)} MB`:`${(v/1024).toFixed(0)} KB`;};
   const abortError=()=>{const error=new Error('Model download cancelled.');error.name='AbortError';return error};
   const throwIfAborted=signal=>{if(signal?.aborted)throw abortError()};
+  async function sha256Hex(view){if(!globalThis.crypto?.subtle)throw new Error('SHA-256 verification is unavailable in this browser.');const digest=await crypto.subtle.digest('SHA-256',view);return[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('')}
   async function openCache(){if(!('caches'in window))return null;try{return await caches.open(CACHE_NAME)}catch(_){return null}}
   async function readResponse(response,onProgress,label,expectedBytes=0,signal){
     throwIfAborted(signal);
@@ -74,7 +75,7 @@
   async function loadMultipart(model,source,{cache,onState,onProgress,trace,signal,attempt}){
     const total=Number(model.bytes)||source.parts.reduce((sum,part)=>sum+(Number(part.bytes)||0),0);
     if(total<=0)throw new Error('multipart model is missing an exact total size');
-    const merged=new Uint8Array(total),started=performance.now();let offset=0,allCached=true;
+    const merged=new Uint8Array(total),started=performance.now();let offset=0,allCached=true,allPartsPinned=true;
     for(let index=0;index<source.parts.length;index++){
       throwIfAborted(signal);
       const part=source.parts[index],canonicalUrl=resolveUrl(part.url),expected=Number(part.bytes)||0;
@@ -100,7 +101,17 @@
         ?cache.put(canonicalUrl,response.clone()).then(()=>{trace('part-cache-write-complete',{source:source.label,part:index+1,stored:true});return true}).catch(error=>{trace('part-cache-write-complete',{source:source.label,part:index+1,stored:false});console.warn('Model part cache write failed',source.label,index+1,error);return false})
         :Promise.resolve(false);
       try{
-        const loaded=await readResponseInto(response,merged,offset,expected,onProgress,source.label,total,signal);
+        const partOffset=offset,loaded=await readResponseInto(response,merged,partOffset,expected,onProgress,source.label,total,signal);
+        if(part.sha256){
+          trace('part-sha256-start',{source:source.label,part:index+1,bytes:loaded});
+          const actual=await sha256Hex(merged.subarray(partOffset,partOffset+loaded));
+          if(actual!==part.sha256){
+            await cacheWrite.catch(()=>{});
+            if(cache)try{await cache.delete(canonicalUrl)}catch(_){}
+            throw new Error(`part ${index+1}/${source.parts.length}: SHA-256 mismatch`);
+          }
+          trace('part-sha256-complete',{source:source.label,part:index+1,verified:true});
+        }else allPartsPinned=false;
         offset+=loaded;await cacheWrite;trace('part-read-complete',{source:source.label,part:index+1,origin,bytes:loaded});
       }catch(error){
         await cacheWrite.catch(()=>{});
@@ -110,7 +121,7 @@
     }
     if(offset!==total)throw new Error(`multipart model size mismatch: expected ${total}, got ${offset}`);
     throwIfAborted(signal);
-    const hit={buffer:merged.buffer,source:source.label,cacheState:allCached?'browser cache':'network',downloadMs:performance.now()-started,bytes:offset};
+    const hit={buffer:merged.buffer,source:source.label,cacheState:allCached?'browser cache':'network',downloadMs:performance.now()-started,bytes:offset,integrity:allPartsPinned?'sha256-parts':'unverified-parts'};
     trace('arraybuffer-obtained',{source:source.label,origin:allCached?'part-cache':'multipart-fetch',bytes:offset,parts:source.parts.length});
     return hit;
   }
