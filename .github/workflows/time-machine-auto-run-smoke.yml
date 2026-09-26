@@ -58,7 +58,8 @@ jobs:
               }));
               console.log('after-select',JSON.stringify(immediate));
               if(immediate.model!=='SSD-MobileNetV1 INT8')throw new Error('SSD did not become active');
-              if(!immediate.status.includes('Running SSD-MobileNetV1 INT8'))throw new Error('selection did not auto-start SSD inference');
+              if(!immediate.rerunDisabled)throw new Error('selection did not enter the automatic run lifecycle');
+              if(immediate.status.includes('selected. Run the current image when ready.'))throw new Error('selection still requires a second manual Run action');
               await page.waitForFunction(()=>document.getElementById('m-inf').textContent!=='—'&&!document.getElementById('rerun').disabled,{timeout:300000});
               const done=await page.evaluate(()=>({model:document.getElementById('active-model-title').textContent,inf:document.getElementById('m-inf').textContent,status:document.getElementById('status').textContent}));
               console.log('completed',JSON.stringify(done));
