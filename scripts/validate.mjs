@@ -324,9 +324,9 @@ check(yolov1Entry?.year===2016&&yolov1Entry.kind==='runnable','YOLOv1 2016 runna
 check(yolov1?.bytes===541358513&&yolov1.sha256==='122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49','YOLOv1 published asset size or checksum changed');
 check(yolov1.capabilities.timeMachine&&yolov1.capabilities.benchmark&&yolov1.capabilities.live===false&&yolov1.capabilities.race===false,'YOLOv1 must remain Time Machine/individual benchmark only');
 check(yolov1.downloadPolicy?.enabled===true&&yolov1.downloadPolicy.warningBytes===100*1048576,'YOLOv1 large-download warning policy changed');
-check(yolov1.sources?.length===1&&yolov1.sources[0].url.includes('/releases/download/yolov1-browser-int8-122bf7462747/yolov1-voc20-int8.onnx'),'YOLOv1 runtime must use the checksum-pinned GitHub Release asset');
+check(yolov1.sources?.length===1&&yolov1.sources[0].label==='GitHub Pages · verified YOLOv1 INT8 chunks'&&yolov1.sources[0].parts?.length===6&&yolov1.sources[0].parts.reduce((sum,part)=>sum+part.bytes,0)===yolov1.bytes,'YOLOv1 same-origin chunk manifest must reconstruct the exact published asset size');
 check(files.historicalDetectors.includes("runtimes.register('yolov1'")&&files.historicalDetectors.includes('options.downloadSignal')&&files.historicalDetectors.includes("subtle.digest('SHA-256'"),'YOLOv1 adapter integrity or cancellable download contract changed');
-check(files.app.includes('confirmLargeModelDownload(model)')&&files.app.includes('new AbortController()')&&files.loader.includes("fetch(url.href,{mode:'cors',cache:attempt?'no-store':'default',signal})"),'large-model consent/cancel flow must reach the network fetch signal');
+check(files.app.includes('confirmLargeModelDownload(model)')&&files.app.includes('new AbortController()')&&files.loader.includes("fetch(url.href,{mode:'cors',cache:attempt?'no-store':'default',signal})")&&files.loader.includes('async function loadMultipart(')&&files.loader.includes('readResponseInto(response,merged'),'large-model consent/cancel flow must reach both normal and multipart network fetch paths');
 
 for(const [key,year,title] of [['ssd2016',2016,'SSD · ResNet-34 INT8'],['detr',2020,'DETR · ResNet-50']]){
   const model=metadataRegistry[key],entry=metadataRegistry.timeline.find(item=>item.model===key);
