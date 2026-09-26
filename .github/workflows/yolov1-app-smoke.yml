@@ -60,9 +60,10 @@ jobs:
             assert.match(warning,/516\.3 MB|516 MB/i);
             await page.click('#model-download-continue');
             await page.waitForFunction(()=>{
-              const status=document.querySelector('#status')?.textContent||'';
+              const statusEl=document.querySelector('#status');
+              const status=statusEl?.textContent||'';
               const backend=document.querySelector('#backend-badge')?.textContent||'';
-              return /detection/i.test(status)&&/WASM/i.test(backend);
+              return statusEl?.classList.contains('error')||(/detection/i.test(status)&&/WASM/i.test(backend));
             },{timeout:240000});
             const result=await page.evaluate(()=>({
               status:document.querySelector('#status')?.textContent||'',
@@ -71,6 +72,7 @@ jobs:
               count:document.querySelector('#m-count')?.textContent||'',
               cache:document.querySelector('#m-cache')?.textContent||''
             }));
+            assert.doesNotMatch(result.status,/failed|error|HTTP|fetch|CORS/i);
             assert.match(result.backend,/WASM/i);
             assert.match(result.input,/448 × 448/);
             assert.notEqual(result.count,'—');
