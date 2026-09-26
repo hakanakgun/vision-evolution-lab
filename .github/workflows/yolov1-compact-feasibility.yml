@@ -138,11 +138,11 @@ jobs:
 
       - name: Publish checksum-pinned compact YOLOv1 release
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           model="artifacts/yolov1-compact/yolov1-voc20-dynamic-int8-local-int4-b128.onnx"
           sha="$(sha256sum "$model" | cut -d ' ' -f 1)"
-          tag="yolov1-browser-compact-\${sha:0:12}"
+          tag="yolov1-browser-compact-${sha:0:12}"
           cp artifacts/yolov1-compact/report.json "$RUNNER_TEMP/yolov1-compact-report.json"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$tag" "$model" "$RUNNER_TEMP/yolov1-compact-report.json#yolov1-compact-report.json" --repo "$GITHUB_REPOSITORY" --clobber
@@ -150,7 +150,7 @@ jobs:
             gh release create "$tag" "$model" "$RUNNER_TEMP/yolov1-compact-report.json#yolov1-compact-report.json" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "YOLOv1 compact browser \${sha:0:12}" \
+              --title "YOLOv1 compact browser ${sha:0:12}" \
               --notes "Full YOLOv1 architecture with the 7x7 local layer rewritten exactly as 49 per-location MatMuls and weight-only INT4-quantized. Existing Conv/FC dynamic INT8 path retained. Canonical dog/bicycle/car golden, four-image baseline agreement, native ORT, and ONNX Runtime Web/WASM smoke passed. SHA-256: $sha"
           fi
           echo "YOLOV1_COMPACT_TAG=$tag" >> "$GITHUB_ENV"
