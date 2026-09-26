@@ -12,7 +12,7 @@ on:
       - "tools/smoke_yolov1_ort_web.cjs"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   export:
@@ -66,6 +66,29 @@ jobs:
 
       - name: Open and run INT8 graph on ONNX Runtime Web WASM
         run: NODE_PATH="$RUNNER_TEMP/yolov1-webtest/node_modules" node tools/smoke_yolov1_ort_web.cjs artifacts/yolov1-feasibility/yolov1-voc20-int8.onnx
+
+      - name: Publish checksum-pinned GitHub Release fallback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          model="artifacts/yolov1-feasibility/yolov1-voc20-int8.onnx"
+          sha="$(sha256sum "$model" | cut -d ' ' -f 1)"
+          tag="yolov1-browser-int8-${sha:0:12}"
+          cp artifacts/yolov1-feasibility/report.json "$RUNNER_TEMP/yolov1-report.json"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" "$model" "$RUNNER_TEMP/yolov1-report.json#yolov1-report.json" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$tag" "$model" "$RUNNER_TEMP/yolov1-report.json#yolov1-report.json" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "YOLOv1 browser INT8 ${sha:0:12}" \
+              --notes "Verified YOLOv1 VOC20 browser candidate. Fixed 448×448 input. CPU ORT golden and ONNX Runtime Web/WASM smoke passed. SHA-256: $sha"
+          fi
+          {
+            echo "YOLOV1_RELEASE_TAG=$tag"
+            echo "YOLOV1_RELEASE_SHA256=$sha"
+          } >> "$GITHUB_ENV"
+          echo "Release tag: $tag" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish verified INT8 candidate to Hugging Face when configured
         env:
