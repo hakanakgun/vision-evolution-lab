@@ -175,9 +175,11 @@
       if(state.modelDownloadController&&state.modelDownloadModel===state.activeModel){
         const warning=$('model-download-warning'),warningText=$('model-download-warning-text');
         warning?.classList.add('downloading');
-        if(warningText)warningText.textContent=pct===null
-          ?`${bytes(info.loaded)} downloaded. You can cancel this transfer without uploading your image.`
-          :`${pct.toFixed(0)}% · ${bytes(info.loaded)} / ${bytes(info.total)} downloaded. You can cancel this transfer at any time.`;
+        const cancel=$('model-download-cancel'),complete=pct!==null&&pct>=100;
+        if(cancel)cancel.disabled=complete;
+        if(warningText)warningText.textContent=complete
+          ?`${bytes(info.loaded)} downloaded. Verifying and initializing the local model…`
+          :(pct===null?`${bytes(info.loaded)} downloaded. You can cancel this transfer without uploading your image.`:`${pct.toFixed(0)}% · ${bytes(info.loaded)} / ${bytes(info.total)} downloaded. You can cancel this transfer at any time.`);
       }
     }
     function networkTransferHint(){
@@ -193,7 +195,7 @@
     function largeDownloadPolicy(model){const policy=model?.downloadPolicy;if(!policy||policy.enabled===false)return null;const threshold=Number(policy.warningBytes)||100*1048576;return Number(model?.bytes)>=threshold?policy:null}
     function hideModelDownloadWarning(){
       const warning=$('model-download-warning');if(warning){warning.hidden=true;warning.classList.remove('downloading')}
-      const go=$('model-download-continue'),cancel=$('model-download-cancel');if(go)go.hidden=false;if(cancel)cancel.textContent='Not now';
+      const go=$('model-download-continue'),cancel=$('model-download-cancel');if(go)go.hidden=false;if(cancel){cancel.textContent='Not now';cancel.disabled=false;}
     }
     function settleModelDownloadConsent(value){
       const resolve=state.modelDownloadConsentResolver;state.modelDownloadConsentResolver=null;
@@ -215,7 +217,7 @@
       const policy=largeDownloadPolicy(model);if(!policy)return null;
       const controller=new AbortController();state.modelDownloadController=controller;state.modelDownloadModel=state.activeModel;
       const warning=$('model-download-warning'),go=$('model-download-continue'),cancel=$('model-download-cancel'),title=$('model-download-warning-title');
-      if(warning){warning.hidden=false;warning.classList.add('downloading')}if(go)go.hidden=true;if(cancel)cancel.textContent='Cancel download';if(title)title.textContent='Downloading '+model.title;
+      if(warning){warning.hidden=false;warning.classList.add('downloading')}if(go)go.hidden=true;if(cancel){cancel.textContent='Cancel download';cancel.disabled=false;}if(title)title.textContent='Downloading '+model.title;
       return controller;
     }
     function endModelDownload(){
