@@ -304,7 +304,7 @@ check(alexnet.model?.labels==='assets/models/imagenet-1k-labels.json'&&alexnet.m
 check(exists(alexnet.model.labels)&&JSON.parse(read(alexnet.model.labels)).length===1000,'AlexNet must ship a complete 1,000-class label map');
 check(createHash('sha256').update(fs.readFileSync(path.join(root,alexnet.model.labels))).digest('hex')===alexnet.model.labelsSha256,'AlexNet bundled label map checksum changed');
 const historicalMilestones=(metadataRegistry.timeline||[]).filter(entry=>entry.kind==='historical');
-const expectedHistoricalMilestones=[[2014,'R-CNN'],[2016,'YOLOv1']];
+const expectedHistoricalMilestones=[[2014,'R-CNN']];
 check(historicalMilestones.length===expectedHistoricalMilestones.length,'paper-only timeline milestone count changed');
 for(const [year,title] of expectedHistoricalMilestones)check(historicalMilestones.some(entry=>entry.year===year&&entry.title===title),'paper-only milestone missing: '+year+' '+title);
 check(historicalMilestones.every(entry=>!entry.model&&!entry.jump&&entry.note?.startsWith('history only ·')),'paper-only milestones must not select or load a runtime');
@@ -317,8 +317,17 @@ check(files.index.includes('Historical experiment · same image')&&historyExperi
 check(files.catalog.includes('| 1980 | Neocognitron-inspired feature response | Runnable historical experiment |')&&files.catalog.includes('| 1998 | LeNet-era MNIST CNN reference | Runnable historical experiment |')&&files.catalog.includes('| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable historical experiment |')&&files.catalog.includes('| 2005 | HOG + linear SVM pedestrian detector | Runnable historical experiment |')&&files.catalog.includes('| 2012 | AlexNet · ImageNet classification | Runnable historical experiment |'),'catalog must distinguish runnable historical experiments');
 check(files.readme.includes('one image selected in Time Machine')&&files.docsIndex.includes('[Time Machine historical experiments](CLASSICAL_CV.md)'),'README/docs map must describe and link to same-image history experiments');
 for(const source of ['https://doi.org/10.1007/BF00344251','https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf','https://doi.org/10.1109/CVPR.2001.990517','https://doi.org/10.1109/CVPR.2005.177','https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2014/html/Girshick_Rich_Feature_Hierarchies_2014_CVPR_paper.html','https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html','https://research.google/pubs/ssd-single-shot-multibox-detector/','https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php'])check(files.history.includes(source),'historical primary-paper source missing: '+source);
-check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===11,'Time Machine registry should contain five race models and six additional Time Machine runtimes');
-check(timeMachineModels.length===11,'Time Machine must expose eleven runnable model generations');
+check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===12,'Time Machine registry should contain five race models and seven additional Time Machine runtimes');
+check(timeMachineModels.length===12,'Time Machine must expose twelve runnable model generations');
+const yolov1=metadataRegistry.yolov1,yolov1Entry=metadataRegistry.timeline.find(item=>item.model==='yolov1');
+check(yolov1Entry?.year===2016&&yolov1Entry.kind==='runnable','YOLOv1 2016 runnable Time Machine entry is missing');
+check(yolov1?.bytes===541358513&&yolov1.sha256==='122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49','YOLOv1 published asset size or checksum changed');
+check(yolov1.capabilities.timeMachine&&yolov1.capabilities.benchmark&&yolov1.capabilities.live===false&&yolov1.capabilities.race===false,'YOLOv1 must remain Time Machine/individual benchmark only');
+check(yolov1.downloadPolicy?.enabled===true&&yolov1.downloadPolicy.warningBytes===100*1048576,'YOLOv1 large-download warning policy changed');
+check(yolov1.sources?.length===1&&yolov1.sources[0].url.includes('/releases/download/yolov1-browser-int8-122bf7462747/yolov1-voc20-int8.onnx'),'YOLOv1 runtime must use the checksum-pinned GitHub Release asset');
+check(files.historicalDetectors.includes("runtimes.register('yolov1'")&&files.historicalDetectors.includes('options.downloadSignal')&&files.historicalDetectors.includes("subtle.digest('SHA-256'"),'YOLOv1 adapter integrity or cancellable download contract changed');
+check(files.app.includes('confirmLargeModelDownload(model)')&&files.app.includes('new AbortController()')&&files.loader.includes("fetch(url.href,{mode:'cors',cache:attempt?'no-store':'default',signal})"),'large-model consent/cancel flow must reach the network fetch signal');
+
 for(const [key,year,title] of [['ssd2016',2016,'SSD · ResNet-34 INT8'],['detr',2020,'DETR · ResNet-50']]){
   const model=metadataRegistry[key],entry=metadataRegistry.timeline.find(item=>item.model===key);
   check(model&&entry&&entry.year===year&&entry.title===title,'historical detector timeline entry missing: '+key);
