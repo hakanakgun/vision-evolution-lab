@@ -20,7 +20,7 @@ Timeline month labels use the first public arXiv paper date when one is availabl
 | 2012 | AlexNet · ImageNet classification | Runnable historical experiment | deep CNN for large-scale 1,000-class classification | pinned ONNX Model Zoo BVLC AlexNet INT8 checkpoint; Apache-2.0 metadata / BSD-3 card body conflict documented | Time Machine only; WASM; top-five labels; classifier, not object boxes or exact 2012 paper weights |
 | 2014 | R-CNN | History only | region proposals plus CNN features and class-specific SVMs | Girshick et al., CVPR 2014; paper reference only | object-detection research reference; no checkpoint/runtime integrated |
 | 2015 | Faster R-CNN · ResNet-50 FPN INT8 | Runnable | learned Region Proposal Network + second-stage RoI classification/regression | pinned `onnxmodelzoo/FasterRCNN-12-int8`; HF metadata Apache-2.0 / imported card MIT; upstream `maskrcnn-benchmark` MIT; COCO | Time Machine only; ONNX Runtime Web/WASM; 800/1333 aspect resize + 32-pixel padding; known dynamic-shape portability risk documented in `MODEL_SOURCES.md` |
-| 2016 | YOLOv1 | History only | unified single-stage grid-based detection | Redmon et al., CVPR 2016; paper reference only | arXiv preprint appeared in 2015; the timeline uses conference year 2016 |
+| 2016 | YOLOv1 | Runnable | unified single-stage 7×7 grid detection | pinned `LibreYOLO/LibreYOLO1b` checkpoint + pinned LibreYOLO converter; Darknet architecture/weights public domain; converter MIT | Time Machine only; fixed 448×448 RGB `/255`; dynamic-INT8 ONNX/WASM; 541,358,513 bytes; explicit large-download consent/cancel flow; physical mobile not validated |
 | 2016 | SSD · ResNet-34 INT8 | Runnable | single-shot multi-scale dense detection | pinned `onnxmodelzoo/ssd-12-int8`; repository Apache-2.0; reference weights are a later COCO 2017 checkpoint | Time Machine only; WASM; 1200×1200 input; not the original paper weights |
 | 2016 | Tiny YOLOv2 | Runnable | compact grid/anchor CNN detector | ONNX Model Zoo migration; pinned HF revision; Pascal VOC; upstream license metadata/body conflict documented | WASM; user-reported physical iPhone/Brave inference and five four-model ×20 runs on 2026-09-22; normalization remains unspecified upstream |
 | 2017 | SSD-MobileNetV1 INT8 | Runnable | lightweight mobile backbone + SSD | pinned ONNX Model Zoo source; see `MODEL_SOURCES.md` | WASM policy because current ORT WebGPU path fails at run time for this export |
@@ -67,6 +67,10 @@ The runnable 2005-era entry uses OpenCV's `HOGDescriptor` with `getDefaultPeople
 
 Face detection, pedestrian detection, handwritten-digit classification, pattern response, and general-object detection remain different tasks. They are not scored against each other and do not enter Model Race.
 
+
+### YOLOv1
+
+The full original YOLOv1 architecture is runnable in Time Machine through a derived fixed-448 ONNX export. The source checkpoint and converter are pinned, the canonical dog/bicycle/car golden is checked before publication, and the published graph is separately opened and run with `onnxruntime-web` WASM. The dynamic-INT8 artifact is still 541,358,513 bytes (~516.3 MiB), so the UI requires explicit consent before an uncached transfer and exposes an AbortController-backed cancel action while bytes are downloading. It stays outside Model Race and Live Camera until device memory/performance evidence exists. The exact published asset is pinned by size and SHA-256; byte-for-byte exporter output is not claimed deterministic across separate export runs.
 
 ### Tiny YOLOv2
 
