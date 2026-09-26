@@ -1,0 +1,80 @@
+name: Efficiency Lab browser smoke
+
+on:
+  push:
+    branches:
+      - feat/efficiency-lab
+    paths:
+      - ".github/workflows/efficiency-lab-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install browser harness
+        run: npm install --prefix "$RUNNER_TEMP/efficiency-smoke" --no-save --no-audit --no-fund puppeteer-core@24.16.0
+
+      - name: Verify desktop and mobile Efficiency Lab
+        env:
+          NODE_PATH: ${{ runner.temp }}/efficiency-smoke/node_modules
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/vision-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/version.json >/dev/null; then break; fi
+            sleep 1
+          done
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const puppeteer=require('puppeteer-core');
+
+          async function exercise(page,width,height){
+            await page.setViewport({width,height,deviceScaleFactor:1});
+            await page.goto('http://127.0.0.1:4173/?ort=wasm',{waitUntil:'networkidle2',timeout:45000});
+            await page.click('[data-tab="efficiency-lab"]');
+            await page.waitForSelector('#efficiency-lab.active');
+            const initial=await page.evaluate(()=>({
+              cards:document.querySelectorAll('[data-efficiency-model]').length,
+              status:document.querySelector('#efficiency-status')?.textContent||'',
+              columns:getComputedStyle(document.querySelector('#efficiency-grid')).gridTemplateColumns,
+              panelWidth:document.querySelector('#efficiency-lab').getBoundingClientRect().width,
+              viewport:document.documentElement.clientWidth
+            }));
+            assert.equal(initial.cards,5);
+            assert.match(initial.status,/Run Model Race ×20/i);
+            if(width<=850)assert.equal(initial.columns.trim().split(/\s+/).length,1);
+            assert.ok(initial.panelWidth<=initial.viewport+1,'Efficiency panel overflows viewport');
+
+            await page.evaluate(()=>{
+              window.VisionRaceInsights={snapshot:()=>({
+                yolox:{key:'yolox',label:'YOLOX-Nano',backend:'WASM',p50:37,p90:38,total:41,cv:2.1,timingBoundary:'onnx-run'}
+              })};
+              document.dispatchEvent(new CustomEvent('vision:racebenchmark',{detail:{results:window.VisionRaceInsights.snapshot()}}));
+            });
+            await page.waitForFunction(()=>/Measured 1\/5/.test(document.querySelector('#efficiency-status')?.textContent||''));
+            const measured=await page.evaluate(()=>({
+              status:document.querySelector('#efficiency-status')?.textContent||'',
+              card:[...document.querySelectorAll('[data-efficiency-model]')].find(el=>el.dataset.efficiencyModel==='yolox')?.textContent||''
+            }));
+            assert.match(measured.status,/not a score or ranking/i);
+            assert.match(measured.card,/37\.0 ms/);
+            assert.match(measured.card,/WASM/);
+          }
+
+          (async()=>{
+            const browser=await puppeteer.launch({executablePath:process.env.CHROME_PATH||'/usr/bin/google-chrome',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+            try{
+              const desktop=await browser.newPage();await exercise(desktop,1280,900);await desktop.close();
+              const mobile=await browser.newPage();await exercise(mobile,390,844);await mobile.close();
+              console.log(JSON.stringify({status:'passed',views:['1280x900','390x844']}));
+            }finally{await browser.close()}
+          })().catch(error=>{console.error(error);process.exitCode=1});
+          NODE
