@@ -77,9 +77,9 @@ jobs:
         run: |
           mkdir -p artifacts/yolov1-compact/web-smoke
           set +e
-          for name in dynamic-int8 static-u8s8 matmul-int4; do
-            model="artifacts/yolov1-compact/yolov1-voc20-\${name}.onnx"
-            log="artifacts/yolov1-compact/web-smoke/\${name}.log"
+          for name in dynamic-int8 conv8-fc4-b32 conv8-fc4-b128; do
+            model="artifacts/yolov1-compact/yolov1-voc20-${name}.onnx"
+            log="artifacts/yolov1-compact/web-smoke/${name}.log"
             if [ ! -f "$model" ]; then
               echo "missing $model" | tee "$log"
               continue
@@ -87,7 +87,7 @@ jobs:
             echo "=== $name ===" | tee "$log"
             NODE_PATH="$RUNNER_TEMP/yolov1-webtest/node_modules" \
               node tools/smoke_yolov1_ort_web.cjs "$model" 2>&1 | tee -a "$log"
-            code=\${PIPESTATUS[0]}
+            code=${PIPESTATUS[0]}
             echo "exit_code=$code" | tee -a "$log"
           done
           exit 0
