@@ -11,6 +11,7 @@ Vision Evolution Lab lets you run and compare object-detection generations witho
 - **Vision Time Machine** opens with YOLOX-Nano as a lightweight fast-inference starting point; all runnable years remain selectable, including the full-architecture YOLOv1 browser export, 2015 Faster R-CNN two-stage reference, SSD 2016, DETR 2020, and 2021 YOLOS-tiny pure-ViT detector. Once an image is selected, choosing any runnable generation automatically runs that same image through the newly selected model; the Run button remains available for an explicit rerun. One image stays selected while early task-specific experiments show pattern responses, handwritten digits, faces, or pedestrians.
 - **Model Race** benchmarks the compatible runnable generations sequentially on the same image; cards, benchmark rows, and overlap cells are generated from model capabilities. A separate fixed four-image COCO sanity suite aggregates same-class IoU precision/recall/F1 as browser-regression evidence, not COCO AP or a model ranking.
 - **Efficiency Lab** reuses the latest normal Model Race ×20 measurements from the current page session and places warm p50/p90/end-to-end latency beside each model's declared runtime-asset footprint. It does not rerun inference, estimate energy use, or collapse the two axes into a score/ranking.
+- **Resolution Microscope** runs the active runnable detector on the original Time Machine source plus 640 px, 320 px, and 160 px aspect-preserved source-detail variants. The detector's native preprocessing/input stays unchanged; same-class IoU ≥ 0.50 matches are stability-vs-original evidence, not accuracy.
 - **Inside the Model** explains each model's verified preprocessing and architecture contract. It only visualizes intermediate tensors that are actually exposed: YOLOX objectness maps are real; Faster R-CNN proposals and transformer query/attention tensors are explicitly marked unavailable when the active export/pipeline does not expose them.
 - **Live Camera** has its own model picker and its own confidence slider for seven live-capable detectors. It runs the selected detector locally with rolling latency measurements and no frame queue. Changing Live confidence does not change Time Machine confidence. Model switching keeps the camera stream open; camera-facing switching reopens the requested front/rear camera while keeping the model runtime loaded. When the active rear-camera track reports a zoom capability, in-frame zoom controls are generated from that track's reported range.
 - **Early history experiments** run inside Time Machine. Their task-specific outputs stay separate from the general-object models in Model Race.
@@ -120,12 +121,12 @@ Current priority order:
 3. Inside the Model
 4. Live Camera
 5. Efficiency Lab — shipped in v0.19.0
-6. Resolution Microscope
+6. Resolution Microscope — shipped in v0.20.0
 7. Architecture Explorer
 
 Failure Gallery is deferred until a broader, rights-reviewed ground-truth set is available and the user wants to evaluate it.
 
-The iOS/WebKit reload mitigation has passed the current physical-device regression test. Further diagnostic work is only needed if the issue recurs. Efficiency Lab is now executable; the next feature priority is Resolution Microscope.
+The iOS/WebKit reload mitigation has passed the current physical-device regression test. Further diagnostic work is only needed if the issue recurs. Efficiency Lab and Resolution Microscope are now executable; the next feature priority is Architecture Explorer.
 
 ## Local development
 
