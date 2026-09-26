@@ -1,39 +1,24 @@
 {
-  "sourceRelease": "yolov1-browser-int8-122bf7462747",
-  "sourceFile": "yolov1-voc20-int8.onnx",
-  "bytes": 541358513,
-  "sha256": "122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49",
+  "sourceRelease": "yolov1-browser-compact-b0ebae01b947",
+  "sourceFile": "yolov1-voc20-dynamic-int8-local-int4-b128.onnx",
+  "bytes": 140390394,
+  "sha256": "b0ebae01b947624ac5c7ea24c4b993d6dd56160d7c6f0e050b46e03dece7f18f",
   "chunkBytes": 95000000,
+  "quantization": {
+    "base": "dynamic INT8 Conv/FC",
+    "localLayer": "49 exact per-location MatMulNBits INT4",
+    "blockSize": 128
+  },
   "parts": [
     {
-      "file": "part-00.bin",
+      "file": "compact-b128-part-00.bin",
       "bytes": 95000000,
-      "sha256": "db339bdd4578655b41cfa464b79dcd3f6b0ddd296ceb786c8a50d3508eb34a8e"
+      "sha256": "078323f69a05d44c45ed5b8e14fe5cac4fc188925753698c69ad458a415aebc0"
     },
     {
-      "file": "part-01.bin",
-      "bytes": 95000000,
-      "sha256": "93f57ad4c753612d6f2f9b6bae34ad13e3ff443d39f9258787d610be0770e011"
-    },
-    {
-      "file": "part-02.bin",
-      "bytes": 95000000,
-      "sha256": "7fa8819947e9ea1c0a1fa5bfce812162eb1a156a869f9e7a572c8d55218bd57d"
-    },
-    {
-      "file": "part-03.bin",
-      "bytes": 95000000,
-      "sha256": "87dc543fdbdaec667344b7052c9627d2bfdc14919c300bdfd1dac097f0d9c9c5"
-    },
-    {
-      "file": "part-04.bin",
-      "bytes": 95000000,
-      "sha256": "682f7954a97896cce569b2f66cb42fff1de9e1814906a2d8fa867f9c8e802ebe"
-    },
-    {
-      "file": "part-05.bin",
-      "bytes": 66358513,
-      "sha256": "f26c0a901a920f0ca9dde70d04cf7f144009fd27183d0d5a340350905c0fbf52"
+      "file": "compact-b128-part-01.bin",
+      "bytes": 45390394,
+      "sha256": "131875a7afa8119d2c4e94f1b695c2ecb94529f6b10cdcc6f7fb2740b930478f"
     }
   ]
 }
