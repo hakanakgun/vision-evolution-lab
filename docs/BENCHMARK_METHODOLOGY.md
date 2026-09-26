@@ -86,6 +86,17 @@ To bound peak memory on mobile browsers, Model Race discards already-created rac
 
 Both RT-DETR variants use an aspect-preserving staging canvas whose longest side is capped at the model input size (640 px) before the Transformers.js processor. This avoids retaining a second full-resolution RGBA backing store for large phone photos. The staging resize is outside the reported pipeline timing; the processor still owns the final model tensor preparation. RT-DETRv2 is wired as a research preview. One user-reported physical iPhone / Brave-WebKit session completed WebGPU fp16 inference and a 20-run warm benchmark on 2026-09-23; broader device/sample coverage and sustained Live Camera validation remain pending.
 
+### Efficiency Lab
+
+Efficiency Lab does not run another benchmark. It reads the latest **normal** Model Race ×20 result held in the current page session and combines those measured values with pinned model/runtime metadata.
+
+It shows two independent engineering dimensions:
+
+- **Runtime asset footprint** — exact model bytes when the model has one fixed runtime asset; for backend-dependent RT-DETR variants, the measured backend selects the corresponding declared fp16/q8 asset size. Before a benchmark exists, the UI may show the declared runtime-size range.
+- **Warm latency** — p50, p90, p50 end-to-end, timing variation, backend, and timing boundary copied from the normal Model Race benchmark.
+
+The bars are normalized only to make the current set visually comparable. They are **not** an efficiency score. The lab does not estimate power/energy, memory residency, accuracy, cost, or an overall winner. Diagnostic benchmarks with forced backends are intentionally excluded so they cannot silently replace the normal user-facing measurement set.
+
 ### Confidence retention
 
 The Time Machine slider minimum is also the internal retention floor. Tiny YOLOv2 decoding, YOLOX decoding and the RT-DETR Transformers.js pipeline retain detections down to that floor, while the current Time Machine/Model Race UI threshold is applied during draw/comparison. Live Camera has an independent display-confidence slider and passes that value into the same adapter draw path without changing the retention floor. This allows threshold changes within the slider range to re-filter existing outputs without a new inference. SSD already exposes its decoded detections before the UI draw threshold. The retention floor is not an accuracy claim and does not change the benchmark's user-visible confidence contract.

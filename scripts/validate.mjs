@@ -22,6 +22,7 @@ const files={
   historicalDetectors:read('src/models/historical-detectors.js'),
   lwdetrPostprocess:read('src/models/lwdetr-postprocess.js'),
   race:read('src/models/race.js'),
+  efficiency:read('src/efficiency.js'),
   historyExperiments:read('src/history/history-experiments.js'),
   classicalWorker:read('src/history/classical-cv-worker.js'),
   history:read('docs/MODEL_HISTORY.md'),
@@ -38,7 +39,7 @@ const files={
   version:JSON.parse(read('version.json'))
 };
 
-for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
+for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,efficiency:files.efficiency,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
 let relativeLoaderUrl='',relativeLoaderProgress=[];
@@ -105,12 +106,15 @@ const literalRefs=[...new Set([
   ...files.app.matchAll(/\$\('([^']+)'\)/g),
   ...files.historicalDetectors.matchAll(/\$\('([^']+)'\)/g),
   ...files.race.matchAll(/\$\('([^']+)'\)/g),
+  ...files.efficiency.matchAll(/\$\('([^']+)'\)/g),
   ...files.historyExperiments.matchAll(/\$\('([^']+)'\)/g)
 ].map(match=>match[1]))];
 const missingIds=literalRefs.filter(id=>!idSet.has(id)&&!generatedIds.has(id));
 check(missingIds.length===0,`missing DOM ids: ${missingIds.join(', ')}`);
 check(idSet.has('live-model-select')&&idSet.has('live-model-status'),'Live Camera model picker controls are missing');
 check(idSet.has('live-confidence')&&idSet.has('live-confidence-value'),'Live Camera independent confidence controls are missing');
+for(const id of ['efficiency-lab','efficiency-status','efficiency-grid'])check(idSet.has(id),'Efficiency Lab DOM contract missing: '+id);
+check(files.index.includes('data-tab="efficiency-lab"')&&files.index.includes('data-jump="model-race"'),'Efficiency Lab navigation contract missing');
 check(!files.index.includes('Confidence uses the Time Machine setting.'),'Live Camera must not depend on the Time Machine confidence label');
 for(const id of ['camera-flip','camera-zoom-controls','camera-zoom-out','camera-zoom-reset','camera-zoom-in'])check(idSet.has(id),'Live Camera device control missing: '+id);
 check(files.app.includes("function liveModelKeys()")&&files.app.includes("state.liveModel===modelKey"),'Live Camera must use its independent live model state');
@@ -119,10 +123,10 @@ const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
 check(files.index.includes(`const CURRENT_BUILD = '${build}'`),'CURRENT_BUILD does not match version.json');
 check(metadataRegistry.version===version,'VisionModels.version does not match version.json');
-for(const asset of ['assets/css/styles.css','src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/core/detection-metrics.js','src/models/models.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/history/history-experiments.js']){
+for(const asset of ['assets/css/styles.css','src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/core/detection-metrics.js','src/models/models.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/efficiency.js','src/history/history-experiments.js']){
   check(files.index.includes(`${asset}?v=${version}`),`cache-busted asset missing or stale: ${asset}`);
 }
-const scriptOrder=['src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/models/models.js','src/core/detection-metrics.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/history/history-experiments.js'];
+const scriptOrder=['src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/models/models.js','src/core/detection-metrics.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/efficiency.js','src/history/history-experiments.js'];
 let previous=-1;
 for(const script of scriptOrder){
   const current=files.index.indexOf(script);
@@ -459,6 +463,11 @@ for(const key of ['tinyyolo','yolox','rtdetr'])check(files.race.includes(`runtim
 check(files.race.includes("runtimeRegistry.register('rtdetrv2',createRtResearchAdapter('rtdetrv2'))"),'RT-DETRv2 research adapter is not registered');
 check(!files.app.includes("if(model==='ssd')return inferSource"),'Time Machine still bypasses the runtime adapter for SSD');
 check(!files.app.includes("['tinyyolo','ssd','yolox','rtdetr'].includes(key)"),'Time Machine selection still hard-codes runnable model keys');
+check(files.race.includes("window.VisionRaceInsights=Object.freeze({snapshot:benchmarkSnapshot})")&&files.race.includes("new CustomEvent('vision:racebenchmark'"),'Model Race must expose measured benchmark results to Efficiency Lab without rerunning inference');
+check(files.race.includes('state.benchmarkResults[spec.key]=stats')&&files.race.includes('setBench(spec,samples,!diagnostic)'),'Efficiency Lab must use normal Model Race measurements and exclude diagnostic benchmark overrides');
+check(files.efficiency.includes("document.addEventListener('vision:racebenchmark',render)")&&files.efficiency.includes("event.detail?.tab==='efficiency-lab'"),'Efficiency Lab must refresh from measured race results and tab activation');
+check(files.efficiency.includes('The lab keeps those axes separate')===false,'Efficiency Lab explanatory copy belongs in HTML, not duplicated runtime code');
+check(!files.efficiency.includes('efficiencyScore')&&!files.efficiency.includes('winner')&&!files.efficiency.includes('ranking='),'Efficiency Lab must not invent a composite score or winner');
 check(files.race.includes('runs=20'),'Model Race measured-run count changed');
 check(files.app.includes('const RUNS=20'),'Time Machine measured-run count changed');
 check(!files.app.includes('threshold: currentUiThreshold')&&!files.race.includes('threshold: currentUiThreshold'),'UI threshold leaked into retained inference contract');
