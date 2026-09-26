@@ -48,6 +48,13 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "artifacts" / "yolov1-compact"
 OUT.mkdir(parents=True, exist_ok=True)
 
+BENCHMARK_IMAGES = [
+    ROOT / "assets" / "benchmark" / "coco-val-000000397133.jpg",
+    ROOT / "assets" / "benchmark" / "coco-val-000000017029.jpg",
+    ROOT / "assets" / "benchmark" / "coco-val-000000013348.jpg",
+    ROOT / "assets" / "benchmark" / "coco-val-000000000872.jpg",
+]
+
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -194,6 +201,89 @@ def record(report: dict, key: str, path: Path, dog: Path, started: float) -> Non
     }
     value = report["artifacts"][key]
     print(f"{key}: {value['mib']} MiB · golden={value['ort']['dog_labels']}", flush=True)
+
+
+def run_detection_set(model_path: Path, images: list[Path]) -> list[dict]:
+    options = ort.SessionOptions()
+    options.enable_cpu_mem_arena = False
+    options.enable_mem_pattern = False
+    options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+    options.add_session_config_entry("session.disable_prepacking", "1")
+    session = ort.InferenceSession(str(model_path), sess_options=options, providers=["CPUExecutionProvider"])
+    try:
+        input_name = session.get_inputs()[0].name
+        results = []
+        for image in images:
+            output = session.run(None, {input_name: preprocess_image(image)})[0]
+            results.append(
+                {
+                    "image": str(image.relative_to(ROOT)),
+                    "detections": decode(output, confidence=0.2),
+                    "raw": np.asarray(output, dtype=np.float32),
+                }
+            )
+        return results
+    finally:
+        del session
+        gc.collect()
+
+
+def detection_agreement(baseline_path: Path, candidate_path: Path, images: list[Path]) -> dict:
+    baseline = run_detection_set(baseline_path, images)
+    candidate = run_detection_set(candidate_path, images)
+    rows = []
+    total_baseline = 0
+    total_matched = 0
+    raw_abs_sum = 0.0
+    raw_abs_count = 0
+    raw_max_abs = 0.0
+
+    for base, cand in zip(baseline, candidate):
+        base_det = base["detections"]
+        cand_det = cand["detections"]
+        used = set()
+        matches = []
+        for index, detection in enumerate(base_det):
+            best_index = None
+            best_iou = 0.0
+            for other_index, other in enumerate(cand_det):
+                if other_index in used or other["class_id"] != detection["class_id"]:
+                    continue
+                iou = box_iou(detection["box"], other["box"])
+                if iou > best_iou:
+                    best_iou = iou
+                    best_index = other_index
+            if best_index is not None and best_iou >= 0.5:
+                used.add(best_index)
+                matches.append(best_iou)
+
+        total_baseline += len(base_det)
+        total_matched += len(matches)
+        delta = np.abs(base["raw"] - cand["raw"])
+        raw_abs_sum += float(delta.sum())
+        raw_abs_count += int(delta.size)
+        raw_max_abs = max(raw_max_abs, float(delta.max(initial=0.0)))
+        rows.append(
+            {
+                "image": base["image"],
+                "baseline_detections": len(base_det),
+                "candidate_detections": len(cand_det),
+                "matched_same_class_iou50": len(matches),
+                "baseline_match_ratio": round(len(matches) / max(1, len(base_det)), 4),
+                "mean_matched_iou": round(float(np.mean(matches)) if matches else 0.0, 4),
+                "baseline_labels": sorted({item["label"] for item in base_det}),
+                "candidate_labels": sorted({item["label"] for item in cand_det}),
+            }
+        )
+
+    return {
+        "images": rows,
+        "baseline_detections": total_baseline,
+        "matched_same_class_iou50": total_matched,
+        "baseline_match_ratio": round(total_matched / max(1, total_baseline), 4),
+        "raw_mean_abs_error": round(raw_abs_sum / max(1, raw_abs_count), 6),
+        "raw_max_abs_error": round(raw_max_abs, 6),
+    }
 
 
 def _attribute(node, name: str):
@@ -434,6 +524,15 @@ def main() -> None:
         except Exception as error:
             report["errors"][key] = f"{type(error).__name__}: {error}"
             print(report["errors"][key], flush=True)
+
+    candidate_b128 = OUT / "yolov1-voc20-dynamic-int8-local-int4-b128.onnx"
+    if candidate_b128.exists():
+        print("Comparing block-128 compact model with the published dynamic-INT8 baseline…", flush=True)
+        report["agreement_b128_vs_dynamic_int8"] = detection_agreement(
+            dynamic_path,
+            candidate_b128,
+            BENCHMARK_IMAGES,
+        )
 
     report_path = OUT / "report.json"
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
