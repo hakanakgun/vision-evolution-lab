@@ -18,7 +18,7 @@
       Object.freeze({year:2012,title:'AlexNet',note:'run · ImageNet top-5 classification',kind:'history-experiment',experiment:'alexnet-classification',evolution:'Deep learned visual representations scaled to large-category image classification; this milestone recognizes whole images rather than localizing objects.'}),
       Object.freeze({year:2014,title:'R-CNN',note:'history only · region proposals + CNN',kind:'historical'}),
       Object.freeze({year:2015,model:'fasterrcnn',title:'Faster R-CNN',note:'run · two-stage RPN · WASM INT8',kind:'runnable',evolution:'Region proposals became learned: a Region Proposal Network shares convolutional features with a second-stage RoI classifier/regressor instead of relying on an external proposal algorithm.'}),
-      Object.freeze({year:2016,title:'YOLOv1',note:'history only · single-stage detector',kind:'historical'}),
+      Object.freeze({year:2016,model:'yolov1',title:'YOLOv1',note:'run · VOC20 · large 516 MB download',kind:'runnable',evolution:'Object detection becomes a single neural-network regression problem: one 448×448 pass predicts a 7×7 grid of boxes and Pascal VOC classes without a separate proposal stage.'}),
       Object.freeze({year:2016,model:'ssd2016',title:'SSD · ResNet-34 INT8',note:'reference checkpoint · COCO · WASM',kind:'runnable',evolution:'Single-shot dense prediction removes a separate proposal stage and predicts classes and boxes across multiple feature scales.'}),
       Object.freeze({year:2016,model:'tinyyolo',title:'Tiny YOLOv2',note:'tap to run · VOC20',kind:'runnable',evolution:'A compact one-stage grid-and-anchor detector predicts boxes, objectness and classes in one network pass, trading some accuracy for real-time efficiency.'}),
       Object.freeze({year:2017,model:'ssd',title:'SSD + MobileNet',note:'tap to run',kind:'runnable',evolution:'MobileNet makes single-shot object detection practical on constrained devices by pairing lightweight depthwise-separable CNN features with SSD heads.'}),
@@ -69,6 +69,33 @@
           labels:'assets/models/imagenet-1k-labels.json',labelsSha256:'495a1f028e7b3b1878dbc4ec2e66f9a9a9c89c48abb007a9c954faa13571c33a',provider:'wasm',licenseMetadata:'Apache-2.0',licenseCard:'BSD-3-Clause'
         })
       })
+    }),
+    yolov1:Object.freeze({
+      id:'yolov1-voc20-int8-browser',title:'YOLOv1',year:2016,status:'runnable',family:'YOLOv1 · original full Darknet architecture',task:'object-detection',
+      license:'Darknet architecture/weights public domain; LibreYOLO conversion tooling MIT; see docs/MODEL_SOURCES.md',bytes:541358513,sha256:'180014dd690d8174a3143bb0579a82f3e56c3624d2f3c9805dd6d359cb1f8c22',input:448,nms:0.45,
+      sourceCheckpoint:Object.freeze({repository:'LibreYOLO/LibreYOLO1b',revision:'4349c7a823974cea5d29c5f306a99bcf441ef437',file:'LibreYOLO1b.pt',bytes:777058063,sha256:'90a9ec72a3961fae7860c54eca5ae000e1d85b3659628cf3fb8b2e2a770d5575'}),
+      converter:Object.freeze({repository:'LibreYOLO/libreyolo',revision:'c25f6dffb521ea60bc0f63ae3dffb168a7edc466'}),
+      downloadPolicy:Object.freeze({enabled:true,warningBytes:100*1048576,reason:'Large historical full-network checkpoint'}),
+      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:false,race:false,inspection:Object.freeze({
+        mode:'decoded-output-contract',stages:Object.freeze(['preprocessing','decoded-output']),
+        input:'448×448',resize:'direct stretch',tensor:'float32 · NCHW',channels:'RGB',normalization:'divide by 255',
+        preview:Object.freeze({mode:'stretch',width:448,height:448,caption:'YOLOv1 448×448 direct-stretch preview'}),
+        shape:Object.freeze({layout:'NCHW',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'Direct 448×448 stretch',text:'The full image is stretched to the fixed square input used by YOLOv1’s fully-connected head; it is not letterboxed.'}),
+          step3:Object.freeze({title:'RGB / 255 tensor',text:'Canvas RGB values are normalized to 0–1 and packed as float32 NCHW.'}),
+          step4:Object.freeze({title:'7×7 single-pass detector',text:'The exported graph decodes the original two-box-per-cell YOLOv1 head into 98 xyxy box candidates plus 20 Pascal VOC class scores; the page applies class-aware NMS.'})
+        }),
+        comparison:Object.freeze({label:'YOLOv1',input:'448×448',resize:'direct stretch',padding:'none',layout:'NCHW',dtype:'float32 input · INT8 weights',channels:'RGB · /255'}),
+        intermediate:Object.freeze({title:'YOLOv1 internal grid activations are not exported',subtitle:'The browser graph exposes 98 decoded box candidates and VOC class scores, not the original dense 7×7×30 head tensor.',note:'No synthetic feature maps or grid activations are shown.',data:'none',status:'Real decoded detections exposed · internal activations not exposed'}),
+        resultNote:'The graph emits decoded 448-input-pixel xyxy boxes and VOC scores. The page retains candidates to the UI slider floor and applies class-aware NMS at IoU 0.45.'
+      })}),
+      executionProviders:Object.freeze(['wasm']),
+      providerNote:'WASM is the initial compatibility policy. The 516 MB INT8 model is intentionally Time Machine-only; physical iPhone/WebKit memory and sustained inference have not been validated.',
+      preprocessing:Object.freeze({resize:'direct stretch to 448×448',layout:'NCHW',dtype:'float32 input / dynamic INT8 weights',channels:'RGB',normalization:'divide by 255',padding:'none'}),
+      decoder:'98 decoded xyxy candidates · Pascal VOC 20 scores · class-aware NMS IoU 0.45',
+      ui:Object.freeze({subtitle:'Pascal VOC 20-class detection · original YOLOv1 architecture · ONNX/WASM',provenance:'Derived browser export of the full original YOLOv1 architecture. A pinned LibreYOLO checkpoint is exported at a pinned converter revision, dynamically INT8-quantized, checked on the canonical dog/bicycle/car image, and opened with ONNX Runtime Web WASM before publication.',runtime:Object.freeze({initLabel:'Session init',bytesText:'516.3 MB · INT8 weights · large download',cacheInitial:'checking large model cache',benchmarkBoundary:'20 warm ONNX Runtime Web/WASM runs after the one-time model transfer and session initialization.'}),links:Object.freeze([Object.freeze({label:'YOLOv1 paper ↗',url:'https://arxiv.org/abs/1506.02640'}),Object.freeze({label:'Pinned source checkpoint ↗',url:'https://huggingface.co/LibreYOLO/LibreYOLO1b/tree/4349c7a823974cea5d29c5f306a99bcf441ef437'}),Object.freeze({label:'Converter source ↗',url:'https://github.com/LibreYOLO/libreyolo/tree/c25f6dffb521ea60bc0f63ae3dffb168a7edc466'}),Object.freeze({label:'License/provenance ↗',url:'docs/MODEL_SOURCES.md#yolov1'})])}),
+      sources:Object.freeze([Object.freeze({label:'GitHub Release · verified YOLOv1 INT8',url:'https://github.com/hakanakgun/vision-evolution-lab/releases/download/yolov1-browser-int8-180014dd690d/yolov1-voc20-int8.onnx',provenance:'Vision Evolution Lab reproducible export · SHA-256 180014dd690d8174a3143bb0579a82f3e56c3624d2f3c9805dd6d359cb1f8c22'})])
     }),
     tinyyolo:Object.freeze({
       id:'tiny-yolov2-voc-opset8',title:'Tiny YOLOv2',year:2016,status:'runnable',family:'Tiny YOLOv2',task:'object-detection',
