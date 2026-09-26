@@ -22,6 +22,8 @@ On 2026-09-24, after the v0.13.4 telemetry/input-label correction, the user repo
 
 On 2026-09-24, the user verified the v0.15.1 front/rear camera control on a physical iPhone in Brave-WebKit: the front camera opened successfully and Live Camera resumed. The same rear-camera session exposed browser zoom controls with an observed WebKit-reported lower bound around 0.53× and a maximum of 5×; the initial v0.15.1 UI produced intermediate values such as 1.48× because it divided the reported range into 20 equal steps. v0.15.2 replaces that UI stepping policy with clean capability-bounded levels; that new stepping behavior still requires physical-device confirmation.
 
+A later physical-iPhone smoke test confirmed YOLOX-Nano could run in Live Camera on the tested session. This is functional device evidence for that model/path only; it does not replace the pending seven-model matrix, multi-minute soak, Safari comparison, or fallback tests.
+
 ## Physical iOS tests still pending
 
 - In Live Camera, use its model picker to run each of the seven live-capable models, including newly enabled D-FINE-N and LW-DETR-tiny; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.

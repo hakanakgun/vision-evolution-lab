@@ -84,7 +84,7 @@ After a successful race, the optional race benchmark executes 20 warm runs per m
 
 To bound peak memory on mobile browsers, Model Race discards already-created race runtimes before the benchmark, creates only the model currently being measured, performs one unmeasured warm-up inference, then records 20 warm runs and releases/disposes that runtime before moving to the next model. Session/pipeline initialization and the warm-up inference are excluded from the 20-run statistics. Raw ONNX ArrayBuffers are evicted from the page-memory cache after successful session creation; the browser Cache API copy remains available for later reloads.
 
-Both RT-DETR variants use an aspect-preserving staging canvas whose longest side is capped at the model input size (640 px) before the Transformers.js processor. This avoids retaining a second full-resolution RGBA backing store for large phone photos. The staging resize is outside the reported pipeline timing; the processor still owns the final model tensor preparation. RT-DETRv2 is wired as a research preview and has not yet completed live-device inference validation.
+Both RT-DETR variants use an aspect-preserving staging canvas whose longest side is capped at the model input size (640 px) before the Transformers.js processor. This avoids retaining a second full-resolution RGBA backing store for large phone photos. The staging resize is outside the reported pipeline timing; the processor still owns the final model tensor preparation. RT-DETRv2 is wired as a research preview. One user-reported physical iPhone / Brave-WebKit session completed WebGPU fp16 inference and a 20-run warm benchmark on 2026-09-23; broader device/sample coverage and sustained Live Camera validation remain pending.
 
 ### Confidence retention
 
