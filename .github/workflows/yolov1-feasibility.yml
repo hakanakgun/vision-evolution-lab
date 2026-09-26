@@ -1,0 +1,99 @@
+name: YOLOv1 browser feasibility
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      LIBREYOLO_REVISION: c25f6dffb521ea60bc0f63ae3dffb168a7edc466
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - name: Checkout Vision Evolution Lab
+        uses: actions/checkout@v4
+
+      - name: Runner capacity
+        run: |
+          free -h
+          df -h /
+          nproc
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install CPU PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
+
+      - name: Checkout pinned LibreYOLO
+        run: |
+          git clone --filter=blob:none https://github.com/LibreYOLO/libreyolo.git _libreyolo
+          git -C _libreyolo checkout "$LIBREYOLO_REVISION"
+          test "$(git -C _libreyolo rev-parse HEAD)" = "$LIBREYOLO_REVISION"
+
+      - name: Install pinned LibreYOLO with ONNX tools
+        run: |
+          python -m pip install -e "./_libreyolo[onnx]"
+          python -m pip install "huggingface_hub>=0.34,<2"
+          python - <<'PY'
+          import onnxruntime, torch
+          print("torch", torch.__version__)
+          print("onnxruntime", onnxruntime.__version__)
+          PY
+
+      - name: Export and validate YOLOv1
+        run: |
+          /usr/bin/time -v python scripts/yolov1_feasibility.py
+
+      - name: Install pinned ONNX Runtime Web
+        run: npm install --prefix "$RUNNER_TEMP/yolov1-webtest" --no-save --no-audit --no-fund onnxruntime-web@1.30.0
+
+      - name: Open and run INT8 graph on ONNX Runtime Web WASM
+        run: NODE_PATH="$RUNNER_TEMP/yolov1-webtest/node_modules" node tools/smoke_yolov1_ort_web.cjs artifacts/yolov1-feasibility/yolov1-voc20-int8.onnx
+
+      - name: Publish checksum-pinned GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          model="artifacts/yolov1-feasibility/yolov1-voc20-int8.onnx"
+          sha="$(sha256sum "$model" | cut -d ' ' -f 1)"
+          tag="yolov1-browser-int8-${sha:0:12}"
+          cp artifacts/yolov1-feasibility/report.json "$RUNNER_TEMP/yolov1-report.json"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" "$model" "$RUNNER_TEMP/yolov1-report.json#yolov1-report.json" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$tag" "$model" "$RUNNER_TEMP/yolov1-report.json#yolov1-report.json" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "YOLOv1 browser INT8 ${sha:0:12}" \
+              --notes "Verified YOLOv1 VOC20 browser candidate. Fixed 448×448 input. CPU ORT golden and ONNX Runtime Web/WASM smoke passed. SHA-256: $sha"
+          fi
+          {
+            echo "YOLOV1_RELEASE_TAG=$tag"
+            echo "YOLOV1_RELEASE_SHA256=$sha"
+          } >> "$GITHUB_ENV"
+          echo "Release tag: $tag" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Final capacity
+        if: always()
+        run: |
+          free -h
+          df -h /
+
+      - name: Upload feasibility report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yolov1-feasibility-report
+          path: artifacts/yolov1-feasibility/report.json
+          if-no-files-found: warn
+          retention-days: 7
+

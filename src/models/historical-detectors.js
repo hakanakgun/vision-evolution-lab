@@ -5,8 +5,43 @@
   const $=id=>document.getElementById(id),work=$('historical-model-work');
   if(!work)throw new Error('Historical detector work canvas is missing.');
   const clamp=value=>Math.max(0,Math.min(1,value));
+  function boxIou(a,b){const top=Math.max(a[0],b[0]),left=Math.max(a[1],b[1]),bottom=Math.min(a[2],b[2]),right=Math.min(a[3],b[3]),intersection=Math.max(0,bottom-top)*Math.max(0,right-left),areaA=Math.max(0,a[2]-a[0])*Math.max(0,a[3]-a[1]),areaB=Math.max(0,b[2]-b[0])*Math.max(0,b[3]-b[1]);return intersection/Math.max(1e-12,areaA+areaB-intersection)}
+  function classAwareNms(detections,iouThreshold,maxDet=100){const sorted=[...detections].sort((a,b)=>b.score-a.score),kept=[];for(const detection of sorted){if(kept.length>=maxDet)break;if(kept.every(other=>other.classId!==detection.classId||boxIou(detection.box,other.box)<=iouThreshold))kept.push(detection)}return kept}
   function stage(source,target,maxSide=640){const {w,h}=api.sourceSize(source);if(!w||!h)throw new Error('Input has no readable dimensions.');const scale=Math.min(1,maxSide/Math.max(w,h)),width=Math.max(1,Math.round(w*scale)),height=Math.max(1,Math.round(h*scale));target.width=width;target.height=height;target.getContext('2d').drawImage(source,0,0,width,height);return{width,height};}
   function formatSource(revision){return`HF pinned ${revision}`;}
+  function createYolov1Adapter(){
+    const model=registry.yolov1;let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',sourceLabel='not loaded',inFlight=Promise.resolve(),loading=null;
+    async function prepare(options={}){
+      if(session)return session;if(loading)return loading;
+      loading=(async()=>{
+        const asset=await loader.load(model,{signal:options.downloadSignal,onState:value=>{cacheState=value.state;if(value.source)cacheState+=` · ${value.source}`},onProgress:value=>api.reportRuntimeEvent('yolov1',{type:'progress',info:value})});downloadMs=asset.downloadMs;sourceLabel=asset.source;
+        if(asset.buffer.byteLength!==model.bytes){loader.evictMemory(model);throw new Error(`Pinned YOLOv1 checkpoint size mismatch (${asset.buffer.byteLength} bytes).`)}
+        const digest=await crypto.subtle.digest('SHA-256',asset.buffer),hash=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
+        if(hash!==model.sha256){loader.evictMemory(model);throw new Error('Pinned YOLOv1 checkpoint SHA-256 verification failed.')}
+        const started=performance.now(),active=await ort.InferenceSession.create(asset.buffer,{executionProviders:['wasm'],graphOptimizationLevel:'all'}),elapsed=performance.now()-started;
+        if(JSON.stringify(active.inputNames)!=='["images"]'||JSON.stringify(active.outputNames)!=='["output"]'){await active.release();loader.evictMemory(model);throw new Error('Pinned YOLOv1 ONNX input/output names changed.')}
+        session=active;initMs=elapsed;cacheState=asset.cacheState;loader.evictMemory(model);
+        api.reportRuntimeEvent('yolov1',{type:'runtime',backend:'WASM',dtype:'dynamic INT8 weights',downloadMs,initMs,bytes:model.bytes,cacheState,source:sourceLabel});
+        return session;
+      })().finally(()=>{loading=null});
+      return loading;
+    }
+    async function infer(source,canvas,{confidence,downloadSignal}={}){
+      const totalStart=performance.now(),prepStart=performance.now(),sourceSize=api.sourceSize(source);if(!sourceSize.w||!sourceSize.h)throw new Error('Input has no readable dimensions.');
+      work.width=448;work.height=448;const ctx=work.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,448,448);const rgba=ctx.getImageData(0,0,448,448).data,plane=448*448,tensor=new Float32Array(3*plane);
+      for(let i=0;i<plane;i++){const offset=i*4;tensor[i]=rgba[offset]/255;tensor[plane+i]=rgba[offset+1]/255;tensor[plane*2+i]=rgba[offset+2]/255}
+      const preMs=performance.now()-prepStart,active=await prepare({downloadSignal}),inferStart=performance.now(),result=await active.run({images:new ort.Tensor('float32',tensor,[1,3,448,448])}),infMs=performance.now()-inferStart,output=result.output;
+      if(!output||output.type!=='float32'||JSON.stringify(output.dims)!=='[1,24,98]')throw new Error('Pinned YOLOv1 returned an unexpected [1,24,98] output contract.');
+      const postStart=performance.now(),data=output.data,candidates=[];let droppedInvalid=0;for(let prediction=0;prediction<98;prediction++){const x1=Number(data[prediction]),y1=Number(data[98+prediction]),x2=Number(data[196+prediction]),y2=Number(data[294+prediction]);let classId=-1,score=-Infinity;for(let cls=0;cls<20;cls++){const value=Number(data[(4+cls)*98+prediction]);if(value>score){score=value;classId=cls}}
+        const box=[y1/448,x1/448,y2/448,x2/448].map(clamp),label=registry.labels.vocCanonical[classId];if(!Number.isFinite(score)||![x1,y1,x2,y2].every(Number.isFinite)||!label||box[2]<=box[0]||box[3]<=box[1]){droppedInvalid++;continue}if(score>=api.getRetentionThreshold())candidates.push({score,label,classId,box});
+      }
+      const detections=classAwareNms(candidates,model.nms,100),outputSize=stage(source,canvas),visible=api.drawDetections(canvas,detections,confidence),postMs=performance.now()-postStart;
+      return{preMs,infMs,postMs,totalMs:performance.now()-totalStart,detections,visible,width:outputSize.width,height:outputSize.height,inputWidth:448,inputHeight:448,rawCount:98,retained:detections.length,droppedInvalid,retentionThreshold:api.getRetentionThreshold(),timingBoundary:'onnx-run'};
+    }
+    function run(source,canvas,options={}){const promise=inFlight.catch(()=>{}).then(()=>infer(source,canvas,options));inFlight=promise;return promise}
+    async function release(){await inFlight.catch(()=>{});if(loading)await loading.catch(()=>{});const old=session;session=null;if(old)try{await old.release()}catch(error){console.warn('YOLOv1 runtime release failed',error)}loader.evictMemory(model);cacheState='runtime released'}
+    return{run,prepare,release,backend:()=> 'WASM INT8',runtimeInfo:()=>({backend:'wasm',dtype:'dynamic INT8 weights',initMs,downloadMs,bytes:model.bytes,cacheState,source:sourceLabel}),handlesMainUi:false};
+  }
   function createFasterRcnnAdapter(){
     const model=registry.fasterrcnn;let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',inFlight=Promise.resolve(),loading=null;
     async function prepare(){if(session)return session;if(loading)return loading;loading=(async()=>{const asset=await loader.load(model,{onState:value=>{cacheState=value.state;if(value.source)cacheState+=` · ${value.source}`},onProgress:value=>api.reportRuntimeEvent('fasterrcnn',{type:'progress',info:value})});downloadMs=asset.downloadMs;
@@ -90,13 +125,14 @@
     async function release(){await inFlight.catch(()=>{});if(loading)await loading.catch(()=>{});const old=session;session=null;if(old)try{await old.release()}catch(error){console.warn('LW-DETR runtime release failed',error)}loader.evictMemory(model);cacheState='runtime released'}
     return{run,prepare,release,backend:()=> 'WASM fp32',runtimeInfo:()=>({backend:'wasm',dtype:'fp32',initMs,downloadMs,bytes:model.bytes,cacheState,source:runtimeSource}),handlesMainUi:false};
   }
+  runtimes.register('yolov1',createYolov1Adapter());
   runtimes.register('lwdetr',createLwdetrAdapter());
   runtimes.register('fasterrcnn',createFasterRcnnAdapter());
   runtimes.register('ssd2016',createSsdAdapter());
   runtimes.register('detr',createDetrAdapter());
   runtimes.register('yolos',createYolosAdapter());
   runtimes.register('dfine',createDfineAdapter());
-  const historicalRuntimeKeys=Object.freeze(['lwdetr','fasterrcnn','ssd2016','detr','yolos','dfine']);
+  const historicalRuntimeKeys=Object.freeze(['yolov1','lwdetr','fasterrcnn','ssd2016','detr','yolos','dfine']);
   async function releaseHistoricalRuntimes(exceptKey=''){await Promise.all(historicalRuntimeKeys.filter(key=>key!==exceptKey).map(key=>runtimes.get(key)?.release?.()))}
   document.addEventListener('vision:tabchange',event=>{
     if(event.detail?.tab==='time-machine')return;

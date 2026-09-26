@@ -59,6 +59,29 @@ All five early experiments operate on the same Time Machine source image but ret
 
 OpenCV.js loads on demand in `src/history/classical-cv-worker.js`; the worker receives an aspect-preserving copy capped at 640 px on its longest side and returns only boxes/timings or digit-region proposals. Before a history experiment runs, registered AI adapters are released. For digit classification, the OpenCV worker is terminated before the ONNX Runtime WASM session is loaded. AlexNet also runs through ONNX Runtime WASM and releases its session when leaving Time Machine.
 
+## YOLOv1
+
+- Purpose: makes the original full YOLOv1 single-stage detector executable in Time Machine while preserving its fixed 448×448, Pascal VOC 20-class task.
+- Paper: Redmon et al., *You Only Look Once: Unified, Real-Time Object Detection*, CVPR 2016.
+- Source checkpoint: Hugging Face `LibreYOLO/LibreYOLO1b`, pinned revision `4349c7a823974cea5d29c5f306a99bcf441ef437`; `LibreYOLO1b.pt` is 777,058,063 bytes with SHA-256 `90a9ec72a3961fae7860c54eca5ae000e1d85b3659628cf3fb8b2e2a770d5575`.
+- Converter source: `LibreYOLO/libreyolo`, pinned revision `c25f6dffb521ea60bc0f63ae3dffb168a7edc466`.
+- Export workflow: `.github/workflows/yolov1-feasibility.yml` calls `scripts/yolov1_feasibility.py`, exports fixed-shape ONNX, dynamically INT8-quantizes it, verifies the canonical dog/bicycle/car result, then opens and runs the candidate through `onnxruntime-web@1.30.0` WASM before GitHub Release publication.
+- Canonical derived asset: GitHub Release `yolov1-browser-int8-122bf7462747`, file `yolov1-voc20-int8.onnx`, 541,358,513 bytes (~516.3 MiB), SHA-256 `122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49`.
+- Verified ONNX contract: input `images [1,3,448,448]` float32; output `output [1,24,98]` float32. The graph output contains 98 decoded xyxy candidates in 448-input-pixel coordinates plus 20 VOC class scores.
+- Preprocessing: direct non-aspect-preserving stretch to 448×448, RGB, float32 NCHW, divide by 255. Letterboxing is intentionally not used because the original YOLOv1 fully-connected head was trained on the square-stretch layout.
+- Postprocessing: choose the highest VOC class score per candidate, retain down to the UI slider floor, rescale from the 448×448 input coordinates, then apply class-aware NMS at IoU 0.45.
+- Runtime: ONNX Runtime Web 1.30.0 WASM. The publication workflow's same-run ORT Web/WASM smoke opened the 541,358,513-byte graph and produced finite `[1,24,98]` output. The GitHub runner measured about 4.9 s for its zero-input inference; this is CI evidence, not device performance.
+- Scope: Time Machine + individual warm benchmark only. It is excluded from Model Race and Live Camera because its transfer and resident-memory cost are materially different from the compact browser models and physical mobile behavior has not been validated.
+- Browser delivery: GitHub Release and GitHub Release API asset URLs were verified to fail cross-origin browser `fetch`, so the canonical 541,358,513-byte Release asset is split into six Git objects below 100 MB and served from `assets/models/yolov1/` on the app's own GitHub Pages origin. The loader streams those parts into one preallocated buffer, verifies every part size, then the YOLOv1 adapter verifies the reconstructed full SHA-256 before ONNX Runtime can create a session. The chunk files are delivery packaging only; the Release asset remains the canonical derived model artifact.
+- Download UX: an uncached run requires explicit consent before the transfer. The UI always states the ~516.3 MiB size; where the browser exposes Network Information it additionally reports an explicit cellular/Data Saver signal. Unsupported browsers are reported as connection type unknown rather than guessed. During transfer, **Cancel download** aborts the active chunk Fetch stream through `AbortController`; no fallback source is attempted after an abort.
+- Large-stream memory policy: when expected bytes are known, `src/core/model-loader.js` streams directly into one preallocated buffer rather than retaining all chunks and allocating a second full-size merged buffer. The raw model buffer is evicted after ORT session creation.
+- Publication policy: the canonical derived browser artifact is published only as the checksum-pinned GitHub Release above. The repository contains six sub-100-MB byte-for-byte chunks solely so GitHub Pages can serve that same verified artifact from the app origin. Hugging Face remains the pinned source location for the upstream LibreYOLO checkpoint, not a publication target for this derived asset.
+- Export reproducibility limitation: source checkpoint, converter revision, graph contract and golden detections are pinned, but separate exporter runs have produced byte-different yet functionally equivalent ONNX serializations. Therefore the app pins the exact published asset by size and SHA-256 rather than claiming byte-identical re-export determinism.
+
+### License note
+
+The Darknet/YOLOv1 architecture and original weights are public domain under the upstream YOLO license. LibreYOLO conversion code is MIT according to its repository. The derived ONNX file is distributed here only as a non-commercial educational/demo artifact with the full source/conversion chain recorded. Pascal VOC dataset terms remain separate.
+
 ## Tiny YOLOv2
 
 - Purpose: earliest runnable detector generation in Vision Evolution Lab, representing 2016-era YOLOv2 grid/anchor detection.

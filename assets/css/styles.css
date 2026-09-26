@@ -134,3 +134,13 @@
   .timeline .milestone,.timeline .milestone .dot{transition:none}
 }
 [hidden]{display:none!important}
+
+.model-download-warning{margin:10px 15px 0;padding:12px;border:1px solid #d9b87f;border-radius:11px;background:#fff5df;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.model-download-warning[hidden]{display:none}
+.model-download-warning-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.model-download-warning-copy strong{font-size:12px;color:#704b17}
+.model-download-warning-copy span{font-size:11px;line-height:1.45;color:#6a5638}
+.model-download-actions{display:flex;flex:none;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.model-download-warning.downloading{border-color:#b9d4cd;background:var(--soft)}
+.model-download-warning.downloading .model-download-warning-copy strong{color:var(--accent)}
+@media(max-width:650px){.model-download-warning{align-items:stretch;flex-direction:column}.model-download-actions{justify-content:flex-start}.model-download-actions .btn{flex:1 1 auto}}
