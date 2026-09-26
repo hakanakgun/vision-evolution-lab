@@ -82,7 +82,7 @@ jobs:
               assert.match(result.status,/not ground truth/i);
 
               await page.setViewport({width:390,height:844,deviceScaleFactor:1});
-              await page.waitForTimeout(100);
+              await new Promise(resolve=>setTimeout(resolve,100));
               const mobile=await page.evaluate(()=>({
                 columns:getComputedStyle(document.querySelector('#resolution-grid')).gridTemplateColumns,
                 panelWidth:document.querySelector('#resolution-microscope').getBoundingClientRect().width,
