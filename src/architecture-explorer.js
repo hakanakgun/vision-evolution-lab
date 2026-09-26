@@ -7,8 +7,10 @@
     const seen=new Set(),items=[];
     for(const timeline of registry.timeline||[]){
       if(!timeline.model||seen.has(timeline.model))continue;
-      const model=registry[timeline.model],inspection=model?.capabilities?.inspection;
-      if(!model||model.status!=='runnable'||!runtimes.capabilityEnabled(model,'timeMachine')||!inspection||typeof inspection!=='object')continue;
+      const model=registry[timeline.model];
+      if(!model||model.status!=='runnable'||!runtimes.capabilityEnabled(model,'timeMachine'))continue;
+      const inspection=model.capabilities?.inspection;
+      if(!inspection||typeof inspection!=='object')continue;
       seen.add(timeline.model);items.push({key:timeline.model,timeline,model,inspection});
     }
     return items;
