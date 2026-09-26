@@ -10,18 +10,18 @@
   function stage(source,target,maxSide=640){const {w,h}=api.sourceSize(source);if(!w||!h)throw new Error('Input has no readable dimensions.');const scale=Math.min(1,maxSide/Math.max(w,h)),width=Math.max(1,Math.round(w*scale)),height=Math.max(1,Math.round(h*scale));target.width=width;target.height=height;target.getContext('2d').drawImage(source,0,0,width,height);return{width,height};}
   function formatSource(revision){return`HF pinned ${revision}`;}
   function createYolov1Adapter(){
-    const model=registry.yolov1;let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',inFlight=Promise.resolve(),loading=null;
+    const model=registry.yolov1;let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',sourceLabel='not loaded',inFlight=Promise.resolve(),loading=null;
     async function prepare(options={}){
       if(session)return session;if(loading)return loading;
       loading=(async()=>{
-        const asset=await loader.load(model,{signal:options.downloadSignal,onState:value=>{cacheState=value.state;if(value.source)cacheState+=` · ${value.source}`},onProgress:value=>api.reportRuntimeEvent('yolov1',{type:'progress',info:value})});downloadMs=asset.downloadMs;
+        const asset=await loader.load(model,{signal:options.downloadSignal,onState:value=>{cacheState=value.state;if(value.source)cacheState+=` · ${value.source}`},onProgress:value=>api.reportRuntimeEvent('yolov1',{type:'progress',info:value})});downloadMs=asset.downloadMs;sourceLabel=asset.source;
         if(asset.buffer.byteLength!==model.bytes){loader.evictMemory(model);throw new Error(`Pinned YOLOv1 checkpoint size mismatch (${asset.buffer.byteLength} bytes).`)}
         const digest=await crypto.subtle.digest('SHA-256',asset.buffer),hash=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
         if(hash!==model.sha256){loader.evictMemory(model);throw new Error('Pinned YOLOv1 checkpoint SHA-256 verification failed.')}
         const started=performance.now(),active=await ort.InferenceSession.create(asset.buffer,{executionProviders:['wasm'],graphOptimizationLevel:'all'}),elapsed=performance.now()-started;
         if(JSON.stringify(active.inputNames)!=='["images"]'||JSON.stringify(active.outputNames)!=='["output"]'){await active.release();loader.evictMemory(model);throw new Error('Pinned YOLOv1 ONNX input/output names changed.')}
         session=active;initMs=elapsed;cacheState=asset.cacheState;loader.evictMemory(model);
-        api.reportRuntimeEvent('yolov1',{type:'runtime',backend:'WASM',dtype:'dynamic INT8 weights',downloadMs,initMs,bytes:model.bytes,cacheState,source:'verified browser export'});
+        api.reportRuntimeEvent('yolov1',{type:'runtime',backend:'WASM',dtype:'dynamic INT8 weights',downloadMs,initMs,bytes:model.bytes,cacheState,source:sourceLabel});
         return session;
       })().finally(()=>{loading=null});
       return loading;
@@ -40,7 +40,7 @@
     }
     function run(source,canvas,options={}){const promise=inFlight.catch(()=>{}).then(()=>infer(source,canvas,options));inFlight=promise;return promise}
     async function release(){await inFlight.catch(()=>{});if(loading)await loading.catch(()=>{});const old=session;session=null;if(old)try{await old.release()}catch(error){console.warn('YOLOv1 runtime release failed',error)}loader.evictMemory(model);cacheState='runtime released'}
-    return{run,prepare,release,backend:()=> 'WASM INT8',runtimeInfo:()=>({backend:'wasm',dtype:'dynamic INT8 weights',initMs,downloadMs,bytes:model.bytes,cacheState,source:'verified browser export'}),handlesMainUi:false};
+    return{run,prepare,release,backend:()=> 'WASM INT8',runtimeInfo:()=>({backend:'wasm',dtype:'dynamic INT8 weights',initMs,downloadMs,bytes:model.bytes,cacheState,source:sourceLabel}),handlesMainUi:false};
   }
   function createFasterRcnnAdapter(){
     const model=registry.fasterrcnn;let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',inFlight=Promise.resolve(),loading=null;
