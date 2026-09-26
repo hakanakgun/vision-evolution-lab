@@ -1,0 +1,80 @@
+name: YOLOv1 app smoke
+
+on:
+  push:
+    branches:
+      - feat/yolov1-browser
+    paths:
+      - ".github/workflows/yolov1-app-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install browser harness
+        run: npm install --prefix "$RUNNER_TEMP/yolov1-browser-smoke" --no-save --no-audit --no-fund puppeteer-core@24.16.0
+
+      - name: Run YOLOv1 through the application
+        env:
+          NODE_PATH: ${{ runner.temp }}/yolov1-browser-smoke/node_modules
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/vision-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/version.json >/dev/null; then break; fi
+            sleep 1
+          done
+          node <<'NODE'
+          const assert=require('node:assert/strict');
+          const path=require('node:path');
+          const puppeteer=require('puppeteer-core');
+
+          (async()=>{
+            const browser=await puppeteer.launch({
+              executablePath:process.env.CHROME_PATH||'/usr/bin/google-chrome',
+              headless:true,
+              args:['--no-sandbox','--disable-dev-shm-usage','--js-flags=--max-old-space-size=4096']
+            });
+            const page=await browser.newPage();
+            const consoleLines=[];
+            page.on('console',msg=>consoleLines.push(msg.type()+': '+msg.text()));
+            page.on('pageerror',err=>consoleLines.push('pageerror: '+err.message));
+            page.setDefaultTimeout(30000);
+            await page.goto('http://127.0.0.1:4173/?ort=wasm',{waitUntil:'networkidle2',timeout:45000});
+            await page.waitForSelector('[data-runnable-model="yolov1"]');
+            await page.click('[data-runnable-model="yolov1"]');
+            const input=await page.$('#image-file');
+            assert.ok(input,'Time Machine image input missing');
+            await input.uploadFile(path.resolve('assets/benchmark/coco-val-000000397133.jpg'));
+            await page.waitForSelector('#model-download-warning:not([hidden])',{timeout:15000});
+            const warning=await page.$eval('#model-download-warning',el=>el.textContent);
+            assert.match(warning,/YOLOv1/i);
+            assert.match(warning,/516\.3 MB|516 MB/i);
+            await page.click('#model-download-continue');
+            await page.waitForFunction(()=>{
+              const status=document.querySelector('#status')?.textContent||'';
+              const backend=document.querySelector('#backend-badge')?.textContent||'';
+              return /detection/i.test(status)&&/WASM/i.test(backend);
+            },{timeout:240000});
+            const result=await page.evaluate(()=>({
+              status:document.querySelector('#status')?.textContent||'',
+              backend:document.querySelector('#backend-badge')?.textContent||'',
+              input:document.querySelector('#input-size')?.textContent||'',
+              count:document.querySelector('#m-count')?.textContent||'',
+              cache:document.querySelector('#m-cache')?.textContent||''
+            }));
+            assert.match(result.backend,/WASM/i);
+            assert.match(result.input,/448 × 448/);
+            assert.notEqual(result.count,'—');
+            console.log(JSON.stringify({status:'passed',...result,consoleTail:consoleLines.slice(-12)}));
+            await browser.close();
+          })().catch(error=>{console.error(error);process.exitCode=1});
+          NODE
