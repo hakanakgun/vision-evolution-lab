@@ -6,7 +6,7 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.21.1',
+    version:'0.21.2',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),
@@ -18,7 +18,7 @@
       Object.freeze({year:2012,title:'AlexNet',note:'run · ImageNet top-5 classification',kind:'history-experiment',experiment:'alexnet-classification',evolution:'Deep learned visual representations scaled to large-category image classification; this milestone recognizes whole images rather than localizing objects.'}),
       Object.freeze({year:2014,title:'R-CNN',note:'history only · region proposals + CNN',kind:'historical'}),
       Object.freeze({year:2015,model:'fasterrcnn',title:'Faster R-CNN',note:'run · two-stage RPN · WASM INT8',kind:'runnable',evolution:'Region proposals became learned: a Region Proposal Network shares convolutional features with a second-stage RoI classifier/regressor instead of relying on an external proposal algorithm.'}),
-      Object.freeze({year:2016,model:'yolov1',title:'YOLOv1',note:'run · VOC20 · large 516 MB download',kind:'runnable',evolution:'Object detection becomes a single neural-network regression problem: one 448×448 pass predicts a 7×7 grid of boxes and Pascal VOC classes without a separate proposal stage.'}),
+      Object.freeze({year:2016,model:'yolov1',title:'YOLOv1',note:'run · VOC20 · compact 133.9 MB',kind:'runnable',evolution:'Object detection becomes a single neural-network regression problem: one 448×448 pass predicts a 7×7 grid of boxes and Pascal VOC classes without a separate proposal stage.'}),
       Object.freeze({year:2016,model:'ssd2016',title:'SSD · ResNet-34 INT8',note:'reference checkpoint · COCO · WASM',kind:'runnable',evolution:'Single-shot dense prediction removes a separate proposal stage and predicts classes and boxes across multiple feature scales.'}),
       Object.freeze({year:2016,model:'tinyyolo',title:'Tiny YOLOv2',note:'tap to run · VOC20',kind:'runnable',evolution:'A compact one-stage grid-and-anchor detector predicts boxes, objectness and classes in one network pass, trading some accuracy for real-time efficiency.'}),
       Object.freeze({year:2017,model:'ssd',title:'SSD + MobileNet',note:'tap to run',kind:'runnable',evolution:'MobileNet makes single-shot object detection practical on constrained devices by pairing lightweight depthwise-separable CNN features with SSD heads.'}),
@@ -71,10 +71,11 @@
       })
     }),
     yolov1:Object.freeze({
-      id:'yolov1-voc20-int8-browser',title:'YOLOv1',year:2016,status:'runnable',family:'YOLOv1 · original full Darknet architecture',task:'object-detection',
-      license:'Darknet architecture/weights public domain; LibreYOLO conversion tooling MIT; see docs/MODEL_SOURCES.md',bytes:541358513,sha256:'122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49',input:448,nms:0.45,
+      id:'yolov1-voc20-int8-local-int4-browser',title:'YOLOv1',year:2016,status:'runnable',family:'YOLOv1 · original full Darknet architecture',task:'object-detection',
+      license:'Darknet architecture/weights public domain; LibreYOLO conversion tooling MIT; see docs/MODEL_SOURCES.md',bytes:140390394,sha256:'b0ebae01b947624ac5c7ea24c4b993d6dd56160d7c6f0e050b46e03dece7f18f',input:448,nms:0.45,
       sourceCheckpoint:Object.freeze({repository:'LibreYOLO/LibreYOLO1b',revision:'4349c7a823974cea5d29c5f306a99bcf441ef437',file:'LibreYOLO1b.pt',bytes:777058063,sha256:'90a9ec72a3961fae7860c54eca5ae000e1d85b3659628cf3fb8b2e2a770d5575'}),
       converter:Object.freeze({repository:'LibreYOLO/libreyolo',revision:'c25f6dffb521ea60bc0f63ae3dffb168a7edc466'}),
+      compactTransform:Object.freeze({localEquation:'lok,nkl->nol',locations:49,matmulNBits:4,blockSize:128,baselineAgreement:'7/7 same-class IoU >= 0.50 across four fixed regression images'}),
       downloadPolicy:Object.freeze({enabled:true,warningBytes:100*1048576,reason:'Large historical full-network checkpoint'}),
       capabilities:Object.freeze({timeMachine:true,benchmark:true,live:false,race:false,inspection:Object.freeze({
         mode:'decoded-output-contract',stages:Object.freeze(['preprocessing','decoded-output']),
@@ -86,22 +87,18 @@
           step3:Object.freeze({title:'RGB / 255 tensor',text:'Canvas RGB values are normalized to 0–1 and packed as float32 NCHW.'}),
           step4:Object.freeze({title:'7×7 single-pass detector',text:'The exported graph decodes the original two-box-per-cell YOLOv1 head into 98 xyxy box candidates plus 20 Pascal VOC class scores; the page applies class-aware NMS.'})
         }),
-        comparison:Object.freeze({label:'YOLOv1',input:'448×448',resize:'direct stretch',padding:'none',layout:'NCHW',dtype:'float32 input · INT8 weights',channels:'RGB · /255'}),
+        comparison:Object.freeze({label:'YOLOv1',input:'448×448',resize:'direct stretch',padding:'none',layout:'NCHW',dtype:'float32 input · INT8 Conv/FC + INT4 local weights',channels:'RGB · /255'}),
         intermediate:Object.freeze({title:'YOLOv1 internal grid activations are not exported',subtitle:'The browser graph exposes 98 decoded box candidates and VOC class scores, not the original dense 7×7×30 head tensor.',note:'No synthetic feature maps or grid activations are shown.',data:'none',status:'Real decoded detections exposed · internal activations not exposed'}),
         resultNote:'The graph emits decoded 448-input-pixel xyxy boxes and VOC scores. The page retains candidates to the UI slider floor and applies class-aware NMS at IoU 0.45.'
       })}),
       executionProviders:Object.freeze(['wasm']),
-      providerNote:'WASM is the compatibility path. On iOS/WebKit the 516 MB INT8 model disables CPU arena allocation, memory-pattern optimization, and weight prepacking to reduce peak memory; physical-device success still requires validation.',
-      preprocessing:Object.freeze({resize:'direct stretch to 448×448',layout:'NCHW',dtype:'float32 input / dynamic INT8 weights',channels:'RGB',normalization:'divide by 255',padding:'none'}),
+      providerNote:'WASM is the compatibility path. The compact 133.9 MiB export preserves the 49 independently weighted local positions as 49 MatMulNBits operations. On iOS/WebKit CPU arena allocation, memory-pattern optimization, and weight prepacking remain disabled; physical-device success still requires validation.',
+      preprocessing:Object.freeze({resize:'direct stretch to 448×448',layout:'NCHW',dtype:'float32 input / dynamic INT8 Conv+FC weights / INT4 local weights',channels:'RGB',normalization:'divide by 255',padding:'none'}),
       decoder:'98 decoded xyxy candidates · Pascal VOC 20 scores · class-aware NMS IoU 0.45',
-      ui:Object.freeze({subtitle:'Pascal VOC 20-class detection · original YOLOv1 architecture · ONNX/WASM',provenance:'Derived browser export of the full original YOLOv1 architecture. A pinned LibreYOLO checkpoint is exported at a pinned converter revision, dynamically INT8-quantized, checked on the canonical dog/bicycle/car image, and opened with ONNX Runtime Web WASM in the same publication workflow. The exact published asset is pinned by byte size and SHA-256.',runtime:Object.freeze({initLabel:'Session init',bytesText:'516.3 MB · INT8 weights · large download',cacheInitial:'checking large model cache',benchmarkBoundary:'20 warm ONNX Runtime Web/WASM runs after the one-time model transfer and session initialization.'}),links:Object.freeze([Object.freeze({label:'YOLOv1 paper ↗',url:'https://arxiv.org/abs/1506.02640'}),Object.freeze({label:'Pinned source checkpoint ↗',url:'https://huggingface.co/LibreYOLO/LibreYOLO1b/tree/4349c7a823974cea5d29c5f306a99bcf441ef437'}),Object.freeze({label:'Converter source ↗',url:'https://github.com/LibreYOLO/libreyolo/tree/c25f6dffb521ea60bc0f63ae3dffb168a7edc466'}),Object.freeze({label:'License/provenance ↗',url:'docs/MODEL_SOURCES.md#yolov1'})])}),
-      sources:Object.freeze([Object.freeze({label:'GitHub Pages · verified YOLOv1 INT8 chunks',provenance:'Same-origin chunks reconstructed from GitHub Release yolov1-browser-int8-122bf7462747 · final SHA-256 122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49',parts:Object.freeze([
-        Object.freeze({url:'assets/models/yolov1/part-00.bin',bytes:95000000,sha256:'db339bdd4578655b41cfa464b79dcd3f6b0ddd296ceb786c8a50d3508eb34a8e'}),
-        Object.freeze({url:'assets/models/yolov1/part-01.bin',bytes:95000000,sha256:'93f57ad4c753612d6f2f9b6bae34ad13e3ff443d39f9258787d610be0770e011'}),
-        Object.freeze({url:'assets/models/yolov1/part-02.bin',bytes:95000000,sha256:'7fa8819947e9ea1c0a1fa5bfce812162eb1a156a869f9e7a572c8d55218bd57d'}),
-        Object.freeze({url:'assets/models/yolov1/part-03.bin',bytes:95000000,sha256:'87dc543fdbdaec667344b7052c9627d2bfdc14919c300bdfd1dac097f0d9c9c5'}),
-        Object.freeze({url:'assets/models/yolov1/part-04.bin',bytes:95000000,sha256:'682f7954a97896cce569b2f66cb42fff1de9e1814906a2d8fa867f9c8e802ebe'}),
-        Object.freeze({url:'assets/models/yolov1/part-05.bin',bytes:66358513,sha256:'f26c0a901a920f0ca9dde70d04cf7f144009fd27183d0d5a340350905c0fbf52'})
+      ui:Object.freeze({subtitle:'Pascal VOC 20-class detection · original YOLOv1 architecture · compact ONNX/WASM',provenance:'Derived browser export of the full original YOLOv1 architecture. The pinned LibreYOLO checkpoint is exported at the pinned converter revision, then the original 7×7 locally-connected Einsum is rewritten exactly as 49 independently weighted MatMuls and only those local weights are compressed with MatMulNBits INT4 (block 128); the existing Conv/final-FC dynamic INT8 path is retained. Canonical dog/bicycle/car golden, four-image baseline agreement, native ORT, and ONNX Runtime Web/WASM smoke passed before publication. The exact published asset is pinned by byte size and SHA-256.',runtime:Object.freeze({initLabel:'Session init',bytesText:'133.9 MB · INT8 + local INT4 · large download',cacheInitial:'checking pinned compact model',benchmarkBoundary:'20 warm ONNX Runtime Web/WASM runs after the one-time model transfer and session initialization.'}),links:Object.freeze([Object.freeze({label:'YOLOv1 paper ↗',url:'https://arxiv.org/abs/1506.02640'}),Object.freeze({label:'Pinned source checkpoint ↗',url:'https://huggingface.co/LibreYOLO/LibreYOLO1b/tree/4349c7a823974cea5d29c5f306a99bcf441ef437'}),Object.freeze({label:'Converter source ↗',url:'https://github.com/LibreYOLO/libreyolo/tree/c25f6dffb521ea60bc0f63ae3dffb168a7edc466'}),Object.freeze({label:'License/provenance ↗',url:'docs/MODEL_SOURCES.md#yolov1'})])}),
+      sources:Object.freeze([Object.freeze({label:'GitHub Pages · verified compact YOLOv1 chunks',provenance:'Same-origin chunks reconstructed from GitHub Release yolov1-browser-compact-b0ebae01b947 · final SHA-256 b0ebae01b947624ac5c7ea24c4b993d6dd56160d7c6f0e050b46e03dece7f18f',parts:Object.freeze([
+        Object.freeze({url:'assets/models/yolov1/compact-b128-part-00.bin',bytes:95000000,sha256:'078323f69a05d44c45ed5b8e14fe5cac4fc188925753698c69ad458a415aebc0'}),
+        Object.freeze({url:'assets/models/yolov1/compact-b128-part-01.bin',bytes:45390394,sha256:'131875a7afa8119d2c4e94f1b695c2ecb94529f6b10cdcc6f7fb2740b930478f'})
       ])})])
     }),
     tinyyolo:Object.freeze({
