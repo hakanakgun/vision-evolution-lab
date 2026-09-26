@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.26-v0.20.0">
+<html lang="en" data-build="2026.09.26-v0.21.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.26-v0.20.0';
+      const CURRENT_BUILD = '2026.09.26-v0.21.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=0.20.0">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.21.0">
 </head>
 <body>
   <main class="shell">
@@ -74,6 +74,7 @@
         <button class="tab" role="tab" aria-selected="false" aria-controls="live-camera" data-tab="live-camera">Live Camera</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="efficiency-lab" data-tab="efficiency-lab">Efficiency Lab</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="resolution-microscope" data-tab="resolution-microscope">Resolution Microscope</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="architecture-explorer" data-tab="architecture-explorer">Architecture Explorer</button>
       </nav>
       <div class="scroll-cue" aria-hidden="true">Swipe →</div>
     </div>
@@ -517,24 +518,51 @@
       </div>
     </section>
 
+    <section class="panel" id="architecture-explorer" role="tabpanel">
+      <div class="card architecture-explorer-intro">
+        <div class="architecture-explorer-copy">
+          <div class="eyebrow">Cross-generation architecture contracts</div>
+          <h2>Compare how two detector generations are actually wired</h2>
+          <p class="lede">Choose two runnable Time Machine models. The explorer renders only declared preprocessing, detector-path, output and intermediate-evidence contracts already used by the app; it does not reconstruct hidden layers or fabricate activations.</p>
+        </div>
+        <div class="architecture-selectors">
+          <label>Architecture A<select id="architecture-a" aria-label="Architecture A"></select></label>
+          <span class="architecture-versus">↔</span>
+          <label>Architecture B<select id="architecture-b" aria-label="Architecture B"></select></label>
+        </div>
+        <div class="status" id="architecture-status" aria-live="polite">Select two models to compare their declared browser contracts.</div>
+      </div>
+      <div class="architecture-explorer-grid">
+        <article class="card architecture-profile" id="architecture-profile-a"></article>
+        <article class="card architecture-profile" id="architecture-profile-b"></article>
+      </div>
+      <div class="card architecture-explorer-note">
+        <div class="eyebrow">Evidence boundary</div>
+        <h3>Architecture explanation, not hidden-state reconstruction</h3>
+        <p>The cards use the same model registry and Inside the Model contracts that drive production inference. When an intermediate tensor is not exposed, the explorer says so. Architecture-family descriptions and runtime capabilities are contextual metadata, not measurements of accuracy or performance.</p>
+        <div class="links"><a href="docs/ARCHITECTURE.md#architecture-explorer" target="_blank">Architecture notes ↗</a><a href="docs/MODEL_CATALOG.md" target="_blank">Model catalog ↗</a></div>
+      </div>
+    </section>
+
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.20.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.21.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="src/core/runtime-bootstrap.js?v=0.20.0"></script>
-  <script src="src/core/preprocessing.js?v=0.20.0"></script>
-  <script src="src/models/models.js?v=0.20.0"></script>
-  <script src="src/core/detection-metrics.js?v=0.20.0"></script>
-  <script src="src/core/model-runtime.js?v=0.20.0"></script>
-  <script src="src/core/model-loader.js?v=0.20.0"></script>
-  <script src="src/app.js?v=0.20.0"></script>
-  <script src="src/models/lwdetr-postprocess.js?v=0.20.0"></script>
-  <script src="src/models/historical-detectors.js?v=0.20.0"></script>
-  <script src="src/models/race.js?v=0.20.0"></script>
-  <script src="src/efficiency.js?v=0.20.0"></script>
-  <script src="src/resolution-microscope.js?v=0.20.0"></script>
-  <script src="src/history/history-experiments.js?v=0.20.0"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.21.0"></script>
+  <script src="src/core/preprocessing.js?v=0.21.0"></script>
+  <script src="src/models/models.js?v=0.21.0"></script>
+  <script src="src/core/detection-metrics.js?v=0.21.0"></script>
+  <script src="src/core/model-runtime.js?v=0.21.0"></script>
+  <script src="src/core/model-loader.js?v=0.21.0"></script>
+  <script src="src/app.js?v=0.21.0"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.21.0"></script>
+  <script src="src/models/historical-detectors.js?v=0.21.0"></script>
+  <script src="src/models/race.js?v=0.21.0"></script>
+  <script src="src/efficiency.js?v=0.21.0"></script>
+  <script src="src/resolution-microscope.js?v=0.21.0"></script>
+  <script src="src/architecture-explorer.js?v=0.21.0"></script>
+  <script src="src/history/history-experiments.js?v=0.21.0"></script>
 </body>
 </html>
