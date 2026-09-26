@@ -96,6 +96,18 @@ def main() -> None:
 
     print("Loading checkpoint…", flush=True)
     model = LibreYOLO(str(pt_path))
+    dog = ROOT / "_libreyolo" / "tests" / "fixtures" / "dog.jpg"
+    if not dog.exists():
+        raise FileNotFoundError(f"Pinned LibreYOLO dog fixture is missing: {dog}")
+
+    print("Running native real-image golden…", flush=True)
+    native_result = model.predict(str(dog), conf=0.2)
+    native_result = native_result[0] if isinstance(native_result, list) else native_result
+    native_labels = sorted({model.names[int(value)] for value in native_result.boxes.cls})
+    report["golden"] = {"native_labels": native_labels}
+    if not {"dog", "bicycle", "car"}.issubset(native_labels):
+        raise RuntimeError(f"Native YOLOv1 golden changed: {native_labels}")
+
     print("Exporting fixed 448x448 FP32 ONNX…", flush=True)
     export_started = time.perf_counter()
     exported = Path(
@@ -118,6 +130,14 @@ def main() -> None:
         "sha256": sha256(fp32),
         "ort": validate_ort(fp32),
     }
+    print("Running exported FP32 real-image golden…", flush=True)
+    fp32_model = LibreYOLO(str(fp32))
+    fp32_result = fp32_model.predict(str(dog), conf=0.2)
+    fp32_result = fp32_result[0] if isinstance(fp32_result, list) else fp32_result
+    fp32_labels = sorted({fp32_model.names[int(value)] for value in fp32_result.boxes.cls})
+    report["artifacts"]["fp32"]["golden_labels"] = fp32_labels
+    if not {"dog", "bicycle", "car"}.issubset(fp32_labels):
+        raise RuntimeError(f"FP32 ONNX golden changed: {fp32_labels}")
     print(f"FP32 ONNX: {mib(fp32.stat().st_size):.1f} MiB", flush=True)
 
     int8 = OUT / "yolov1-voc20-int8.onnx"
@@ -138,7 +158,14 @@ def main() -> None:
             "sha256": sha256(int8),
             "ort": validate_ort(int8),
         }
-        print(f"INT8 ONNX: {mib(int8.stat().st_size):.1f} MiB", flush=True)
+        print("Running exported INT8 real-image golden…", flush=True)
+        int8_model = LibreYOLO(str(int8))
+        int8_result = int8_model.predict(str(dog), conf=0.2)
+        int8_result = int8_result[0] if isinstance(int8_result, list) else int8_result
+        int8_labels = sorted({int8_model.names[int(value)] for value in int8_result.boxes.cls})
+        report["artifacts"]["int8"]["golden_labels"] = int8_labels
+        report["artifacts"]["int8"]["golden_required_present"] = sorted({"dog", "bicycle", "car"} & set(int8_labels))
+        print(f"INT8 ONNX: {mib(int8.stat().st_size):.1f} MiB · labels={int8_labels}", flush=True)
     except Exception as error:
         report["int8_error"] = f"{type(error).__name__}: {error}"
         print(f"INT8 quantization failed: {report['int8_error']}", file=sys.stderr, flush=True)
