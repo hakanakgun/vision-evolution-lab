@@ -2,14 +2,6 @@ name: YOLOv1 browser feasibility
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/yolov1-browser
-    paths:
-      - ".github/workflows/yolov1-feasibility.yml"
-      - "scripts/yolov1_feasibility.py"
-      - "scripts/publish_yolov1_hf.py"
-      - "tools/smoke_yolov1_ort_web.cjs"
 
 permissions:
   contents: write
@@ -67,7 +59,7 @@ jobs:
       - name: Open and run INT8 graph on ONNX Runtime Web WASM
         run: NODE_PATH="$RUNNER_TEMP/yolov1-webtest/node_modules" node tools/smoke_yolov1_ort_web.cjs artifacts/yolov1-feasibility/yolov1-voc20-int8.onnx
 
-      - name: Publish checksum-pinned GitHub Release fallback
+      - name: Publish checksum-pinned GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -90,25 +82,6 @@ jobs:
           } >> "$GITHUB_ENV"
           echo "Release tag: $tag" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Publish verified INT8 candidate to Hugging Face when configured
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python scripts/publish_yolov1_hf.py
-
-      - name: Record Hugging Face publication status
-        if: always()
-        run: |
-          if test -f artifacts/yolov1-feasibility/hf-publish.json; then
-            cat artifacts/yolov1-feasibility/hf-publish.json
-            {
-              echo '### Hugging Face publication'
-              echo ''
-              echo '```json'
-              cat artifacts/yolov1-feasibility/hf-publish.json
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
       - name: Final capacity
         if: always()
         run: |
@@ -120,9 +93,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: yolov1-feasibility-report
-          path: |
-            artifacts/yolov1-feasibility/report.json
-            artifacts/yolov1-feasibility/hf-publish.json
+          path: artifacts/yolov1-feasibility/report.json
           if-no-files-found: warn
           retention-days: 7
 
