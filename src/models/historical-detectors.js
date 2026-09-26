@@ -25,7 +25,7 @@
         const started=performance.now(),active=await ort.InferenceSession.create(asset.buffer,sessionOptions),elapsed=performance.now()-started;
         if(JSON.stringify(active.inputNames)!=='["images"]'||JSON.stringify(active.outputNames)!=='["output"]'){await active.release();loader.evictMemory(model);throw new Error('Pinned YOLOv1 ONNX input/output names changed.')}
         session=active;initMs=elapsed;cacheState=asset.cacheState;loader.evictMemory(model);
-        api.reportRuntimeEvent('yolov1',{type:'runtime',backend:'WASM',dtype:'dynamic INT8 weights',downloadMs,initMs,bytes:model.bytes,cacheState,source:sourceLabel,memoryPolicy:isIOS?'ios-low-memory-no-prepack':'default',integrity:asset.integrity||'full-sha256'});
+        api.reportRuntimeEvent('yolov1',{type:'runtime',backend:'WASM',dtype:'dynamic INT8 Conv/FC + INT4 local weights',downloadMs,initMs,bytes:model.bytes,cacheState,source:sourceLabel,memoryPolicy:isIOS?'ios-low-memory-no-prepack':'default',integrity:asset.integrity||'full-sha256'});
         return session;
       })().finally(()=>{loading=null});
       return loading;
@@ -44,7 +44,7 @@
     }
     function run(source,canvas,options={}){const promise=inFlight.catch(()=>{}).then(()=>infer(source,canvas,options));inFlight=promise;return promise}
     async function release(){await inFlight.catch(()=>{});if(loading)await loading.catch(()=>{});const old=session;session=null;if(old)try{await old.release()}catch(error){console.warn('YOLOv1 runtime release failed',error)}loader.evictMemory(model);cacheState='runtime released'}
-    return{run,prepare,release,backend:()=> 'WASM INT8',runtimeInfo:()=>({backend:'wasm',dtype:'dynamic INT8 weights',initMs,downloadMs,bytes:model.bytes,cacheState,source:sourceLabel,memoryPolicy:isIOS?'ios-low-memory-no-prepack':'default'}),handlesMainUi:false};
+    return{run,prepare,release,backend:()=> 'WASM INT8+INT4',runtimeInfo:()=>({backend:'wasm',dtype:'dynamic INT8 Conv/FC + INT4 local weights',initMs,downloadMs,bytes:model.bytes,cacheState,source:sourceLabel,memoryPolicy:isIOS?'ios-low-memory-no-prepack':'default'}),handlesMainUi:false};
   }
   function createFasterRcnnAdapter(){
     const model=registry.fasterrcnn;let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',inFlight=Promise.resolve(),loading=null;
