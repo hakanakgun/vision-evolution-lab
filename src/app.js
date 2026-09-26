@@ -12,7 +12,7 @@
     const $ = id => document.getElementById(id);
     const DEFAULT_MODEL = REGISTRY.defaults?.timeMachine || Object.keys(REGISTRY).find(key=>REGISTRY[key]?.status==='runnable'&&RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine')) || 'yolox';
     const DEFAULT_LIVE_MODEL = REGISTRY.defaults?.live || RuntimeRegistry.modelKeys.find(key=>RuntimeRegistry.capabilityEnabled(REGISTRY[key],'live')) || '';
-    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,cameraFacing:'environment',cameraCanFlip:false,cameraZoom:null,cameraZoomChanging:false,liveInference:Promise.resolve(),liveTransition:Promise.resolve(),liveLoopToken:0,liveSwitching:false,runtimeTransition:Promise.resolve(),session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve()};
+    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,cameraFacing:'environment',cameraCanFlip:false,cameraZoom:null,cameraZoomChanging:false,liveInference:Promise.resolve(),liveTransition:Promise.resolve(),liveLoopToken:0,liveSwitching:false,runtimeTransition:Promise.resolve(),session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve(),modelDownloadController:null,modelDownloadConsentResolver:null,modelDownloadModel:''};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -172,7 +172,60 @@
       const pct=Number.isFinite(info.percent)?Math.max(0,Math.min(100,info.percent)):null;
       const bar=$('m-progress-bar');if(bar)bar.style.width=pct===null?'18%':`${pct.toFixed(1)}%`;
       const text=$('m-progress-text');if(text)text.textContent=pct===null?`${bytes(info.loaded)} downloaded`:`${pct.toFixed(0)}% · ${bytes(info.loaded)} / ${bytes(info.total)}`;
+      if(state.modelDownloadController&&state.modelDownloadModel===state.activeModel){
+        const warning=$('model-download-warning'),warningText=$('model-download-warning-text');
+        warning?.classList.add('downloading');
+        if(warningText)warningText.textContent=pct===null
+          ?`${bytes(info.loaded)} downloaded. You can cancel this transfer without uploading your image.`
+          :`${pct.toFixed(0)}% · ${bytes(info.loaded)} / ${bytes(info.total)} downloaded. You can cancel this transfer at any time.`;
+      }
     }
+    function networkTransferHint(){
+      const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+      if(!connection)return{cellular:false,saveData:false,text:'This browser does not expose whether the connection is Wi-Fi or cellular.'};
+      const type=String(connection.type||'').toLowerCase(),cellular=type==='cellular',saveData=connection.saveData===true;
+      if(cellular&&saveData)return{cellular,saveData,text:'The browser reports a cellular connection with Data Saver enabled.'};
+      if(cellular)return{cellular,saveData,text:'The browser reports a cellular connection.'};
+      if(saveData)return{cellular,saveData,text:'The browser reports Data Saver enabled; connection type is not treated as cellular unless explicitly exposed.'};
+      if(type)return{cellular,saveData,text:`The browser reports connection type: ${type}.`};
+      return{cellular,saveData,text:'Connection type is not exposed by this browser.'};
+    }
+    function largeDownloadPolicy(model){const policy=model?.downloadPolicy;if(!policy||policy.enabled===false)return null;const threshold=Number(policy.warningBytes)||100*1048576;return Number(model?.bytes)>=threshold?policy:null}
+    function hideModelDownloadWarning(){
+      const warning=$('model-download-warning');if(warning){warning.hidden=true;warning.classList.remove('downloading')}
+      const go=$('model-download-continue'),cancel=$('model-download-cancel');if(go)go.hidden=false;if(cancel)cancel.textContent='Not now';
+    }
+    function settleModelDownloadConsent(value){
+      const resolve=state.modelDownloadConsentResolver;state.modelDownloadConsentResolver=null;
+      if(resolve)resolve(Boolean(value));
+    }
+    async function confirmLargeModelDownload(model){
+      const policy=largeDownloadPolicy(model);if(!policy)return true;
+      const cache=await ModelLoader.status(model).catch(()=>({state:'not cached'}));
+      if(cache.state==='memory'||cache.state==='browser cache')return true;
+      const hint=networkTransferHint(),warning=$('model-download-warning'),title=$('model-download-warning-title'),text=$('model-download-warning-text'),go=$('model-download-continue'),cancel=$('model-download-cancel');
+      if(!warning||!title||!text||!go||!cancel)return true;
+      title.textContent=hint.cellular?'Large model · cellular data warning':'Large model download';
+      const prefix=`${model.title} requires about ${bytes(model.bytes)} before local inference can start.`;
+      text.textContent=`${prefix} ${hint.text} The transfer stays on your device cache; your selected image is not uploaded.`;
+      go.textContent=`Download ${bytes(model.bytes)}`;go.hidden=false;cancel.textContent='Not now';warning.classList.remove('downloading');warning.hidden=false;
+      return await new Promise(resolve=>{state.modelDownloadConsentResolver=resolve});
+    }
+    function beginModelDownload(model){
+      const policy=largeDownloadPolicy(model);if(!policy)return null;
+      const controller=new AbortController();state.modelDownloadController=controller;state.modelDownloadModel=state.activeModel;
+      const warning=$('model-download-warning'),go=$('model-download-continue'),cancel=$('model-download-cancel'),title=$('model-download-warning-title');
+      if(warning){warning.hidden=false;warning.classList.add('downloading')}if(go)go.hidden=true;if(cancel)cancel.textContent='Cancel download';if(title)title.textContent='Downloading '+model.title;
+      return controller;
+    }
+    function endModelDownload(){
+      state.modelDownloadController=null;state.modelDownloadModel='';hideModelDownloadWarning();
+    }
+    $('model-download-continue')?.addEventListener('click',()=>settleModelDownloadConsent(true));
+    $('model-download-cancel')?.addEventListener('click',()=>{
+      if(state.modelDownloadController){state.modelDownloadController.abort();return}
+      settleModelDownloadConsent(false);hideModelDownloadWarning();
+    });
     async function fetchModel(){
       if(state.modelBuffer){if(state.activeModel==='ssd'){setMetric('m-download',ms(0));setMetric('m-bytes',bytes(state.modelBuffer.byteLength));setMetric('m-cache','memory');}traceDiagnostic('ssd-raw-buffer-reuse',{bytes:state.modelBuffer.byteLength});return {buffer:state.modelBuffer,downloadMs:0,cacheState:'memory'};}
       setStatus('Loading the pinned SSD checkpoint…','loading');
@@ -384,10 +437,11 @@
 
     function redrawUploaded(){if(!state.image||!state.lastResults)return;const canvas=$('image-canvas');drawSourceOnly();const count=drawDetections(canvas,state.lastResults);setMetric('m-count',String(count));if(state.lastRunResult){state.lastRunResult.visible=count;updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}setStatus(`${count} detection${count===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}. Retained outputs were re-filtered without new inference.`);}
     function applyExternalRun(model,result,targetCanvas){const runtime=RuntimeRegistry.get(model)?.runtimeInfo?.()||{},modelMeta=REGISTRY[model]||{},runtimeUi=modelMeta.ui?.runtime||{},size=sourceSize(state.image),w=size.w,h=size.h;state.lastResults=result.detections;state.lastRunResult=Object.assign({},result);state.lastDims={sourceW:w,sourceH:h,width:targetCanvas.width,height:targetCanvas.height};state.inferenceCount++;setMetric('m-run-label',state.inferenceCount===1?'first inference':'warm run #'+state.inferenceCount);setMetric('m-pre',ms(result.preMs));setMetric('m-inf',ms(result.infMs));setMetric('m-post',ms(result.postMs));setMetric('m-total',ms(result.totalMs));setMetric('m-count',String(result.visible));const inputWidth=Number.isFinite(result.inputWidth)?result.inputWidth:result.width,inputHeight=Number.isFinite(result.inputHeight)?result.inputHeight:result.height;$('input-size').textContent=inputWidth+' × '+inputHeight+' model input';setMetric('d-input',inputWidth+'×'+inputHeight);if(runtime.backend)$('backend-badge').textContent=runtime.dtype?runtime.backend.toUpperCase()+' · '+runtime.dtype:runtime.backend.toUpperCase();if(Number.isFinite(runtime.downloadMs))setMetric('m-download',ms(runtime.downloadMs));else if(runtimeUi.managedTransferWhenMissing)setMetric('m-download','managed by pipeline');if(Number.isFinite(runtime.initMs))setMetric('m-init',ms(runtime.initMs));if(runtime.bytes)setMetric('m-bytes',bytes(runtime.bytes));if(runtime.cacheState)setMetric('m-cache',runtime.source?runtime.cacheState+' · '+runtime.source:runtime.cacheState);updateInsideModelUI(model,state.lastRunResult,state.image);const boundary=runtimeUi.inferenceBoundaryNote?' '+runtimeUi.inferenceBoundaryNote:'';setStatus(result.visible+' detection'+(result.visible===1?'':'s')+' above confidence '+Number($('confidence').value).toFixed(2)+'.'+boundary);}
-    async function runActiveModel(source,targetCanvas,{updateMain=true,benchmarking=false}={}){const model=state.activeModel,adapter=RuntimeRegistry.get(model);if(!adapter)throw new Error('Active model runtime is not ready. Reload the page and try again.');const result=await adapter.run(source,targetCanvas,{benchmarking,updateMain});if(updateMain&&!adapter.handlesMainUi&&model===state.activeModel)applyExternalRun(model,result,targetCanvas);return result;}
+    async function runActiveModel(source,targetCanvas,{updateMain=true,benchmarking=false,downloadSignal}={}){const model=state.activeModel,adapter=RuntimeRegistry.get(model);if(!adapter)throw new Error('Active model runtime is not ready. Reload the page and try again.');const result=await adapter.run(source,targetCanvas,{benchmarking,updateMain,downloadSignal});if(updateMain&&!adapter.handlesMainUi&&model===state.activeModel)applyExternalRun(model,result,targetCanvas);return result;}
     async function runUploaded(){
       if(!state.image||state.running||state.benchmarking)return;
       state.running=true;$('image-file').disabled=true;$('confidence').disabled=true;$('rerun').disabled=true;$('benchmark').disabled=true;$('history-run').disabled=true;
+      let controller=null;
       try{
         await state.historyTransition;
         await state.runtimeTransition;
@@ -395,9 +449,17 @@
           if(!window.VisionHistoryExperiments)throw new Error('Historical experiment runtime is unavailable.');
           await window.VisionHistoryExperiments.run(state.historyExperiment,state.image);
           setStatus('Historical experiment complete. See its task-specific result above.');
-        }else await runActiveModel(state.image,$('image-canvas'));
-      }catch(err){console.error(err);setStatus(err.message||String(err),'error');}
-      finally{
+        }else{
+          const model=activeModel(),allowed=await confirmLargeModelDownload(model);
+          if(!allowed){setStatus(model.title+' was not downloaded. Choose another generation or run it later.');return}
+          controller=beginModelDownload(model);
+          await runActiveModel(state.image,$('image-canvas'),{downloadSignal:controller?.signal});
+        }
+      }catch(err){
+        if(err?.name==='AbortError')setStatus('Model download cancelled. The selected image stayed local.');
+        else{console.error(err);setStatus(err.message||String(err),'error');}
+      }finally{
+        if(controller&&state.modelDownloadController===controller)endModelDownload();
         state.running=false;$('image-file').disabled=false;$('rerun').disabled=!state.image;$('benchmark').disabled=!state.image;
         syncHistoryControls();
       }
@@ -748,5 +810,5 @@
     });
 
     updateActiveModelUI();updateActiveCacheState();renderLiveModels();
-    window.addEventListener('pagehide',()=>stopCamera());
+    window.addEventListener('pagehide',()=>{state.modelDownloadController?.abort();settleModelDownloadConsent(false);stopCamera()});
   })();
