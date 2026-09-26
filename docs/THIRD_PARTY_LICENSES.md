@@ -35,7 +35,7 @@ This project currently loads the following runtime dependency from a CDN.
 - License: MIT
 - Upstream: `microsoft/onnxruntime`
 
-Most model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetched from a pinned ONNX Model Zoo migration repository on Hugging Face; its repository metadata says Apache-2.0 while the imported model-card body says MIT, so both upstream statements are recorded rather than treated as one definitive weights-license claim. SSD-MobileNetV1, Faster R-CNN 2015, SSD 2016, DETR 2020, YOLOS-tiny, RT-DETR variants, D-FINE-N, and the MNIST task-reference model are fetched from pinned or official upstream sources. LW-DETR-tiny is the exception: its pinned Apache-2.0 source checkpoint is exported to a derived ONNX artifact, published in the repository’s GitHub Release, verified by exact size/SHA-256, and committed as `assets/models/lw-detr-tiny.onnx` for same-origin Pages delivery. YOLOX-Nano uses the official Megvii GitHub Release first and a pinned Apache-2.0 Hugging Face mirror only as a browser-fetch fallback. DETR's base model declares Apache-2.0, while its conversion repository has no independent license declaration. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
+Most model checkpoints are not bundled in this repository. YOLOv1 uses a derived dynamic-INT8 ONNX artifact published as a checksum-pinned GitHub Release after pinned-source export/golden/WASM validation. Tiny YOLOv2 is fetched from a pinned ONNX Model Zoo migration repository on Hugging Face; its repository metadata says Apache-2.0 while the imported model-card body says MIT, so both upstream statements are recorded rather than treated as one definitive weights-license claim. SSD-MobileNetV1, Faster R-CNN 2015, SSD 2016, DETR 2020, YOLOS-tiny, RT-DETR variants, D-FINE-N, and the MNIST task-reference model are fetched from pinned or official upstream sources. LW-DETR-tiny is the exception: its pinned Apache-2.0 source checkpoint is exported to a derived ONNX artifact, published in the repository’s GitHub Release, verified by exact size/SHA-256, and committed as `assets/models/lw-detr-tiny.onnx` for same-origin Pages delivery. YOLOX-Nano uses the official Megvii GitHub Release first and a pinned Apache-2.0 Hugging Face mirror only as a browser-fetch fallback. DETR's base model declares Apache-2.0, while its conversion repository has no independent license declaration. See [MODEL_SOURCES.md](MODEL_SOURCES.md) for provenance and model-specific license notes.
 
 ## MNIST digit task-reference checkpoint
 
@@ -54,6 +54,14 @@ Most model checkpoints are not bundled in this repository. Tiny YOLOv2 is fetche
 - The ONNX checkpoint is fetched at runtime, pinned to the revision above, and SHA-256 verified. It is not bundled in the repository.
 - The small ImageNet synset-label mapping is bundled in `assets/models/imagenet-1k-labels.json` from the ONNX Model Zoo's `synset.txt` sample asset. Its source does not publish a separate license statement; the file is used solely to map model output indices to the standard class names. SHA-256: `495a1f028e7b3b1878dbc4ec2e66f9a9a9c89c48abb007a9c954faa13571c33a`.
 - The in-app runner follows Intel Neural Compressor's pinned evaluation preprocessing and uses ONNX Runtime Web 1.30.0 under its existing MIT notice above.
+
+## YOLOv1 browser export
+
+- Original architecture and pretrained Darknet weights: upstream YOLO/Darknet public-domain declaration.
+- Pinned converted source checkpoint: `LibreYOLO/LibreYOLO1b@4349c7a823974cea5d29c5f306a99bcf441ef437`.
+- Conversion tooling: `LibreYOLO/libreyolo@c25f6dffb521ea60bc0f63ae3dffb168a7edc466`; upstream repository license MIT.
+- Derived runtime artifact: `yolov1-voc20-int8.onnx`, 541,358,513 bytes, SHA-256 `122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49`, published under GitHub Release `yolov1-browser-int8-122bf7462747`.
+- The project is an individual non-commercial educational/demo project. Provenance is still retained explicitly; Pascal VOC dataset terms are separate from code/model terms.
 
 ## Tiny YOLOv2 upstream checkpoint
 
