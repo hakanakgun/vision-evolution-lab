@@ -23,9 +23,9 @@ For older milestones, the timeline shows the year only. Recent model entries sho
 | 2021-06 | YOLOS-tiny | Vanilla Vision Transformer transferred directly to object detection. | Runnable · Time Machine only | Pinned q4 Transformers.js conversion; iOS/WebKit and broad browser validation pending. |
 | 2021-07 | YOLOX-Nano | Anchor-free detector with a decoupled head. | Runnable | Month follows the first public arXiv paper; not a release date. |
 | 2023-04 | RT-DETR R18 | Real-time end-to-end DETR detector. | Runnable | Month follows the first public arXiv paper. |
-| 2024-06 | LW-DETR-tiny | Lightweight ViT encoder and shallow DETR decoder. | Runnable · Time Machine + Live Camera | Pinned Apache-2.0 checkpoint exported to a verified ONNX graph; WASM fp32; physical iPhone/Brave execution confirmed, but sustained camera stability and broad compatibility remain unverified. |
+| 2024-06 | LW-DETR-tiny | Lightweight ViT encoder and shallow DETR decoder. | Runnable · Time Machine + Live Camera | Pinned Apache-2.0 checkpoint exported to a verified ONNX graph; WASM fp32; one user-reported iOS 18.7 / Brave-WebKit ×20 benchmark completed, while sustained Live Camera stability and broad compatibility remain unverified. |
 | 2024-07 | RT-DETRv2 R18 | Revised real-time DETR training recipe. | Research preview · runnable | Month follows the first public arXiv paper. |
-| 2024-10 | D-FINE-N | Fine-grained distribution refinement for DETR box regression. | Runnable · Time Machine + Live Camera | Pinned COCO ONNX conversion; WASM fp32; physical iPhone/Brave Live Camera execution confirmed, but sustained and broad cross-device behavior remains unverified. |
+| 2024-10 | D-FINE-N | Fine-grained distribution refinement for DETR box regression. | Runnable · Time Machine + Live Camera | Pinned COCO ONNX conversion; WASM fp32; Live Camera is enabled, but mobile performance and iOS/WebKit camera stability have not been benchmarked. |
 
 ## Primary papers
 
