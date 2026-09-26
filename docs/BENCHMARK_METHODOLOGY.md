@@ -97,6 +97,16 @@ It shows two independent engineering dimensions:
 
 The bars are normalized only to make the current set visually comparable. They are **not** an efficiency score. The lab does not estimate power/energy, memory residency, accuracy, cost, or an overall winner. Diagnostic benchmarks with forced backends are intentionally excluded so they cannot silently replace the normal user-facing measurement set.
 
+### Resolution Microscope
+
+Resolution Microscope is a **source-detail stability test**, not a model-input-resolution benchmark. It runs the currently selected runnable Time Machine detector sequentially on four versions of the same source: original detail, longest side capped at 640 px, 320 px, and 160 px. Aspect ratio is preserved when reducing the source.
+
+After that reduction, every model still receives its normal preprocessing path and native tensor contract. For example, a detector with a fixed 416×416 input still receives its usual 416×416 tensor; the microscope changes only how much source detail survives before that preprocessing.
+
+The same Time Machine confidence threshold is used for all four runs. For each reduced source, the UI counts detections that can be matched back to the original-source run using the same canonical class and IoU ≥ 0.50 with one-to-one matching. These are **stability matches**, not true positives. No ground truth is involved, so the microscope does not report accuracy, AP, or a winner.
+
+Large models with an explicit download-consent policy must already be cached before the microscope can run. This prevents the tool from bypassing the normal Time Machine warning/cancellation flow.
+
 ### Confidence retention
 
 The Time Machine slider minimum is also the internal retention floor. Tiny YOLOv2 decoding, YOLOX decoding and the RT-DETR Transformers.js pipeline retain detections down to that floor, while the current Time Machine/Model Race UI threshold is applied during draw/comparison. Live Camera has an independent display-confidence slider and passes that value into the same adapter draw path without changing the retention floor. This allows threshold changes within the slider range to re-filter existing outputs without a new inference. SSD already exposes its decoded detections before the UI draw threshold. The retention floor is not an accuracy claim and does not change the benchmark's user-visible confidence contract.
