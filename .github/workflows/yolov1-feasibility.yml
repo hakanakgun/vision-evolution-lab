@@ -8,6 +8,8 @@ on:
     paths:
       - ".github/workflows/yolov1-feasibility.yml"
       - "scripts/yolov1_feasibility.py"
+      - "scripts/publish_yolov1_hf.py"
+      - "tools/smoke_yolov1_ort_web.cjs"
 
 permissions:
   contents: read
@@ -59,6 +61,31 @@ jobs:
         run: |
           /usr/bin/time -v python scripts/yolov1_feasibility.py
 
+      - name: Install pinned ONNX Runtime Web
+        run: npm install --prefix "$RUNNER_TEMP/yolov1-webtest" --no-save --no-audit --no-fund onnxruntime-web@1.30.0
+
+      - name: Open and run INT8 graph on ONNX Runtime Web WASM
+        run: NODE_PATH="$RUNNER_TEMP/yolov1-webtest/node_modules" node tools/smoke_yolov1_ort_web.cjs artifacts/yolov1-feasibility/yolov1-voc20-int8.onnx
+
+      - name: Publish verified INT8 candidate to Hugging Face when configured
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/publish_yolov1_hf.py
+
+      - name: Record Hugging Face publication status
+        if: always()
+        run: |
+          if test -f artifacts/yolov1-feasibility/hf-publish.json; then
+            cat artifacts/yolov1-feasibility/hf-publish.json
+            {
+              echo '### Hugging Face publication'
+              echo ''
+              echo '```json'
+              cat artifacts/yolov1-feasibility/hf-publish.json
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Final capacity
         if: always()
         run: |
@@ -70,7 +97,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: yolov1-feasibility-report
-          path: artifacts/yolov1-feasibility/report.json
+          path: |
+            artifacts/yolov1-feasibility/report.json
+            artifacts/yolov1-feasibility/hf-publish.json
           if-no-files-found: warn
           retention-days: 7
 
