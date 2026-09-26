@@ -140,6 +140,16 @@
         <aside class="card">
           <div class="side-head"><div class="side-title">On your device</div><div class="tiny" id="backend-badge">Not loaded</div></div>
           <div id="status" class="status">Choose an image to load the model and run the first measurement.</div>
+          <section class="model-download-warning" id="model-download-warning" hidden aria-live="polite">
+            <div class="model-download-warning-copy">
+              <strong id="model-download-warning-title">Large model download</strong>
+              <span id="model-download-warning-text">This model requires a large one-time transfer before local inference can start.</span>
+            </div>
+            <div class="model-download-actions">
+              <button class="btn secondary" id="model-download-continue" type="button">Download model</button>
+              <button class="btn secondary" id="model-download-cancel" type="button">Not now</button>
+            </div>
+          </section>
           <div class="metric-section">
             <div class="metric-section-head"><span>Startup</span><small>once per page session</small></div>
             <div class="metrics">
