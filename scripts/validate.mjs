@@ -325,6 +325,11 @@ check(yolov1?.bytes===541358513&&yolov1.sha256==='122bf7462747d0cf140525ed6c1d90
 check(yolov1.capabilities.timeMachine&&yolov1.capabilities.benchmark&&yolov1.capabilities.live===false&&yolov1.capabilities.race===false,'YOLOv1 must remain Time Machine/individual benchmark only');
 check(yolov1.downloadPolicy?.enabled===true&&yolov1.downloadPolicy.warningBytes===100*1048576,'YOLOv1 large-download warning policy changed');
 check(yolov1.sources?.length===1&&yolov1.sources[0].label==='GitHub Pages · verified YOLOv1 INT8 chunks'&&yolov1.sources[0].parts?.length===6&&yolov1.sources[0].parts.reduce((sum,part)=>sum+part.bytes,0)===yolov1.bytes,'YOLOv1 same-origin chunk manifest must reconstruct the exact published asset size');
+const yolov1Manifest=JSON.parse(read('assets/models/yolov1/manifest.json')),yolov1Parts=yolov1.sources[0].parts;
+check(yolov1Manifest.sourceRelease==='yolov1-browser-int8-122bf7462747'&&yolov1Manifest.bytes===yolov1.bytes&&yolov1Manifest.sha256===yolov1.sha256&&yolov1Manifest.parts?.length===6,'YOLOv1 committed chunk manifest does not match the canonical Release artifact');
+check(JSON.stringify(yolov1Parts.map(part=>part.url))===JSON.stringify(yolov1Manifest.parts.map(part=>'assets/models/yolov1/'+part.file)),'YOLOv1 runtime chunk paths differ from the committed manifest');
+for(let index=0;index<yolov1Parts.length;index++){const runtimePart=yolov1Parts[index],manifestPart=yolov1Manifest.parts[index],file=runtimePart.url;check(exists(file),`YOLOv1 Pages chunk missing: ${file}`);check(runtimePart.bytes===manifestPart.bytes&&fs.statSync(path.join(root,file)).size===runtimePart.bytes,`YOLOv1 Pages chunk size mismatch: ${file}`);}
+
 check(files.historicalDetectors.includes("runtimes.register('yolov1'")&&files.historicalDetectors.includes('options.downloadSignal')&&files.historicalDetectors.includes("subtle.digest('SHA-256'"),'YOLOv1 adapter integrity or cancellable download contract changed');
 check(files.app.includes('confirmLargeModelDownload(model)')&&files.app.includes('new AbortController()')&&files.loader.includes("fetch(url.href,{mode:'cors',cache:attempt?'no-store':'default',signal})")&&files.loader.includes('async function loadMultipart(')&&files.loader.includes('readResponseInto(response,merged'),'large-model consent/cancel flow must reach both normal and multipart network fetch paths');
 
