@@ -50,6 +50,21 @@ jobs:
             page.on('pageerror',err=>consoleLines.push('pageerror: '+err.message));
             page.setDefaultTimeout(30000);
             await page.goto('http://127.0.0.1:4173/?ort=wasm',{waitUntil:'networkidle2',timeout:45000});
+            const apiProbe=await page.evaluate(async()=>{
+              try{
+                const response=await fetch('https://api.github.com/repos/hakanakgun/vision-evolution-lab/releases/assets/590202614',{
+                  headers:{Accept:'application/octet-stream'}
+                });
+                const result={ok:response.ok,status:response.status,type:response.type,url:response.url,contentType:response.headers.get('content-type'),contentLength:response.headers.get('content-length')};
+                if(response.body)await response.body.cancel();
+                return result;
+              }catch(error){
+                return{ok:false,error:String(error&&error.message||error)};
+              }
+            });
+            console.log('release-api-probe '+JSON.stringify(apiProbe));
+            assert.ok(apiProbe.ok,'GitHub release asset API browser fetch failed: '+JSON.stringify(apiProbe));
+            return;
             await page.waitForSelector('[data-runnable-model="yolov1"]');
             await page.click('[data-runnable-model="yolov1"]');
             const input=await page.$('#image-file');
