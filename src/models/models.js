@@ -6,7 +6,7 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.21.0',
+    version:'0.21.1',
     runtime:Object.freeze({ort:'1.30.0',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),
@@ -91,17 +91,17 @@
         resultNote:'The graph emits decoded 448-input-pixel xyxy boxes and VOC scores. The page retains candidates to the UI slider floor and applies class-aware NMS at IoU 0.45.'
       })}),
       executionProviders:Object.freeze(['wasm']),
-      providerNote:'WASM is the initial compatibility policy. The 516 MB INT8 model is intentionally Time Machine-only; physical iPhone/WebKit memory and sustained inference have not been validated.',
+      providerNote:'WASM is the compatibility path. On iOS/WebKit the 516 MB INT8 model uses a low-memory session policy (CPU arena and memory pattern disabled); physical-device success still requires validation.',
       preprocessing:Object.freeze({resize:'direct stretch to 448×448',layout:'NCHW',dtype:'float32 input / dynamic INT8 weights',channels:'RGB',normalization:'divide by 255',padding:'none'}),
       decoder:'98 decoded xyxy candidates · Pascal VOC 20 scores · class-aware NMS IoU 0.45',
       ui:Object.freeze({subtitle:'Pascal VOC 20-class detection · original YOLOv1 architecture · ONNX/WASM',provenance:'Derived browser export of the full original YOLOv1 architecture. A pinned LibreYOLO checkpoint is exported at a pinned converter revision, dynamically INT8-quantized, checked on the canonical dog/bicycle/car image, and opened with ONNX Runtime Web WASM in the same publication workflow. The exact published asset is pinned by byte size and SHA-256.',runtime:Object.freeze({initLabel:'Session init',bytesText:'516.3 MB · INT8 weights · large download',cacheInitial:'checking large model cache',benchmarkBoundary:'20 warm ONNX Runtime Web/WASM runs after the one-time model transfer and session initialization.'}),links:Object.freeze([Object.freeze({label:'YOLOv1 paper ↗',url:'https://arxiv.org/abs/1506.02640'}),Object.freeze({label:'Pinned source checkpoint ↗',url:'https://huggingface.co/LibreYOLO/LibreYOLO1b/tree/4349c7a823974cea5d29c5f306a99bcf441ef437'}),Object.freeze({label:'Converter source ↗',url:'https://github.com/LibreYOLO/libreyolo/tree/c25f6dffb521ea60bc0f63ae3dffb168a7edc466'}),Object.freeze({label:'License/provenance ↗',url:'docs/MODEL_SOURCES.md#yolov1'})])}),
       sources:Object.freeze([Object.freeze({label:'GitHub Pages · verified YOLOv1 INT8 chunks',provenance:'Same-origin chunks reconstructed from GitHub Release yolov1-browser-int8-122bf7462747 · final SHA-256 122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49',parts:Object.freeze([
-        Object.freeze({url:'assets/models/yolov1/part-00.bin',bytes:95000000}),
-        Object.freeze({url:'assets/models/yolov1/part-01.bin',bytes:95000000}),
-        Object.freeze({url:'assets/models/yolov1/part-02.bin',bytes:95000000}),
-        Object.freeze({url:'assets/models/yolov1/part-03.bin',bytes:95000000}),
-        Object.freeze({url:'assets/models/yolov1/part-04.bin',bytes:95000000}),
-        Object.freeze({url:'assets/models/yolov1/part-05.bin',bytes:66358513})
+        Object.freeze({url:'assets/models/yolov1/part-00.bin',bytes:95000000,sha256:'db339bdd4578655b41cfa464b79dcd3f6b0ddd296ceb786c8a50d3508eb34a8e'}),
+        Object.freeze({url:'assets/models/yolov1/part-01.bin',bytes:95000000,sha256:'93f57ad4c753612d6f2f9b6bae34ad13e3ff443d39f9258787d610be0770e011'}),
+        Object.freeze({url:'assets/models/yolov1/part-02.bin',bytes:95000000,sha256:'7fa8819947e9ea1c0a1fa5bfce812162eb1a156a869f9e7a572c8d55218bd57d'}),
+        Object.freeze({url:'assets/models/yolov1/part-03.bin',bytes:95000000,sha256:'87dc543fdbdaec667344b7052c9627d2bfdc14919c300bdfd1dac097f0d9c9c5'}),
+        Object.freeze({url:'assets/models/yolov1/part-04.bin',bytes:95000000,sha256:'682f7954a97896cce569b2f66cb42fff1de9e1814906a2d8fa867f9c8e802ebe'}),
+        Object.freeze({url:'assets/models/yolov1/part-05.bin',bytes:66358513,sha256:'f26c0a901a920f0ca9dde70d04cf7f144009fd27183d0d5a340350905c0fbf52'})
       ])})])
     }),
     tinyyolo:Object.freeze({
