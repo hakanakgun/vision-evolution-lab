@@ -97,12 +97,3 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload exported ONNX candidates
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: yolov1-onnx-candidates
-          path: artifacts/yolov1-feasibility/*.onnx
-          compression-level: 0
-          if-no-files-found: error
-          retention-days: 1
