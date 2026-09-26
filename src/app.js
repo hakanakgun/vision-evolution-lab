@@ -792,6 +792,8 @@
       ms,
       bytes,
       getActiveModel:()=>state.activeModel,
+      getHistoryExperiment:()=>state.historyExperiment,
+      isTimeMachineBusy:()=>state.running||state.benchmarking,
       selectActiveModel,
       getLiveModel:()=>state.liveModel,
       selectLiveModel,
