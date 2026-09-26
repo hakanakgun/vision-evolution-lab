@@ -24,6 +24,7 @@ const files={
   race:read('src/models/race.js'),
   efficiency:read('src/efficiency.js'),
   resolution:read('src/resolution-microscope.js'),
+  architectureExplorer:read('src/architecture-explorer.js'),
   historyExperiments:read('src/history/history-experiments.js'),
   classicalWorker:read('src/history/classical-cv-worker.js'),
   history:read('docs/MODEL_HISTORY.md'),
@@ -40,7 +41,7 @@ const files={
   version:JSON.parse(read('version.json'))
 };
 
-for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,efficiency:files.efficiency,resolution:files.resolution,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
+for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,efficiency:files.efficiency,resolution:files.resolution,architectureExplorer:files.architectureExplorer,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
 let relativeLoaderUrl='',relativeLoaderProgress=[];
@@ -109,6 +110,7 @@ const literalRefs=[...new Set([
   ...files.race.matchAll(/\$\('([^']+)'\)/g),
   ...files.efficiency.matchAll(/\$\('([^']+)'\)/g),
   ...files.resolution.matchAll(/\$\('([^']+)'\)/g),
+  ...files.architectureExplorer.matchAll(/\$\('([^']+)'\)/g),
   ...files.historyExperiments.matchAll(/\$\('([^']+)'\)/g)
 ].map(match=>match[1]))];
 const missingIds=literalRefs.filter(id=>!idSet.has(id)&&!generatedIds.has(id));
@@ -117,8 +119,10 @@ check(idSet.has('live-model-select')&&idSet.has('live-model-status'),'Live Camer
 check(idSet.has('live-confidence')&&idSet.has('live-confidence-value'),'Live Camera independent confidence controls are missing');
 for(const id of ['efficiency-lab','efficiency-status','efficiency-grid'])check(idSet.has(id),'Efficiency Lab DOM contract missing: '+id);
 for(const id of ['resolution-microscope','resolution-run','resolution-context','resolution-status','resolution-grid'])check(idSet.has(id),'Resolution Microscope DOM contract missing: '+id);
+for(const id of ['architecture-explorer','architecture-a','architecture-b','architecture-status','architecture-profile-a','architecture-profile-b'])check(idSet.has(id),'Architecture Explorer DOM contract missing: '+id);
 check(files.index.includes('data-tab="efficiency-lab"')&&files.index.includes('data-jump="model-race"'),'Efficiency Lab navigation contract missing');
 check(files.index.includes('data-tab="resolution-microscope"')&&files.index.includes('data-jump="time-machine"'),'Resolution Microscope navigation contract missing');
+check(files.index.includes('data-tab="architecture-explorer"'),'Architecture Explorer navigation contract missing');
 check(!files.index.includes('Confidence uses the Time Machine setting.'),'Live Camera must not depend on the Time Machine confidence label');
 for(const id of ['camera-flip','camera-zoom-controls','camera-zoom-out','camera-zoom-reset','camera-zoom-in'])check(idSet.has(id),'Live Camera device control missing: '+id);
 check(files.app.includes("function liveModelKeys()")&&files.app.includes("state.liveModel===modelKey"),'Live Camera must use its independent live model state');
@@ -128,10 +132,10 @@ const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
 check(files.index.includes(`const CURRENT_BUILD = '${build}'`),'CURRENT_BUILD does not match version.json');
 check(metadataRegistry.version===version,'VisionModels.version does not match version.json');
-for(const asset of ['assets/css/styles.css','src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/core/detection-metrics.js','src/models/models.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/efficiency.js','src/resolution-microscope.js','src/history/history-experiments.js']){
+for(const asset of ['assets/css/styles.css','src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/core/detection-metrics.js','src/models/models.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/efficiency.js','src/resolution-microscope.js','src/architecture-explorer.js','src/history/history-experiments.js']){
   check(files.index.includes(`${asset}?v=${version}`),`cache-busted asset missing or stale: ${asset}`);
 }
-const scriptOrder=['src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/models/models.js','src/core/detection-metrics.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/efficiency.js','src/resolution-microscope.js','src/history/history-experiments.js'];
+const scriptOrder=['src/core/runtime-bootstrap.js','src/core/preprocessing.js','src/models/models.js','src/core/detection-metrics.js','src/core/model-runtime.js','src/core/model-loader.js','src/app.js','src/models/lwdetr-postprocess.js','src/models/historical-detectors.js','src/models/race.js','src/efficiency.js','src/resolution-microscope.js','src/architecture-explorer.js','src/history/history-experiments.js'];
 let previous=-1;
 for(const script of scriptOrder){
   const current=files.index.indexOf(script);
@@ -478,6 +482,10 @@ check(files.resolution.includes("adapter.run(variant,view.canvas,{confidence,ben
 check(files.resolution.includes("model.downloadPolicy?.enabled&&loader?.status")&&files.resolution.includes("cache.state==='not cached'"),'Resolution Microscope must not bypass the large-model consent path for uncached models');
 check(files.resolution.includes("lab.getHistoryExperiment?.()")&&files.resolution.includes("lab.isTimeMachineBusy?.()"),'Resolution Microscope must avoid historical-task and concurrent Time Machine runs');
 check(!files.resolution.includes('groundTruth')&&!files.resolution.includes('accuracyScore')&&!files.resolution.includes('resolutionScore'),'Resolution Microscope must not fabricate ground truth, accuracy, or a composite resolution score');
+check(files.architectureExplorer.includes("runtimes.capabilityEnabled(model,'timeMachine')")&&files.architectureExplorer.includes("model.capabilities?.inspection"),'Architecture Explorer must derive entries from runnable Time Machine inspection contracts');
+check(files.architectureExplorer.includes("race?.architecture||model.family")&&files.architectureExplorer.includes("inspection.resultNote")&&files.architectureExplorer.includes("intermediate.status||intermediate.statusReady"),'Architecture Explorer must reuse declared family/output/intermediate evidence');
+check(files.architectureExplorer.includes("lab?.selectActiveModel?.(key,{scroll:false})")&&files.architectureExplorer.includes("[data-tab=\"time-machine\"]"),'Architecture Explorer must link profiles back to Time Machine selection');
+check(!files.architectureExplorer.includes('activationMap')&&!files.architectureExplorer.includes('syntheticTensor')&&!files.architectureExplorer.includes('architectureScore'),'Architecture Explorer must not fabricate activations, tensors, or a composite score');
 check(files.race.includes('runs=20'),'Model Race measured-run count changed');
 check(files.app.includes('const RUNS=20'),'Time Machine measured-run count changed');
 check(!files.app.includes('threshold: currentUiThreshold')&&!files.race.includes('threshold: currentUiThreshold'),'UI threshold leaked into retained inference contract');
