@@ -9,11 +9,11 @@ The current runtime is intentionally client-side so users can compare computer-v
 ## Main modules
 
 - `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints.
-- `src/models/models.js` — five general-object Model Race models, six additional Time Machine runtimes, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
+- `src/models/models.js` — five general-object Model Race models, seven additional Time Machine runtimes, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
 - `src/core/model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
-- `src/core/model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, and in-memory buffer ownership.
+- `src/core/model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, cancellable transfers, and memory-bounded preallocated streaming when the expected byte size is known.
 - `src/app.js` — Time Machine state, SSD-MobileNet runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
-- `src/models/historical-detectors.js` — adapters for Faster R-CNN 2015, SSD 2016, DETR 2020, YOLOS-tiny, LW-DETR-tiny, and D-FINE-N, including model loading, preprocessing/postprocessing, Live Camera eligibility where declared, and release paths.
+- `src/models/historical-detectors.js` — adapters for YOLOv1, Faster R-CNN 2015, SSD 2016, DETR 2020, YOLOS-tiny, LW-DETR-tiny, and D-FINE-N, including model loading, preprocessing/postprocessing, Live Camera eligibility where declared, and release paths.
 - `src/models/race.js` — Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 runtime adapters, Model Race benchmarking, overlap comparison, and iOS regression diagnostics.
 - `src/history/history-experiments.js` — Time Machine historical experiment runners for a pattern-response preview, MNIST digit crops, frontal-face cascade, HOG pedestrian detection, and AlexNet ImageNet classification.
 - `src/history/classical-cv-worker.js` — lazy OpenCV.js WASM runtime, frontal-face cascade, HOG pedestrian detection, and explicit OpenCV object cleanup.
@@ -37,7 +37,7 @@ Runtime behavior is registered through `src/core/model-runtime.js`. Every runnab
 - optional `prepare()` for pre-run initialization
 - optional `runtimeInfo()`, inspection data, and diagnostic backend choices
 
-SSD registers its adapter in `src/app.js`; Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 register in `src/models/race.js`; Faster R-CNN 2015, SSD 2016, DETR 2020, YOLOS-tiny, LW-DETR-tiny, and D-FINE-N register in `src/models/historical-detectors.js`. Time Machine and Model Race resolve runtimes through this registry instead of selecting implementations with model-name branches.
+SSD registers its adapter in `src/app.js`; Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 register in `src/models/race.js`; YOLOv1, Faster R-CNN 2015, SSD 2016, DETR 2020, YOLOS-tiny, LW-DETR-tiny, and D-FINE-N register in `src/models/historical-detectors.js`. Time Machine and Model Race resolve runtimes through this registry instead of selecting implementations with model-name branches.
 
 Model Race presentation is also capability-driven. Each `race` capability declares deterministic order, DOM prefix, work-canvas ownership, timing boundary, card/metric presentation, and architecture summary. `src/models/race.js` generates result cards, benchmark rows, pairwise-overlap cells, unmatched counters, architecture cards, and hidden work canvases from that metadata. Adding another model to the `general-object` comparison group no longer requires adding another static result card or pairwise overlap cell to `index.html`.
 
@@ -74,7 +74,7 @@ Direct ORT models no longer use one bundle on every platform.
 
 The bootstrap uses a parser-ordered script insertion. It intentionally avoids loading both ORT distributions into one page/process because that would add another WASM/native runtime and contaminate the memory question.
 
-Tiny YOLOv2, SSD-MobileNetV1 INT8, Faster R-CNN 2015, SSD 2016, and LW-DETR-tiny request WASM for their direct-ORT paths. Faster R-CNN uses WASM deliberately for operator coverage and follows the upstream 800/1333 resize plus 32-pixel padding contract; it remains Time Machine-only because the upstream export has a documented dynamic-shape portability issue. YOLOX requests WebGPU first only when the selected direct-ORT bundle is JSEP-capable; under the standard WASM bundle its provider list is WASM-only.
+Tiny YOLOv2, YOLOv1, SSD-MobileNetV1 INT8, Faster R-CNN 2015, SSD 2016, and LW-DETR-tiny request WASM for their direct-ORT paths. Faster R-CNN uses WASM deliberately for operator coverage and follows the upstream 800/1333 resize plus 32-pixel padding contract; it remains Time Machine-only because the upstream export has a documented dynamic-shape portability issue. YOLOX requests WebGPU first only when the selected direct-ORT bundle is JSEP-capable; under the standard WASM bundle its provider list is WASM-only.
 
 The application pins `ort.env.wasm.wasmPaths` to the matching 1.30.0 distribution directory. When the page is not cross-origin isolated, `ort.env.wasm.numThreads` is forced to 1. With cross-origin isolation, the app may use up to four threads based on `navigator.hardwareConcurrency`.
 
@@ -115,6 +115,7 @@ The timeline itself is registry-driven. `src/models/models.js` owns chronologica
 
 Inside the Model follows the same active model through the `inspection` capability contract. The contract declares the native input/preprocessing presentation, tensor shape/layout, pipeline explanation, comparison-table values, preview strategy, intermediate-data policy, and result note. `src/app.js` renders these fields generically.
 
+- YOLOv1 declares its fixed 448×448 stretch preprocessing and real decoded `[1,24,98]` export contract; internal grid/backbone activations are not fabricated.
 - Tiny YOLOv2 declares preprocessing plus its final-grid contract, but no simulated backbone activations.
 - SSD declares native preprocessing and no deeper exported activations.
 - Faster R-CNN declares the verified 800/1333 resize + ×32 padding path and the two-stage RPN → RoI-head architecture. The pinned graph exports final boxes/labels/scores but not RPN proposal coordinates, so proposals are described but never synthesized.
@@ -142,7 +143,7 @@ See [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md) for the stable benchmar
 
 ## Model assets, cache, and provenance
 
-Most model binaries are fetched at runtime. LW-DETR-tiny is the deliberate exception: a verified derived ONNX export is committed as `assets/models/lw-detr-tiny.onnx` and served from the same GitHub Pages origin.
+Most model binaries are fetched at runtime. LW-DETR-tiny is the deliberate same-origin exception: a verified derived ONNX export is committed as `assets/models/lw-detr-tiny.onnx`. YOLOv1 is another derived export, but its 516.3 MiB dynamic-INT8 artifact is kept as a checksum-pinned release asset rather than committed to the repository.
 
 `src/core/model-loader.js` distinguishes:
 
@@ -150,9 +151,11 @@ Most model binaries are fetched at runtime. LW-DETR-tiny is the deliberate excep
 - application Cache API hit/miss,
 - network fetch,
 - retry,
-- streamed transfer progress.
+- streamed transfer progress,
+- `AbortSignal` cancellation without falling through to retry/fallback,
+- fixed-buffer streaming for known-size large assets to avoid a second full merged-buffer allocation.
 
-The browser's HTTP-cache hit/miss is not inferred when the Fetch API does not expose it.
+The browser's HTTP-cache hit/miss is not inferred when the Fetch API does not expose it. Models that declare a large-download policy are checked against the application cache before transfer; uncached runs require explicit user consent. Connection-type messaging uses the Network Information API only when the browser exposes it. Lack of that API, including on current iOS/Safari paths, is treated as unknown rather than guessed. During the network transfer the same `AbortSignal` is passed to the model loader so **Cancel download** terminates the fetch.
 
 Model implementation license, checkpoint terms, dataset terms, runtime license, pinned revision, provenance, redistribution status, and attribution are documented separately in [MODEL_SOURCES.md](MODEL_SOURCES.md) and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
