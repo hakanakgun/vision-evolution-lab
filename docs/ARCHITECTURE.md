@@ -143,7 +143,7 @@ See [BENCHMARK_METHODOLOGY.md](BENCHMARK_METHODOLOGY.md) for the stable benchmar
 
 ## Model assets, cache, and provenance
 
-Most model binaries are fetched at runtime. LW-DETR-tiny is the deliberate same-origin exception: a verified derived ONNX export is committed as `assets/models/lw-detr-tiny.onnx`. YOLOv1 is another derived export, but its 516.3 MiB dynamic-INT8 artifact is kept as a checksum-pinned release asset rather than committed to the repository.
+Most model binaries are fetched at runtime. LW-DETR-tiny is the deliberate same-origin exception: a verified derived ONNX export is committed as `assets/models/lw-detr-tiny.onnx`. YOLOv1 is another derived export. Its canonical 516.3 MiB dynamic-INT8 artifact stays checksum-pinned in a GitHub Release, while six sub-100-MB byte chunks are committed under `assets/models/yolov1/` only for same-origin Pages delivery because browser fetches of GitHub Release assets fail CORS.
 
 `src/core/model-loader.js` distinguishes:
 
