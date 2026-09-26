@@ -109,7 +109,7 @@ Both RT-DETR variants use an aspect-preserving staging canvas capped at 640 px o
 
 ## Model selection and UI state
 
-Time Machine owns the active runnable model. Selecting a generation does not navigate to Model Race.
+Time Machine owns the active runnable model. Selecting a generation does not navigate to Model Race. If a source image is already selected, choosing any runnable generation clears the stale overlay, waits for the prior runtime-release transition, and automatically runs the same image through the newly active adapter. The explicit Run button remains a rerun control rather than a required second step.
 
 The timeline itself is registry-driven. `src/models/models.js` owns chronological entries, their short `evolution` explanations, the default Time Machine AI model, and a separate `historyExperiments` table. Time Machine opens with YOLOX-Nano as a lightweight fast-inference starting point. Live Camera also defaults to YOLOX-Nano but keeps an independent selection state. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model. `src/app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
 
