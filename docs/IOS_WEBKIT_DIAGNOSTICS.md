@@ -8,6 +8,8 @@ On a physical iPhone running an iOS browser, repeated sequential benchmarking of
 
 On 2026-09-26, the user reported a separate YOLOv1 failure on a physical iPhone: the ~516.3 MiB model transfer completed, then the browser recreated the page while detection/session work was starting. v0.21.1 reduced avoidable peak memory by verifying the six already-pinned chunk SHA-256 values incrementally instead of hashing the reconstructed buffer again, and disabled `enableCpuMemArena`, `enableMemPattern`, and ORT weight prepacking for the YOLOv1 iOS/WASM session. On 2026-09-27 the user repeated the test on the same physical iPhone: transfer again reached 100% (516.3 MiB), the UI entered verification/session initialization, and the page recreated before inference completed. That result falsifies the working assumption that the v0.21.1 reductions were sufficient on this device. It does not by itself identify the native termination mechanism.
 
+Later on 2026-09-27, after v0.22.0 introduced the JSPI + OPFS external-data path, the user tested the same physical iPhone class in Brave-WebKit / iOS 18.7. The runtime reported `WASM-JSPI · dynamic INT8 weights`; inference completed with 3 detections, the normal Benchmark ×20 completed, and the page did not recreate. After a page refresh, the persistent OPFS external-data cache was reused without another model download: model transfer was 0.00 ms, session initialization 812 ms, inference 2061 ms, and end-to-end 3212 ms for the observed run. This validates the tested device/browser/OS path and the refresh-cache reuse behavior; it does not establish broad Safari, iPhone, or iOS compatibility.
+
 On 2026-09-23, the user reported a five-model Benchmark ×20 and Model Race completing on iOS 18.7 / Brave-WebKit, including RT-DETRv2 R18. The measured warm inference results were:
 
 | Model | Backend | p50 | p90 | p50 end-to-end | Timing variation |
@@ -27,8 +29,6 @@ On 2026-09-24, the user verified the v0.15.1 front/rear camera control on a phys
 A later physical-iPhone smoke test confirmed YOLOX-Nano could run in Live Camera on the tested session. This is functional device evidence for that model/path only; it does not replace the pending seven-model matrix, multi-minute soak, Safari comparison, or fallback tests.
 
 ## Physical iOS tests still pending
-
-- Test the v0.22 YOLOv1 external-data path on the same iPhone. Confirm that the runtime reports `WASM JSPI`, the model is staged to OPFS without a 516 MiB JavaScript reconstruction, session creation completes, and one detection run returns without a page reload. Repeat once after a fresh page load to exercise OPFS reuse. If the browser does not expose JSPI + OPFS, record the explicit unsupported-path error; iOS must not fall back to the known-crashing full-buffer path.
 
 - In Live Camera, use its model picker to run each of the seven live-capable models, including newly enabled D-FINE-N and LW-DETR-tiny; verify the displayed model/backend, nonzero frame count, plausible boxes, and no page reload.
 - While the camera is running, switch models from the Live Camera picker and confirm the camera stream stays open, inference resumes on the new model, and a failed switch restores the previous model when possible. Also stop and restart the camera for each model.
