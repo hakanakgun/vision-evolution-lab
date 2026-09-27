@@ -203,6 +203,13 @@
     }
     async function confirmLargeModelDownload(model){
       const policy=largeDownloadPolicy(model);if(!policy)return true;
+      if(window.VisionRuntimeBootstrap?.isIOS&&model.externalData?.requireJspiOnIOS){
+        const externalSupport=window.VisionExternalDataStore?.support?.()||{},jspi=typeof globalThis.WebAssembly?.Suspending==='function'&&typeof globalThis.WebAssembly?.promising==='function';
+        if(!jspi||!externalSupport.opfs||!externalSupport.crypto){
+          const missing=[!jspi?'WebAssembly JSPI':'',!externalSupport.opfs?'OPFS':'',!externalSupport.crypto?'Web Crypto':''].filter(Boolean).join(', ');
+          throw new Error(`${model.title} low-memory loading is unavailable in this browser because ${missing} is not exposed. The previous 516 MB full-buffer path is disabled on iPhone/iPad to avoid the reproduced page reload.`);
+        }
+      }
       const cache=await ModelLoader.status(model).catch(()=>({state:'not cached'}));
       if(cache.state==='memory'||cache.state==='browser cache'||cache.state==='persistent cache')return true;
       const hint=networkTransferHint(),warning=$('model-download-warning'),title=$('model-download-warning-title'),text=$('model-download-warning-text'),go=$('model-download-continue'),cancel=$('model-download-cancel');
