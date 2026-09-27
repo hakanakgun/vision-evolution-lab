@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.27-v0.22.1">
+<html lang="en" data-build="2026.09.27-v0.22.2">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.27-v0.22.1';
+      const CURRENT_BUILD = '2026.09.27-v0.22.2';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=0.22.1">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.22.2">
 </head>
 <body>
   <main class="shell">
@@ -322,11 +322,10 @@
           <div class="status error" id="race-diag-crash" hidden></div>
           <div id="race-blackbox-tools" hidden>
           <div class="status" id="race-diag-controls">
-            <div class="tiny"><b>Diagnostic plan</b> · diag=2 keeps the lightweight reclamation experiment; diag=3 adds crash-safe deep telemetry. Use <span class="kbd">ort=wasm</span> or <span class="kbd">ort=jsep</span> only for an intentional runtime A/B.</div>
+            <div class="tiny"><b>Diagnostic plan</b> · diag=3 enables crash-safe telemetry and manual model/backend probes. Use <span class="kbd">ort=wasm</span> or <span class="kbd">ort=jsep</span> only for an intentional runtime A/B.</div>
             <div id="race-diag-models" style="margin-top:6px"></div>
             <div id="race-diag-backends" class="tiny" style="margin-top:4px"></div>
             <div style="margin-top:6px"><button class="btn secondary" id="race-diag-all" type="button">Select all</button> <button class="btn secondary" id="race-diag-none" type="button">Clear</button> <label class="tiny" for="race-diag-settle" style="margin-left:8px">Inter-model settle <select id="race-diag-settle"><option value="0">0 ms</option><option value="250">250 ms</option><option value="1000">1000 ms</option><option value="3000">3000 ms</option></select></label></div>
-            <div class="race-diag-actions"><button class="btn secondary" id="race-diag-matrix" type="button" disabled>Run reclamation matrix R1–R4 ×10</button><button class="btn secondary" id="race-diag-matrix-stop" type="button" disabled>Stop after current</button><span class="tiny" id="race-diag-matrix-status">Matrix: idle</span></div>
           </div>
           <div id="race-diag-copy-row" class="race-diag-copy-row"><button class="btn secondary" id="race-diag-copy" type="button">Copy Black Box</button><button class="btn secondary" id="race-diag-copy-full" type="button">Copy full diagnostic JSON</button></div>
           <pre class="status race-diag-blackbox" id="race-diag-blackbox"></pre>
@@ -547,23 +546,23 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.22.1 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.22.2 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="src/core/runtime-bootstrap.js?v=0.22.1"></script>
-  <script src="src/core/preprocessing.js?v=0.22.1"></script>
-  <script src="src/models/models.js?v=0.22.1"></script>
-  <script src="src/core/detection-metrics.js?v=0.22.1"></script>
-  <script src="src/core/model-runtime.js?v=0.22.1"></script>
-  <script src="src/core/model-loader.js?v=0.22.1"></script>
-  <script src="src/core/external-data-store.js?v=0.22.1"></script>
-  <script src="src/app.js?v=0.22.1"></script>
-  <script src="src/models/lwdetr-postprocess.js?v=0.22.1"></script>
-  <script src="src/models/historical-detectors.js?v=0.22.1"></script>
-  <script src="src/models/race.js?v=0.22.1"></script>
-  <script src="src/efficiency.js?v=0.22.1"></script>
-  <script src="src/resolution-microscope.js?v=0.22.1"></script>
-  <script src="src/architecture-explorer.js?v=0.22.1"></script>
-  <script src="src/history/history-experiments.js?v=0.22.1"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.22.2"></script>
+  <script src="src/core/preprocessing.js?v=0.22.2"></script>
+  <script src="src/models/models.js?v=0.22.2"></script>
+  <script src="src/core/detection-metrics.js?v=0.22.2"></script>
+  <script src="src/core/model-runtime.js?v=0.22.2"></script>
+  <script src="src/core/model-loader.js?v=0.22.2"></script>
+  <script src="src/core/external-data-store.js?v=0.22.2"></script>
+  <script src="src/app.js?v=0.22.2"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.22.2"></script>
+  <script src="src/models/historical-detectors.js?v=0.22.2"></script>
+  <script src="src/models/race.js?v=0.22.2"></script>
+  <script src="src/efficiency.js?v=0.22.2"></script>
+  <script src="src/resolution-microscope.js?v=0.22.2"></script>
+  <script src="src/architecture-explorer.js?v=0.22.2"></script>
+  <script src="src/history/history-experiments.js?v=0.22.2"></script>
 </body>
 </html>
