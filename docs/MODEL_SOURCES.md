@@ -94,7 +94,7 @@ The Darknet/YOLOv1 architecture and original weights are public domain under the
 - Pinned revision: `869707e16e57006f97d98af54cfdc8a1d388ae61`.
 - File: `tinyyolov2-8.onnx`.
 - File SHA-256 reported by Hugging Face/Xet: `583fb7fdc948435ceac9fa82efc7708701efe8382a859a3dd46526b155f5f2ae`.
-- Reported asset size: approximately 63.5 MB.
+- Exact asset size: 63,480,982 bytes (the upstream UI rounds this to 63.5 MB decimal; the app's binary-size formatter shows about 60.5 MiB).
 - ONNX version/opset reported upstream: ONNX 1.3 / opset 8.
 - Input: float32 NCHW `1×3×416×416` RGB.
 - Output: `1×125×13×13`, representing 5 anchors × (4 box values + objectness + 20 class logits) for each 13×13 grid cell.
@@ -118,7 +118,7 @@ The Hugging Face repository metadata currently declares `apache-2.0`, while the 
 
 ## Faster R-CNN 2015 reference
 
-- Purpose: makes the 2015 two-stage Region Proposal Network milestone executable in Time Machine; excluded from Model Race, Live Camera, and individual benchmarks pending broader portability validation. Inside the Model exposes the verified preprocessing/two-stage architecture contract and actual final detection counts, while stating that this pinned graph does not export RPN proposal coordinates.
+- Purpose: makes the 2015 two-stage Region Proposal Network milestone executable in Time Machine with an individual Benchmark ×20; it remains excluded from Model Race and Live Camera while broader portability validation continues. Inside the Model exposes the verified preprocessing/two-stage architecture contract and actual final detection counts, while stating that this pinned graph does not export RPN proposal coordinates.
 - Historical reference: Ren et al., *Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks*, NeurIPS 2015.
 - Browser checkpoint: `onnxmodelzoo/FasterRCNN-12-int8`, pinned revision `c4c979ff5c8043967de03c97daef7b54663182eb`.
 - File: `FasterRCNN-12-int8.onnx`, 44,631,113 bytes; SHA-256 `95f67f5f6249f4804f1302367dd88cee32bf47713b9858cc6d8ba835548f9b8e`.
@@ -126,7 +126,7 @@ The Hugging Face repository metadata currently declares `apache-2.0`, while the 
 - Training/evaluation data reported by the imported model card: MS COCO. Dataset terms are separate from model/code licenses.
 - Preprocessing follows the upstream deployment card: keep 0–255 image values, resize aspect-preservingly toward an 800 px short side while capping the long side at 1333 px, convert RGB canvas pixels to BGR, subtract `[102.9801, 115.9465, 122.7717]`, convert HWC to CHW, then zero-pad the bottom/right to dimensions divisible by 32.
 - Output contract: three tensors representing xyxy boxes, one-based COCO labels, and scores. The migrated graph currently exposes numeric output-node names, so the browser validates and decodes them by tensor shape/type rather than inventing semantic names. No page-side NMS is added.
-- Runtime: ONNX Runtime Web 1.30.0, WASM only. A Chrome/Ubuntu browser smoke on 2026-09-24 executed the pinned graph and returned finite detections on the bundled COCO image; this is one browser/image smoke test, not broad compatibility, accuracy, or performance evidence.
+- Runtime: ONNX Runtime Web 1.30.0, WASM only. A Chrome/Ubuntu browser smoke on 2026-09-24 executed the pinned graph and returned finite detections. On 2026-09-27, a physical iPhone / Brave-WebKit / iOS 18.7 individual Benchmark ×20 completed with p50 9199 ms and p90 9520 ms. These remain limited browser/device/image measurements, not broad compatibility or accuracy evidence.
 - Known portability risk: ONNX Model Zoo issue [#691](https://github.com/onnx/models/issues/691) documents shape/broadcast failures for Faster R-CNN exports at some dynamic image dimensions. Vision Evolution Lab follows the documented resize/padding contract but keeps this model Time Machine-only until more browser/device inputs are exercised.
 
 ### License note
@@ -183,7 +183,7 @@ If this project later redistributes or modifies YOLOX weights instead of referen
 
 ## Transformer-era model sources
 
-RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS 18.7 / Brave-WebKit WebGPU fp16 inference result and 20-run warm benchmark, but remains a research preview pending broader device/sample validation. D-FINE-N and LW-DETR-tiny run in Time Machine and Live Camera through their existing pinned ONNX browser paths; LW-DETR has one user-reported iOS ×20 timing sample, while sustained camera behavior, broad user-image accuracy, and cross-device validation remain outstanding.
+RT-DETR R18 is device-validated. RT-DETRv2 R18 has a user-reported iOS 18.7 / Brave-WebKit WebGPU fp16 inference result and 20-run warm benchmark, but remains a research preview pending broader device/sample validation. D-FINE-N and LW-DETR-tiny run in Time Machine, individual Benchmark ×20, and Live Camera through their existing pinned ONNX browser paths; both completed physical iPhone / Brave-WebKit / iOS 18.7 ×20 runs, while sustained camera behavior, broad user-image accuracy, and cross-device validation remain outstanding.
 
 ### YOLOS-tiny
 
