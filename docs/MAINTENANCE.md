@@ -66,6 +66,12 @@ A successful PR check alone is not deployment evidence.
 
 Do not bypass that verification or directly replace the binary without reconciling [MODEL_SOURCES.md](MODEL_SOURCES.md) and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
+## YOLOv1 external-data graph workflow
+
+`.github/workflows/yolov1-external-data.yml` rebuilds the small YOLOv1 external-data graph from the already committed checksum-pinned Pages chunks. It reconstructs and verifies the canonical 541,358,513-byte model, converts large embedded initializer payloads into external-data offset references to the same canonical byte stream, validates deterministic CPU-ORT output equality, runs an ONNX Runtime Web external-data smoke, and then runs repository validation. The workflow commits only the generated small graph and manifest; it does not commit another copy of the 516.3 MiB weights.
+
+Do not hand-edit the generated graph or manifest. A browser/runtime change does not alter the canonical YOLOv1 model SHA unless the model itself is intentionally republished and provenance is updated.
+
 ## Evidence discipline
 
 Do not turn limited evidence into broader claims:
