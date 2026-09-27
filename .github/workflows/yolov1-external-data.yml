@@ -6,6 +6,7 @@ on:
       - ".github/workflows/yolov1-external-data.yml"
       - "scripts/build_yolov1_external_graph.py"
       - "tools/smoke_yolov1_external_ort_web.cjs"
+      - "tools/smoke_yolov1_jspi_blob.cjs"
       - "assets/models/yolov1/part-*.bin"
       - "assets/models/yolov1/yolov1-voc20-int8-external.onnx"
       - "assets/models/yolov1/external-data-manifest.json"
@@ -60,6 +61,13 @@ jobs:
         run: |
           NODE_PATH="$RUNNER_TEMP/yolov1-webtest/node_modules" \
             node tools/smoke_yolov1_external_ort_web.cjs \
+            artifacts/yolov1-external-data/yolov1-voc20-int8-external.onnx \
+            artifacts/yolov1-external-data/yolov1-voc20-int8.onnx
+
+      - name: Smoke JSPI Blob external-data path
+        run: |
+          NODE_PATH="$RUNNER_TEMP/yolov1-webtest/node_modules" \
+            node tools/smoke_yolov1_jspi_blob.cjs \
             artifacts/yolov1-external-data/yolov1-voc20-int8-external.onnx \
             artifacts/yolov1-external-data/yolov1-voc20-int8.onnx
 
