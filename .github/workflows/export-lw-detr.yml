@@ -1,19 +1,13 @@
 name: export LW-DETR tiny ONNX
 
 on:
-  push:
-    branches:
-      - feat/lw-detr-tiny-browser
-    paths:
-      - .github/workflows/export-lw-detr.yml
-      - tools/export_lw_detr.py
-      - tools/smoke_lw_detr_ort_web.cjs
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: lw-detr-export-main
+  group: lw-detr-export-manual
   cancel-in-progress: false
 
 jobs:
