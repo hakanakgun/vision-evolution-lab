@@ -35,9 +35,10 @@
         let active=null;
         if(useExternal){
           loader.evictMemory(model);
+          const jspiOrt=await loadJspiOrt();
           const asset=await externalStore.prepare(model,{signal:options.downloadSignal,onState:value=>{cacheState=value.state;if(value.source)cacheState+=` · ${value.source}`},onProgress:value=>api.reportRuntimeEvent('yolov1',{type:'progress',info:value})});
           downloadMs=asset.downloadMs;sourceLabel=asset.source;
-          const jspiOrt=await loadJspiOrt(),sessionOptions={...lowMemoryOptions(),externalData:[{path:asset.externalPath,data:asset.file}]},started=performance.now();
+          const sessionOptions={...lowMemoryOptions(),externalData:[{path:asset.externalPath,data:asset.file}]},started=performance.now();
           active=await jspiOrt.InferenceSession.create(asset.graph,sessionOptions);initMs=performance.now()-started;sessionOrt=jspiOrt;runtimeMode='jspi-external-data';cacheState=asset.cacheState;
         }else{
           if(isIOS&&model.externalData?.requireJspiOnIOS){
