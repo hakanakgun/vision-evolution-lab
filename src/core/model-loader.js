@@ -147,6 +147,9 @@
   }
   async function status(model){
     if(memory.has(model.id))return{state:'memory',source:memory.get(model.id).source};
+    if(model?.externalData?.enabled&&window.VisionExternalDataStore?.status){
+      try{const persistent=await window.VisionExternalDataStore.status(model);if(persistent?.state==='persistent cache')return persistent}catch(_){}
+    }
     const cache=await openCache();
     if(cache)for(const source of model.sources||[]){try{
       if(hasParts(source)){
