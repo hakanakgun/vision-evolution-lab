@@ -1,7 +1,7 @@
 (() => {
   'use strict';
-  const registry=window.VisionModels,runtimes=window.VisionRuntimeRegistry,lab=window.VisionLab,loader=window.VisionModelLoader,$=id=>document.getElementById(id);
-  if(!registry||!runtimes||!lab)return;
+  const registry=window.VisionModels,runtimes=window.VisionRuntimeRegistry,lab=window.VisionLab,loader=window.VisionModelLoader,metrics=window.VisionDetectionMetrics,$=id=>document.getElementById(id);
+  if(!registry||!runtimes||!lab||!metrics)return;
 
   const LEVELS=Object.freeze([
     Object.freeze({key:'original',label:'Original',maxSide:null}),
@@ -12,27 +12,8 @@
   let running=false,lastModel='',lastSource=null;
 
   function ms(value){return Number.isFinite(value)?value.toFixed(value<10?2:1)+' ms':'—'}
-  function iou(a,b){
-    const top=Math.max(a[0],b[0]),left=Math.max(a[1],b[1]),bottom=Math.min(a[2],b[2]),right=Math.min(a[3],b[3]);
-    const intersection=Math.max(0,bottom-top)*Math.max(0,right-left);
-    const areaA=Math.max(0,a[2]-a[0])*Math.max(0,a[3]-a[1]),areaB=Math.max(0,b[2]-b[0])*Math.max(0,b[3]-b[1]);
-    const union=areaA+areaB-intersection;return union>0?intersection/union:0;
-  }
   function visibleDetections(result,confidence){
     return Array.isArray(result?.detections)?result.detections.filter(item=>Number.isFinite(item.score)&&item.score>=confidence&&Array.isArray(item.box)&&item.box.length===4):[];
-  }
-  function matchBaseline(baseline,current,iouThreshold=.5){
-    const matched=new Set();let matches=0;
-    for(const detection of [...current].sort((a,b)=>b.score-a.score)){
-      let best=-1,bestIou=iouThreshold;
-      for(let index=0;index<baseline.length;index++){
-        if(matched.has(index)||baseline[index].label!==detection.label)continue;
-        const overlap=iou(baseline[index].box,detection.box);
-        if(overlap>=bestIou){best=index;bestIou=overlap}
-      }
-      if(best>=0){matched.add(best);matches++}
-    }
-    return matches;
   }
   function sourceSize(source){return lab.sourceSize(source)}
   function detailSource(source,maxSide){
@@ -99,7 +80,7 @@
         view.canvas.hidden=false;view.empty.hidden=true;view.runtime.textContent=adapter.backend?.()||'runtime';
         const visible=visibleDetections(result,confidence);
         if(level.key==='original')baseline=visible;
-        const matches=level.key==='original'?null:matchBaseline(baseline,visible,.5);
+        const matches=level.key==='original'?null:metrics.evaluate(visible,baseline,{confidence:0,iouThreshold:.5}).truePositives;
         view.rows.count.textContent=String(visible.length);
         view.rows.matches.textContent=level.key==='original'?'baseline':`${matches} / ${baseline.length}`;
         view.rows.inf.textContent=ms(result.infMs);view.rows.total.textContent=ms(result.totalMs);
