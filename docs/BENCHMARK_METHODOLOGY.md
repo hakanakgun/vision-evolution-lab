@@ -23,7 +23,7 @@ The UI reports startup and per-run costs separately.
 
 The Time Machine benchmark runs **20 sequential warm executions** only for models that explicitly opt into the `benchmark` capability, after their model/session or pipeline already exists. The selected model, source image, and UI confidence threshold are locked for the full 20-run sample so interaction cannot mix benchmark populations.
 
-Faster R-CNN R50-FPN INT8 and YOLOS-tiny initially remain Time Machine-only with `benchmark:false`, like other intentionally scoped research/reference runtimes. A successful single browser inference smoke does not establish that a 20-run benchmark is stable or meaningful on mobile/WebKit, so they must not be silently added to Model Race or the warm-benchmark population.
+Individual Benchmark ×20 eligibility is capability-driven. Faster R-CNN R50-FPN INT8, LW-DETR-tiny, and D-FINE-N now opt into `benchmark:true` after physical iPhone / Brave-WebKit / iOS 18.7 ×20 runs completed; they remain outside Model Race. YOLOS-tiny remains `benchmark:false` because the current physical-device evidence contains only a single inference, not a completed ×20 run. The Time Machine benchmark button is disabled when the active model does not opt into this capability.
 
 Reported values:
 

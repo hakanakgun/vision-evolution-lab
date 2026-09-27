@@ -33,7 +33,8 @@
     function resetStartupMetrics(){setMetric('m-download','—');setMetric('m-init','—');$('m-progress-bar').style.width='0%';$('m-progress-text').textContent='No model transfer yet.';$('backend-badge').textContent='Not loaded';}
     function drawSourceOnly(source=state.image){if(!source)return;const canvas=$('image-canvas'),{w,h}=sourceSize(source),scale=Math.min(1,640/Math.max(w,h));canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));canvas.getContext('2d').drawImage(source,0,0,canvas.width,canvas.height);$('image-empty').hidden=true;canvas.hidden=false;}
     function renderProvenance(model){const ui=model.ui||{};$('active-provenance-title').textContent=model.title;$('active-provenance-text').textContent=ui.provenance||`${model.family} · ${model.license}`;const links=$('active-provenance-links');links.replaceChildren();for(const link of ui.links||[]){const a=document.createElement('a');a.href=link.url;a.textContent=link.label;a.target='_blank';a.rel='noreferrer';links.appendChild(a);}}
-    function updateActiveModelUI(){const model=activeModel(),ui=model.ui||{},runtimeUi=ui.runtime||{},inspection=model.capabilities?.inspection;$('active-model-title').textContent=model.title;$('active-model-subtitle').textContent=ui.subtitle||`${model.task} · ${model.family}`;$('rerun').textContent=`Run ${model.title}`;$('m-transfer-label').textContent='Model transfer';$('m-init-label').textContent=runtimeUi.initLabel||'Session init';setMetric('m-bytes',runtimeUi.bytesText||bytes(model.bytes));setMetric('m-cache',runtimeUi.cacheInitial||'checking…');setMetric('d-input',inspection&&typeof inspection==='object'?inspection.input:(model.input?`${model.input}×${model.input}`:'dynamic'));$('input-size').textContent=state.image?'Source ready · not run':'No input';renderProvenance(model);updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}
+    function canBenchmark(model=activeModel()){return RuntimeRegistry.capabilityEnabled(model,'benchmark')}
+    function updateActiveModelUI(){const model=activeModel(),ui=model.ui||{},runtimeUi=ui.runtime||{},inspection=model.capabilities?.inspection;$('active-model-title').textContent=model.title;$('active-model-subtitle').textContent=ui.subtitle||`${model.task} · ${model.family}`;$('rerun').textContent=`Run ${model.title}`;$('m-transfer-label').textContent='Model transfer';$('m-init-label').textContent=runtimeUi.initLabel||'Session init';setMetric('m-bytes',runtimeUi.bytesText||bytes(model.bytes));setMetric('m-cache',runtimeUi.cacheInitial||'checking…');setMetric('d-input',inspection&&typeof inspection==='object'?inspection.input:(model.input?`${model.input}×${model.input}`:'dynamic'));$('input-size').textContent=state.image?'Source ready · not run':'No input';$('benchmark').disabled=!state.image||!canBenchmark(model);renderProvenance(model);updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}
     async function updateActiveCacheState(){const key=state.activeModel,model=activeModel();if(!Array.isArray(model.sources)||!model.sources.length)return;try{const info=await ModelLoader.status(model);if(state.activeModel===key)setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state);}catch(_){}}
     function selectActiveModel(key,{scroll=true}={}){
       if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}
@@ -216,7 +217,7 @@
       if(!warning||!title||!text||!go||!cancel)return true;
       title.textContent=hint.cellular?'Large model · cellular data warning':'Large model download';
       const prefix=`${model.title} requires about ${bytes(model.bytes)} before local inference can start.`;
-      const iosNote=window.VisionRuntimeBootstrap?.isIOS&&model.externalData?.enabled?' On iPhone/iPad this model uses the experimental OPFS + WebAssembly JSPI external-data path when those browser capabilities are available; the previous full-buffer path is not used on iOS. Physical-device success still requires validation.':'';
+      const iosNote=window.VisionRuntimeBootstrap?.isIOS&&model.externalData?.enabled?' On iPhone/iPad this model uses the OPFS + WebAssembly JSPI external-data path when those browser capabilities are available; the previous full-buffer path is not used on iOS. This path completed inference, Benchmark ×20, and refresh-time OPFS reuse on the tested physical iPhone / Brave-WebKit / iOS 18.7 session; broader compatibility remains unverified.':'';
       text.textContent=`${prefix} ${hint.text}${iosNote} The transfer stays on your device cache; your selected image is not uploaded.`;
       go.textContent=`Download ${bytes(model.bytes)}`;go.hidden=false;cancel.textContent='Not now';warning.classList.remove('downloading');warning.hidden=false;
       return await new Promise(resolve=>{state.modelDownloadConsentResolver=resolve});
@@ -446,7 +447,7 @@
     }
 
     function redrawUploaded(){if(!state.image||!state.lastResults)return;const canvas=$('image-canvas');drawSourceOnly();const count=drawDetections(canvas,state.lastResults);setMetric('m-count',String(count));if(state.lastRunResult){state.lastRunResult.visible=count;updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}setStatus(`${count} detection${count===1?'':'s'} above confidence ${Number($('confidence').value).toFixed(2)}. Retained outputs were re-filtered without new inference.`);}
-    function applyExternalRun(model,result,targetCanvas){const runtime=RuntimeRegistry.get(model)?.runtimeInfo?.()||{},modelMeta=REGISTRY[model]||{},runtimeUi=modelMeta.ui?.runtime||{},size=sourceSize(state.image),w=size.w,h=size.h;state.lastResults=result.detections;state.lastRunResult=Object.assign({},result);state.lastDims={sourceW:w,sourceH:h,width:targetCanvas.width,height:targetCanvas.height};state.inferenceCount++;setMetric('m-run-label',state.inferenceCount===1?'first inference':'warm run #'+state.inferenceCount);setMetric('m-pre',ms(result.preMs));setMetric('m-inf',ms(result.infMs));setMetric('m-post',ms(result.postMs));setMetric('m-total',ms(result.totalMs));setMetric('m-count',String(result.visible));const inputWidth=Number.isFinite(result.inputWidth)?result.inputWidth:result.width,inputHeight=Number.isFinite(result.inputHeight)?result.inputHeight:result.height;$('input-size').textContent=inputWidth+' × '+inputHeight+' model input';setMetric('d-input',inputWidth+'×'+inputHeight);if(runtime.backend)$('backend-badge').textContent=runtime.dtype?runtime.backend.toUpperCase()+' · '+runtime.dtype:runtime.backend.toUpperCase();if(Number.isFinite(runtime.downloadMs))setMetric('m-download',ms(runtime.downloadMs));else if(runtimeUi.managedTransferWhenMissing)setMetric('m-download','managed by pipeline');if(Number.isFinite(runtime.initMs))setMetric('m-init',ms(runtime.initMs));if(runtime.bytes)setMetric('m-bytes',bytes(runtime.bytes));if(runtime.cacheState)setMetric('m-cache',runtime.source?runtime.cacheState+' · '+runtime.source:runtime.cacheState);updateInsideModelUI(model,state.lastRunResult,state.image);const boundary=runtimeUi.inferenceBoundaryNote?' '+runtimeUi.inferenceBoundaryNote:'';setStatus(result.visible+' detection'+(result.visible===1?'':'s')+' above confidence '+Number($('confidence').value).toFixed(2)+'.'+boundary);}
+    function applyExternalRun(model,result,targetCanvas){const runtime=RuntimeRegistry.get(model)?.runtimeInfo?.()||{},modelMeta=REGISTRY[model]||{},runtimeUi=modelMeta.ui?.runtime||{},size=sourceSize(state.image),w=size.w,h=size.h;state.lastResults=result.detections;state.lastRunResult=Object.assign({},result);state.lastDims={sourceW:w,sourceH:h,width:targetCanvas.width,height:targetCanvas.height};state.inferenceCount++;setMetric('m-run-label',state.inferenceCount===1?'first inference':'warm run #'+state.inferenceCount);setMetric('m-pre',ms(result.preMs));setMetric('m-inf',ms(result.infMs));setMetric('m-post',ms(result.postMs));setMetric('m-total',ms(result.totalMs));setMetric('m-count',String(result.visible));const hasModelInput=Number.isFinite(result.inputWidth)&&Number.isFinite(result.inputHeight),inputWidth=hasModelInput?result.inputWidth:result.width,inputHeight=hasModelInput?result.inputHeight:result.height,inputLabel=hasModelInput?'model input':'browser staging';$('input-size').textContent=inputWidth+' × '+inputHeight+' '+inputLabel;setMetric('d-input',hasModelInput?inputWidth+'×'+inputHeight:`staging ${inputWidth}×${inputHeight} · processor-managed`);if(runtime.backend)$('backend-badge').textContent=runtime.dtype?runtime.backend.toUpperCase()+' · '+runtime.dtype:runtime.backend.toUpperCase();if(Number.isFinite(runtime.downloadMs))setMetric('m-download',ms(runtime.downloadMs));else if(runtimeUi.managedTransferWhenMissing)setMetric('m-download','managed by pipeline');if(Number.isFinite(runtime.initMs))setMetric('m-init',ms(runtime.initMs));if(runtime.bytes)setMetric('m-bytes',bytes(runtime.bytes));if(runtime.cacheState)setMetric('m-cache',runtime.source?runtime.cacheState+' · '+runtime.source:runtime.cacheState);updateInsideModelUI(model,state.lastRunResult,state.image);const boundary=runtimeUi.inferenceBoundaryNote?' '+runtimeUi.inferenceBoundaryNote:'';setStatus(result.visible+' detection'+(result.visible===1?'':'s')+' above confidence '+Number($('confidence').value).toFixed(2)+'.'+boundary);}
     async function runActiveModel(source,targetCanvas,{updateMain=true,benchmarking=false,downloadSignal}={}){const model=state.activeModel,adapter=RuntimeRegistry.get(model);if(!adapter)throw new Error('Active model runtime is not ready. Reload the page and try again.');const result=await adapter.run(source,targetCanvas,{benchmarking,updateMain,downloadSignal});if(updateMain&&!adapter.handlesMainUi&&model===state.activeModel)applyExternalRun(model,result,targetCanvas);return result;}
     async function runUploaded(){
       if(!state.image||state.running||state.benchmarking)return;
@@ -470,7 +471,7 @@
         else{console.error(err);setStatus(err.message||String(err),'error');}
       }finally{
         if(controller&&state.modelDownloadController===controller)endModelDownload();
-        state.running=false;$('image-file').disabled=false;$('rerun').disabled=!state.image;$('benchmark').disabled=!state.image;
+        state.running=false;$('image-file').disabled=false;$('rerun').disabled=!state.image;$('benchmark').disabled=!state.image||!canBenchmark();
         syncHistoryControls();
       }
     }
@@ -489,10 +490,11 @@
     }
     function resetBenchmark(){
       ['b-inf-med','b-inf-p90','b-inf-range','b-cv','b-total-med','b-fps'].forEach(id=>setMetric(id,'—'));
-      $('benchmark-note').textContent='Run one image first, then Benchmark ×20. Startup time is excluded.';
+      $('benchmark-note').textContent=canBenchmark()?'Run one image first, then Benchmark ×20. Startup time is excluded.':'Individual Benchmark ×20 is not enabled for this model.';
     }
     async function runBenchmark(){
       if(!state.image || state.benchmarking || state.historyExperiment) return;
+      if(!canBenchmark()){setStatus('Individual Benchmark ×20 is not enabled for '+activeModel().title+'.');resetBenchmark();return}
       state.benchmarking=true;
       $('image-file').disabled=true;
       $('confidence').disabled=true;
@@ -534,7 +536,7 @@
         state.benchmarking=false;
         $('image-file').disabled=false;
         $('confidence').disabled=false;
-        $('benchmark').disabled=!state.image;
+        $('benchmark').disabled=!state.image||!canBenchmark();
         $('rerun').disabled=!state.image;
       }
     }
