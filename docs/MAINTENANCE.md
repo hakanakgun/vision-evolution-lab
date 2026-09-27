@@ -68,9 +68,9 @@ Do not bypass that verification or directly replace the binary without reconcili
 
 ## YOLOv1 external-data graph workflow
 
-`.github/workflows/yolov1-external-data.yml` rebuilds the small YOLOv1 external-data graph from the already committed checksum-pinned Pages chunks. It reconstructs and verifies the canonical 541,358,513-byte model, converts large embedded initializer payloads into external-data offset references to the same canonical byte stream, validates deterministic CPU-ORT output equality, runs an ONNX Runtime Web external-data smoke, and then runs repository validation. The workflow commits only the generated small graph and manifest; it does not commit another copy of the 516.3 MiB weights.
+`.github/workflows/yolov1-external-data.yml` rebuilds the small YOLOv1 external-data graph from the committed checksum-pinned Pages chunks on relevant pull requests or manual runs. It reconstructs and verifies the canonical 541,358,513-byte model, converts large embedded initializer payloads into external-data offset references to the same canonical byte stream, validates deterministic CPU-ORT output equality, runs an ONNX Runtime Web external-data smoke, runs repository validation, and fails if the regenerated graph/manifest differ from the committed copies. The workflow uses pinned graph-tool/runtime versions and never commits or publishes another copy of the 516.3 MiB weights.
 
-Do not hand-edit the generated graph or manifest. A browser/runtime change does not alter the canonical YOLOv1 model SHA unless the model itself is intentionally republished and provenance is updated.
+Generate the graph with `python scripts/build_yolov1_external_graph.py` on a development branch, review the manifest, and commit the generated small graph + manifest through the normal PR flow. Do not hand-edit either generated file. A browser/runtime change does not alter the canonical YOLOv1 model SHA unless the model itself is intentionally republished and provenance is updated.
 
 ## Evidence discipline
 
