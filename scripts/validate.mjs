@@ -18,6 +18,7 @@ const files={
   models:read('src/models/models.js'),
   runtime:read('src/core/model-runtime.js'),
   loader:read('src/core/model-loader.js'),
+  externalDataStore:read('src/core/external-data-store.js'),
   app:read('src/app.js'),
   historicalDetectors:read('src/models/historical-detectors.js'),
   lwdetrPostprocess:read('src/models/lwdetr-postprocess.js'),
@@ -38,10 +39,11 @@ const files={
   docsIndex:read('docs/README.md'),
   benchmarkSamples:read('docs/BENCHMARK_SAMPLES.md'),
   sanitySuite:JSON.parse(read('assets/benchmark/sanity-suite.json')),
+  yolov1ExternalManifest:JSON.parse(read('assets/models/yolov1/external-data-manifest.json')),
   version:JSON.parse(read('version.json'))
 };
 
-for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,efficiency:files.efficiency,resolution:files.resolution,architectureExplorer:files.architectureExplorer,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
+for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,externalDataStore:files.externalDataStore,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,efficiency:files.efficiency,resolution:files.resolution,architectureExplorer:files.architectureExplorer,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
 let relativeLoaderUrl='',relativeLoaderProgress=[];
@@ -339,10 +341,24 @@ check(yolov1.capabilities.timeMachine&&yolov1.capabilities.benchmark&&yolov1.cap
 check(yolov1.downloadPolicy?.enabled===true&&yolov1.downloadPolicy.warningBytes===100*1048576,'YOLOv1 large-download warning policy changed');
 check(yolov1.sources?.length===1&&yolov1.sources[0].label==='GitHub Pages · verified YOLOv1 INT8 chunks'&&yolov1.sources[0].parts?.length===6&&yolov1.sources[0].parts.reduce((sum,part)=>sum+part.bytes,0)===yolov1.bytes,'YOLOv1 same-origin chunk manifest must reconstruct the exact published asset size');
 check(yolov1.sources[0].parts.every(part=>/^[0-9a-f]{64}$/.test(part.sha256||'')),'YOLOv1 chunks must keep pinned SHA-256 metadata');
+check(yolov1.externalData?.enabled===true&&yolov1.externalData.manifestUrl==='assets/models/yolov1/external-data-manifest.json'&&yolov1.externalData.requireJspiOnIOS===true,'YOLOv1 external-data capability contract changed');
+check(metadataRegistry.runtime.ortJspiUrl==='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.jspi.min.mjs'&&metadataRegistry.runtime.ortDistUrl==='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/','YOLOv1 JSPI runtime pin changed');
+const yolov1External=files.yolov1ExternalManifest,yolov1ExternalGraph='assets/models/yolov1/yolov1-voc20-int8-external.onnx';
+check(yolov1External?.format===1&&yolov1External.modelSha256===yolov1.sha256&&Number(yolov1External.modelBytes)===yolov1.bytes,'YOLOv1 external-data manifest must bind to the canonical model');
+check(yolov1External.externalData?.path==='yolov1-voc20-int8.onnx'&&Number(yolov1External.externalData.externalizedBytes)>=yolov1.bytes*.8,'YOLOv1 external-data manifest did not externalize enough canonical model bytes');
+check(exists(yolov1ExternalGraph)&&fs.statSync(path.join(root,yolov1ExternalGraph)).size===Number(yolov1External.graph?.bytes),'YOLOv1 external-data graph file/size mismatch');
+check(createHash('sha256').update(fs.readFileSync(path.join(root,yolov1ExternalGraph))).digest('hex')===yolov1External.graph?.sha256,'YOLOv1 external-data graph checksum mismatch');
+check(Number(yolov1External.graph?.bytes)<32*1024*1024,'YOLOv1 external-data graph must stay small enough to avoid another large JS buffer');
+check(files.index.includes('src/core/external-data-store.js?v='+files.version.version),'external-data store must load before the app');
+check(files.externalDataStore.includes("navigator.storage&&typeof navigator.storage.getDirectory==='function'")&&files.externalDataStore.includes("await writable.write({type:'write',position:offset,data:bytes})")&&files.externalDataStore.includes('part.sha256')&&files.externalDataStore.includes("state:'persistent cache'"),'YOLOv1 OPFS staging/integrity contract changed');
+check(files.externalDataStore.includes('await writable.abort()')&&files.externalDataStore.includes("await removeEntry(root,spec.opfsName)"),'YOLOv1 OPFS staging must clean partial downloads after failure/abort');
 check(files.loader.includes('async function sha256Hex(view)')&&files.loader.includes("integrity:allPartsPinned?'sha256-parts':'unverified-parts'")&&files.loader.includes('part-sha256-complete'),'multipart loader must verify pinned chunk hashes incrementally');
 check(files.historicalDetectors.includes("runtimes.register('yolov1'")&&files.historicalDetectors.includes('options.downloadSignal')&&files.historicalDetectors.includes("asset.integrity!=='sha256-parts'"),'YOLOv1 adapter integrity or cancellable download contract changed');
-check(files.historicalDetectors.includes("enableCpuMemArena=false")&&files.historicalDetectors.includes("enableMemPattern=false")&&files.historicalDetectors.includes("executionMode='sequential'")&&files.historicalDetectors.includes("disable_prepacking:'1'"),'YOLOv1 iOS low-memory session policy is missing');
-check(files.app.includes('confirmLargeModelDownload(model)')&&files.app.includes('new AbortController()')&&files.loader.includes("fetch(url.href,{mode:'cors',cache:attempt?'no-store':'default',signal})")&&files.loader.includes('async function loadMultipart(')&&files.loader.includes('readResponseInto(response,merged'),'large-model consent/cancel flow must reach both normal and multipart network fetch paths');
+check(files.historicalDetectors.includes("enableCpuMemArena:false")&&files.historicalDetectors.includes("enableMemPattern:false")&&files.historicalDetectors.includes("executionMode:'sequential'")&&files.historicalDetectors.includes("disable_prepacking:'1'"),'YOLOv1 iOS low-memory session policy is missing');
+check(files.historicalDetectors.includes("WebAssembly?.Suspending")&&files.historicalDetectors.includes("WebAssembly?.promising")&&files.historicalDetectors.includes("import(registry.runtime.ortJspiUrl)")&&files.historicalDetectors.includes("mod.env.wasm.numThreads=1"),'YOLOv1 JSPI capability/import/thread policy is missing');
+check(files.historicalDetectors.includes("externalData:[{path:asset.externalPath,data:asset.file}]")&&files.historicalDetectors.includes("runtimeMode='jspi-external-data'"),'YOLOv1 JSPI session must mount OPFS File as external data');
+check(files.historicalDetectors.includes("if(isIOS&&model.externalData?.requireJspiOnIOS)")&&files.historicalDetectors.includes('previous 516 MB JavaScript-buffer path is intentionally disabled'),'iOS must not fall back to the known-crashing full-buffer YOLOv1 path');
+check(files.app.includes('confirmLargeModelDownload(model)')&&files.app.includes('new AbortController()')&&files.loader.includes("fetch(url.href,{mode:'cors',cache:attempt?'no-store':'default',signal})")&&files.loader.includes('async function loadMultipart(')&&files.loader.includes('readResponseInto(response,merged)')&&files.externalDataStore.includes('signal')&&files.externalDataStore.includes('throwIfAborted(signal)'),'large-model consent/cancel flow must reach normal, multipart, and OPFS external-data paths');
 
 for(const [key,year,title] of [['ssd2016',2016,'SSD · ResNet-34 INT8'],['detr',2020,'DETR · ResNet-50']]){
   const model=metadataRegistry[key],entry=metadataRegistry.timeline.find(item=>item.model===key);
