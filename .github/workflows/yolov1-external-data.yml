@@ -6,7 +6,7 @@ on:
       - ".github/workflows/yolov1-external-data.yml"
       - "scripts/build_yolov1_external_graph.py"
       - "tools/smoke_yolov1_external_ort_web.cjs"
-      - "tools/smoke_yolov1_jspi_blob.cjs"
+      - "tools/smoke_yolov1_jspi_browser.cjs"
       - "assets/models/yolov1/part-*.bin"
       - "assets/models/yolov1/yolov1-voc20-int8-external.onnx"
       - "assets/models/yolov1/external-data-manifest.json"
@@ -54,8 +54,8 @@ jobs:
       - name: Rebuild and verify external-data graph
         run: /usr/bin/time -v python scripts/build_yolov1_external_graph.py
 
-      - name: Install pinned ONNX Runtime Web
-        run: npm install --prefix "$RUNNER_TEMP/yolov1-webtest" --no-save --no-audit --no-fund onnxruntime-web@1.30.0
+      - name: Install pinned browser test dependencies
+        run: npm install --prefix "$RUNNER_TEMP/yolov1-webtest" --no-save --no-audit --no-fund onnxruntime-web@1.30.0 puppeteer-core@24.23.0
 
       - name: Smoke external-data graph in ONNX Runtime Web
         run: |
@@ -64,12 +64,13 @@ jobs:
             artifacts/yolov1-external-data/yolov1-voc20-int8-external.onnx \
             artifacts/yolov1-external-data/yolov1-voc20-int8.onnx
 
-      - name: Smoke JSPI Blob external-data path
+      - name: Smoke JSPI + OPFS File path in headless Chrome
         run: |
           NODE_PATH="$RUNNER_TEMP/yolov1-webtest/node_modules" \
-            node tools/smoke_yolov1_jspi_blob.cjs \
+            node tools/smoke_yolov1_jspi_browser.cjs \
             artifacts/yolov1-external-data/yolov1-voc20-int8-external.onnx \
-            artifacts/yolov1-external-data/yolov1-voc20-int8.onnx
+            artifacts/yolov1-external-data/yolov1-voc20-int8.onnx \
+            "$RUNNER_TEMP/yolov1-webtest/node_modules/onnxruntime-web/dist"
 
       - name: Validate repository contracts
         run: node scripts/validate.mjs
