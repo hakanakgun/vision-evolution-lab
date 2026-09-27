@@ -71,12 +71,12 @@
     if(cache){
       try{
         const hit=await cache.match(canonicalUrl);throwIfAborted(signal);
-        if(hit)return{response:hit,origin:'app-cache'};
+        if(hit)return{response:hit,origin:'app-cache',canonicalUrl};
       }catch(error){if(error?.name==='AbortError'||signal?.aborted)throw abortError()}
     }
     const response=await fetch(canonicalUrl,{mode:'cors',cache:'default',signal});throwIfAborted(signal);
     if(!response.ok)throw new Error(`External-data part HTTP ${response.status}.`);
-    return{response,origin:'network'};
+    return{response,origin:'network',canonicalUrl};
   }
 
   async function materialize(model,manifest,{signal,onProgress,onState}={}){
@@ -104,13 +104,16 @@
         throwIfAborted(signal);
         const part=source.parts[index],expected=Number(part.bytes)||0;
         if(expected<=0||!/^[0-9a-f]{64}$/.test(part.sha256||''))throw new Error(`External-data part ${index+1} metadata is incomplete.`);
-        const {response,origin}=await cachedOrNetworkResponse(part,cache,signal);
+        const {response,origin,canonicalUrl}=await cachedOrNetworkResponse(part,cache,signal);
         if(origin!=='app-cache')allCached=false;
         onState?.({state:origin==='app-cache'?'cache':'network',source:source.label,part:index+1,parts:source.parts.length});
         let buffer=await response.arrayBuffer();throwIfAborted(signal);
         if(buffer.byteLength!==expected)throw new Error(`External-data part ${index+1} size mismatch: expected ${expected}, got ${buffer.byteLength}.`);
         const hash=await sha256Hex(buffer);throwIfAborted(signal);
         if(hash!==part.sha256)throw new Error(`External-data part ${index+1} SHA-256 mismatch.`);
+        if(origin==='app-cache'&&cache){
+          try{await cache.delete(canonicalUrl)}catch(error){console.warn('Legacy YOLOv1 chunk cache cleanup failed',index+1,error)}
+        }
         const bytes=new Uint8Array(buffer);
         await writable.write({type:'write',position:offset,data:bytes});throwIfAborted(signal);
         offset+=bytes.byteLength;
