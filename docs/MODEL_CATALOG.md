@@ -70,7 +70,11 @@ Face detection, pedestrian detection, handwritten-digit classification, pattern 
 
 ### YOLOv1
 
-The full original YOLOv1 architecture is runnable in Time Machine through a derived fixed-448 ONNX export. The source checkpoint and converter are pinned, the canonical dog/bicycle/car golden is checked before publication, and the published graph is separately opened and run with `onnxruntime-web` WASM. The dynamic-INT8 artifact is still 541,358,513 bytes (~516.3 MiB). Because GitHub Release asset URLs fail browser CORS, Pages serves six sub-100-MB chunks of the exact Release artifact from the app origin; the browser reconstructs them before full SHA-256 verification. The UI requires explicit consent before an uncached transfer and exposes an AbortController-backed cancel action while bytes are downloading. It stays outside Model Race and Live Camera until device memory/performance evidence exists. The exact published asset is pinned by size and SHA-256; byte-for-byte exporter output is not claimed deterministic across separate export runs.
+The full original YOLOv1 architecture is runnable in Time Machine through the same derived fixed-448 dynamic-INT8 ONNX artifact. The canonical file remains 541,358,513 bytes (~516.3 MiB), pinned by size and SHA-256, and the UI still requires explicit consent plus an AbortController-backed cancel action for an uncached transfer.
+
+The v0.21.1 iPhone full-buffer mitigation was retested on 2026-09-27 and still ended in a page recreation after the transfer reached 100% while verification/session initialization was starting. v0.22 therefore adds an experimental delivery/runtime representation without changing the model weights: CI generates a small ONNX graph whose large initializers point by offset/length into the canonical byte stream. In browsers with WebAssembly JSPI + OPFS, the six existing checksum-pinned Pages chunks are verified one at a time and staged to an OPFS file; the JSPI runtime receives that OPFS `File` as Blob-backed external data. The browser no longer needs to reconstruct the complete 516 MiB model in one JavaScript buffer. iOS refuses the legacy full-buffer fallback when the required capabilities are unavailable. This new path remains unverified on the physical iPhone until a successful inference is observed.
+
+YOLOv1 stays outside Model Race and Live Camera. The generated graph is a storage-layout alias over the same canonical derived artifact, not a new checkpoint or a second set of weights.
 
 ### Tiny YOLOv2
 
