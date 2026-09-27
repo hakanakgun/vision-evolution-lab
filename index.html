@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-build="2026.09.27-v0.22.2">
+<html lang="en" data-build="2026.09.27-v0.22.3">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -8,7 +8,7 @@
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.09.27-v0.22.2';
+      const CURRENT_BUILD = '2026.09.27-v0.22.3';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -51,7 +51,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=0.22.2">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.22.3">
 </head>
 <body>
   <main class="shell">
@@ -293,7 +293,7 @@
             <div class="links"><a href="#" data-jump="time-machine">Run ↗</a><a href="https://arxiv.org/abs/2410.13842" target="_blank" rel="noreferrer">Paper ↗</a><a href="https://huggingface.co/onnx-community/dfine_n_coco-ONNX/tree/e2b9c0f0884ee7c90b79feedfd30054e82ed634c" target="_blank" rel="noreferrer">Pinned ONNX ↗</a><a href="docs/MODEL_SOURCES.md#d-fine-n" target="_blank">Provenance ↗</a></div>
           </article>
         </div>
-        <div class="note evolution-note">Faster R-CNN and YOLOS-tiny are new Time Machine-only references pending broader browser and physical-device validation. D-FINE-N and LW-DETR-tiny also run in Live Camera; their sustained camera behavior and broad cross-device performance remain incompletely tested. See the provenance notes.</div>
+        <div class="note evolution-note">Faster R-CNN now supports the individual Benchmark ×20 but remains outside Model Race and Live Camera; YOLOS-tiny stays single-run Time Machine-only. D-FINE-N and LW-DETR-tiny support individual Benchmark ×20 and Live Camera while remaining outside Model Race; sustained camera behavior and broad cross-device performance remain incompletely tested. See the provenance notes.</div>
       </section>
     </section>
 
@@ -546,23 +546,23 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.22.2 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.22.3 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="src/core/runtime-bootstrap.js?v=0.22.2"></script>
-  <script src="src/core/preprocessing.js?v=0.22.2"></script>
-  <script src="src/models/models.js?v=0.22.2"></script>
-  <script src="src/core/detection-metrics.js?v=0.22.2"></script>
-  <script src="src/core/model-runtime.js?v=0.22.2"></script>
-  <script src="src/core/model-loader.js?v=0.22.2"></script>
-  <script src="src/core/external-data-store.js?v=0.22.2"></script>
-  <script src="src/app.js?v=0.22.2"></script>
-  <script src="src/models/lwdetr-postprocess.js?v=0.22.2"></script>
-  <script src="src/models/historical-detectors.js?v=0.22.2"></script>
-  <script src="src/models/race.js?v=0.22.2"></script>
-  <script src="src/efficiency.js?v=0.22.2"></script>
-  <script src="src/resolution-microscope.js?v=0.22.2"></script>
-  <script src="src/architecture-explorer.js?v=0.22.2"></script>
-  <script src="src/history/history-experiments.js?v=0.22.2"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.22.3"></script>
+  <script src="src/core/preprocessing.js?v=0.22.3"></script>
+  <script src="src/models/models.js?v=0.22.3"></script>
+  <script src="src/core/detection-metrics.js?v=0.22.3"></script>
+  <script src="src/core/model-runtime.js?v=0.22.3"></script>
+  <script src="src/core/model-loader.js?v=0.22.3"></script>
+  <script src="src/core/external-data-store.js?v=0.22.3"></script>
+  <script src="src/app.js?v=0.22.3"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.22.3"></script>
+  <script src="src/models/historical-detectors.js?v=0.22.3"></script>
+  <script src="src/models/race.js?v=0.22.3"></script>
+  <script src="src/efficiency.js?v=0.22.3"></script>
+  <script src="src/resolution-microscope.js?v=0.22.3"></script>
+  <script src="src/architecture-explorer.js?v=0.22.3"></script>
+  <script src="src/history/history-experiments.js?v=0.22.3"></script>
 </body>
 </html>
