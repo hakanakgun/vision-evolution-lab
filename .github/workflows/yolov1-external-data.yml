@@ -75,8 +75,7 @@ jobs:
         run: node scripts/validate.mjs
 
       - name: Verify generated files are committed exactly
-        run: |
-          git diff --exit-code --             assets/models/yolov1/yolov1-voc20-int8-external.onnx             assets/models/yolov1/external-data-manifest.json
+        run: git diff --exit-code -- assets/models/yolov1/yolov1-voc20-int8-external.onnx assets/models/yolov1/external-data-manifest.json
 
       - name: Summary
         if: always()
