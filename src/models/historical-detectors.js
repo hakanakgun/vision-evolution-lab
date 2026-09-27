@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const registry=window.VisionModels,api=window.VisionLab,runtimes=window.VisionRuntimeRegistry,loader=window.VisionModelLoader;
+  const registry=window.VisionModels,api=window.VisionLab,runtimes=window.VisionRuntimeRegistry,loader=window.VisionModelLoader,externalStore=window.VisionExternalDataStore;
   if(!registry||!api||!runtimes||!loader)throw new Error('Historical detector dependencies are unavailable.');
   const $=id=>document.getElementById(id),work=$('historical-model-work');
   if(!work)throw new Error('Historical detector work canvas is missing.');
@@ -9,23 +9,54 @@
   function classAwareNms(detections,iouThreshold,maxDet=100){const sorted=[...detections].sort((a,b)=>b.score-a.score),kept=[];for(const detection of sorted){if(kept.length>=maxDet)break;if(kept.every(other=>other.classId!==detection.classId||boxIou(detection.box,other.box)<=iouThreshold))kept.push(detection)}return kept}
   function stage(source,target,maxSide=640){const {w,h}=api.sourceSize(source);if(!w||!h)throw new Error('Input has no readable dimensions.');const scale=Math.min(1,maxSide/Math.max(w,h)),width=Math.max(1,Math.round(w*scale)),height=Math.max(1,Math.round(h*scale));target.width=width;target.height=height;target.getContext('2d').drawImage(source,0,0,width,height);return{width,height};}
   function formatSource(revision){return`HF pinned ${revision}`;}
+  let jspiOrtPromise=null;
+  const hasJspi=()=>typeof globalThis.WebAssembly?.Suspending==='function'&&typeof globalThis.WebAssembly?.promising==='function';
+  async function loadJspiOrt(){
+    if(!hasJspi())throw new Error('WebAssembly JSPI is unavailable in this browser.');
+    if(!registry.runtime?.ortJspiUrl)throw new Error('Pinned ONNX Runtime JSPI URL is unavailable.');
+    if(!jspiOrtPromise){
+      jspiOrtPromise=import(registry.runtime.ortJspiUrl).then(mod=>{
+        mod.env.wasm.wasmPaths=registry.runtime.ortDistUrl;
+        mod.env.wasm.numThreads=1;
+        mod.env.wasm.proxy=false;
+        return mod;
+      }).catch(error=>{jspiOrtPromise=null;throw error});
+    }
+    return jspiOrtPromise;
+  }
+
   function createYolov1Adapter(){
-    const model=registry.yolov1,isIOS=Boolean(window.VisionRuntimeBootstrap?.isIOS);let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',sourceLabel='not loaded',inFlight=Promise.resolve(),loading=null;
+    const model=registry.yolov1,isIOS=Boolean(window.VisionRuntimeBootstrap?.isIOS);let session=null,sessionOrt=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',sourceLabel='not loaded',runtimeMode='legacy-buffer',inFlight=Promise.resolve(),loading=null;
+    const lowMemoryOptions=()=>({executionProviders:['wasm'],graphOptimizationLevel:'basic',enableCpuMemArena:false,enableMemPattern:false,executionMode:'sequential',extra:{session:{disable_prepacking:'1'}}});
     async function prepare(options={}){
       if(session)return session;if(loading)return loading;
       loading=(async()=>{
-        const asset=await loader.load(model,{signal:options.downloadSignal,onState:value=>{cacheState=value.state;if(value.source)cacheState+=` · ${value.source}`},onProgress:value=>api.reportRuntimeEvent('yolov1',{type:'progress',info:value})});downloadMs=asset.downloadMs;sourceLabel=asset.source;
-        if(asset.buffer.byteLength!==model.bytes){loader.evictMemory(model);throw new Error(`Pinned YOLOv1 checkpoint size mismatch (${asset.buffer.byteLength} bytes).`)}
-        if(asset.integrity!=='sha256-parts'){
-          const digest=await crypto.subtle.digest('SHA-256',asset.buffer),hash=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
-          if(hash!==model.sha256){loader.evictMemory(model);throw new Error('Pinned YOLOv1 checkpoint SHA-256 verification failed.')}
+        const support=externalStore?.support?.()||{},useExternal=Boolean(model.externalData?.enabled&&externalStore&&hasJspi()&&support.opfs&&support.crypto);
+        let active=null;
+        if(useExternal){
+          loader.evictMemory(model);
+          const jspiOrt=await loadJspiOrt();
+          const asset=await externalStore.prepare(model,{signal:options.downloadSignal,onState:value=>{cacheState=value.state;if(value.source)cacheState+=` · ${value.source}`},onProgress:value=>api.reportRuntimeEvent('yolov1',{type:'progress',info:value})});
+          downloadMs=asset.downloadMs;sourceLabel=asset.source;
+          const sessionOptions={...lowMemoryOptions(),externalData:[{path:asset.externalPath,data:asset.file}]},started=performance.now();
+          active=await jspiOrt.InferenceSession.create(asset.graph,sessionOptions);initMs=performance.now()-started;sessionOrt=jspiOrt;runtimeMode='jspi-external-data';cacheState=asset.cacheState;
+        }else{
+          if(isIOS&&model.externalData?.requireJspiOnIOS){
+            throw new Error('YOLOv1 on iPhone/iPad now requires WebAssembly JSPI + OPFS for the low-memory external-data path. This browser does not expose both capabilities, so the previous 516 MB JavaScript-buffer path is intentionally disabled.');
+          }
+          const asset=await loader.load(model,{signal:options.downloadSignal,onState:value=>{cacheState=value.state;if(value.source)cacheState+=` · ${value.source}`},onProgress:value=>api.reportRuntimeEvent('yolov1',{type:'progress',info:value})});downloadMs=asset.downloadMs;sourceLabel=asset.source;
+          if(asset.buffer.byteLength!==model.bytes){loader.evictMemory(model);throw new Error(`Pinned YOLOv1 checkpoint size mismatch (${asset.buffer.byteLength} bytes).`)}
+          if(asset.integrity!=='sha256-parts'){
+            const digest=await crypto.subtle.digest('SHA-256',asset.buffer),hash=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
+            if(hash!==model.sha256){loader.evictMemory(model);throw new Error('Pinned YOLOv1 checkpoint SHA-256 verification failed.')}
+          }
+          const sessionOptions={executionProviders:['wasm'],graphOptimizationLevel:'all'},started=performance.now();
+          active=await ort.InferenceSession.create(asset.buffer,sessionOptions);initMs=performance.now()-started;sessionOrt=ort;runtimeMode='legacy-buffer';cacheState=asset.cacheState;loader.evictMemory(model);
         }
-        const sessionOptions={executionProviders:['wasm'],graphOptimizationLevel:'all'};
-        if(isIOS){sessionOptions.enableCpuMemArena=false;sessionOptions.enableMemPattern=false;sessionOptions.executionMode='sequential';sessionOptions.extra={session:{disable_prepacking:'1'}}}
-        const started=performance.now(),active=await ort.InferenceSession.create(asset.buffer,sessionOptions),elapsed=performance.now()-started;
-        if(JSON.stringify(active.inputNames)!=='["images"]'||JSON.stringify(active.outputNames)!=='["output"]'){await active.release();loader.evictMemory(model);throw new Error('Pinned YOLOv1 ONNX input/output names changed.')}
-        session=active;initMs=elapsed;cacheState=asset.cacheState;loader.evictMemory(model);
-        api.reportRuntimeEvent('yolov1',{type:'runtime',backend:'WASM',dtype:'dynamic INT8 weights',downloadMs,initMs,bytes:model.bytes,cacheState,source:sourceLabel,memoryPolicy:isIOS?'ios-low-memory-no-prepack':'default',integrity:asset.integrity||'full-sha256'});
+        if(JSON.stringify(active.inputNames)!=='["images"]'||JSON.stringify(active.outputNames)!=='["output"]'){await active.release();throw new Error('Pinned YOLOv1 ONNX input/output names changed.')}
+        session=active;
+        const memoryPolicy=runtimeMode==='jspi-external-data'?'opfs-blob-external-data-no-prepack':isIOS?'ios-low-memory-no-prepack':'default';
+        api.reportRuntimeEvent('yolov1',{type:'runtime',backend:runtimeMode==='jspi-external-data'?'WASM JSPI':'WASM',dtype:'dynamic INT8 weights',downloadMs,initMs,bytes:model.bytes,cacheState,source:sourceLabel,memoryPolicy,integrity:runtimeMode==='jspi-external-data'?'sha256-parts+graph-sha256':'full-sha256'});
         return session;
       })().finally(()=>{loading=null});
       return loading;
@@ -34,7 +65,7 @@
       const totalStart=performance.now(),prepStart=performance.now(),sourceSize=api.sourceSize(source);if(!sourceSize.w||!sourceSize.h)throw new Error('Input has no readable dimensions.');
       work.width=448;work.height=448;const ctx=work.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,448,448);const rgba=ctx.getImageData(0,0,448,448).data,plane=448*448,tensor=new Float32Array(3*plane);
       for(let i=0;i<plane;i++){const offset=i*4;tensor[i]=rgba[offset]/255;tensor[plane+i]=rgba[offset+1]/255;tensor[plane*2+i]=rgba[offset+2]/255}
-      const preMs=performance.now()-prepStart,active=await prepare({downloadSignal}),inferStart=performance.now(),result=await active.run({images:new ort.Tensor('float32',tensor,[1,3,448,448])}),infMs=performance.now()-inferStart,output=result.output;
+      const preMs=performance.now()-prepStart,active=await prepare({downloadSignal}),ortApi=sessionOrt||ort,inferStart=performance.now(),result=await active.run({images:new ortApi.Tensor('float32',tensor,[1,3,448,448])}),infMs=performance.now()-inferStart,output=result.output;
       if(!output||output.type!=='float32'||JSON.stringify(output.dims)!=='[1,24,98]')throw new Error('Pinned YOLOv1 returned an unexpected [1,24,98] output contract.');
       const postStart=performance.now(),data=output.data,candidates=[];let droppedInvalid=0;for(let prediction=0;prediction<98;prediction++){const x1=Number(data[prediction]),y1=Number(data[98+prediction]),x2=Number(data[196+prediction]),y2=Number(data[294+prediction]);let classId=-1,score=-Infinity;for(let cls=0;cls<20;cls++){const value=Number(data[(4+cls)*98+prediction]);if(value>score){score=value;classId=cls}}
         const box=[y1/448,x1/448,y2/448,x2/448].map(clamp),label=registry.labels.vocCanonical[classId];if(!Number.isFinite(score)||![x1,y1,x2,y2].every(Number.isFinite)||!label||box[2]<=box[0]||box[3]<=box[1]){droppedInvalid++;continue}if(score>=api.getRetentionThreshold())candidates.push({score,label,classId,box});
@@ -43,8 +74,8 @@
       return{preMs,infMs,postMs,totalMs:performance.now()-totalStart,detections,visible,width:outputSize.width,height:outputSize.height,inputWidth:448,inputHeight:448,rawCount:98,retained:detections.length,droppedInvalid,retentionThreshold:api.getRetentionThreshold(),timingBoundary:'onnx-run'};
     }
     function run(source,canvas,options={}){const promise=inFlight.catch(()=>{}).then(()=>infer(source,canvas,options));inFlight=promise;return promise}
-    async function release(){await inFlight.catch(()=>{});if(loading)await loading.catch(()=>{});const old=session;session=null;if(old)try{await old.release()}catch(error){console.warn('YOLOv1 runtime release failed',error)}loader.evictMemory(model);cacheState='runtime released'}
-    return{run,prepare,release,backend:()=> 'WASM INT8',runtimeInfo:()=>({backend:'wasm',dtype:'dynamic INT8 weights',initMs,downloadMs,bytes:model.bytes,cacheState,source:sourceLabel,memoryPolicy:isIOS?'ios-low-memory-no-prepack':'default'}),handlesMainUi:false};
+    async function release(){await inFlight.catch(()=>{});if(loading)await loading.catch(()=>{});const old=session;session=null;sessionOrt=null;if(old)try{await old.release()}catch(error){console.warn('YOLOv1 runtime release failed',error)}loader.evictMemory(model);cacheState='runtime released'}
+    return{run,prepare,release,backend:()=>runtimeMode==='jspi-external-data'?'WASM JSPI INT8':'WASM INT8',runtimeInfo:()=>({backend:runtimeMode==='jspi-external-data'?'wasm-jspi':'wasm',dtype:'dynamic INT8 weights',initMs,downloadMs,bytes:model.bytes,cacheState,source:sourceLabel,memoryPolicy:runtimeMode==='jspi-external-data'?'opfs-blob-external-data-no-prepack':isIOS?'ios-low-memory-no-prepack':'default'}),handlesMainUi:false};
   }
   function createFasterRcnnAdapter(){
     const model=registry.fasterrcnn;let session=null,initMs=NaN,downloadMs=NaN,cacheState='not loaded',inFlight=Promise.resolve(),loading=null;

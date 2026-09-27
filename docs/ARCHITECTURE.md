@@ -12,6 +12,7 @@ The current runtime is intentionally client-side so users can compare computer-v
 - `src/models/models.js` — five general-object Model Race models, seven additional Time Machine runtimes, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
 - `src/core/model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
 - `src/core/model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, cancellable transfers, and memory-bounded preallocated streaming when the expected byte size is known.
+- `src/core/external-data-store.js` — large-model OPFS staging for YOLOv1: verifies one existing Pages chunk at a time, writes the canonical byte stream to Origin Private File System, validates the generated small graph, and returns an OPFS `File` for Blob-backed ONNX external data.
 - `src/app.js` — Time Machine state, SSD-MobileNet runtime adapter, capability-driven Live Camera orchestration, Inside the Model rendering, and shared browser diagnostics.
 - `src/models/historical-detectors.js` — adapters for YOLOv1, Faster R-CNN 2015, SSD 2016, DETR 2020, YOLOS-tiny, LW-DETR-tiny, and D-FINE-N, including model loading, preprocessing/postprocessing, Live Camera eligibility where declared, and release paths.
 - `src/models/race.js` — Tiny YOLOv2, YOLOX-Nano, RT-DETR R18, and RT-DETRv2 R18 runtime adapters, Model Race benchmarking, overlap comparison, measured benchmark snapshot export, and iOS regression diagnostics.
@@ -101,6 +102,14 @@ Tiny YOLOv2, YOLOv1, SSD-MobileNetV1 INT8, Faster R-CNN 2015, SSD 2016, and LW-D
 The application pins `ort.env.wasm.wasmPaths` to the matching 1.30.0 distribution directory. When the page is not cross-origin isolated, `ort.env.wasm.numThreads` is forced to 1. With cross-origin isolation, the app may use up to four threads based on `navigator.hardwareConcurrency`.
 
 This policy is an iOS memory-safety mitigation based on upstream ONNX Runtime evidence that Safari/WebKit can exhibit persistent CPU/memory growth in JSEP mode even when the requested execution provider is WASM. It is not evidence that the reload bug is fixed.
+
+#### YOLOv1 JSPI external-data path
+
+YOLOv1 is the exception to the classic direct-ORT startup path. When the browser exposes WebAssembly JSPI, OPFS, and Web Crypto, the adapter dynamically imports the pinned ONNX Runtime Web 1.30.0 `ort.jspi.min.mjs` entrypoint only for YOLOv1. The rest of the page keeps the normal platform-selected ORT bundle.
+
+The canonical 541,358,513-byte INT8 model remains the same checksum-pinned artifact and the six existing Pages chunks remain its delivery source. The browser verifies one chunk at a time and writes it into one OPFS file; it does not reconstruct the entire model as one JavaScript `Uint8Array`. CI generates a small ONNX protobuf whose large initializer entries use external-data offsets into those canonical bytes. The JSPI session receives that small graph plus the OPFS `File` as Blob-backed `externalData`, with one WASM thread and the existing low-memory session options.
+
+This changes peak JavaScript-memory behavior, not model semantics. CI must verify the canonical full-file SHA-256, generated graph SHA-256/size, externalized coverage, CPU-ORT output equality, and an ONNX Runtime Web external-data smoke before the graph/manifest are committed. On iOS, if JSPI or OPFS is unavailable, the known-crashing 516 MiB full-buffer fallback is intentionally rejected rather than retried. Physical-device success remains a separate acceptance test.
 
 
 ### Transformers.js

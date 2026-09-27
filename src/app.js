@@ -203,13 +203,20 @@
     }
     async function confirmLargeModelDownload(model){
       const policy=largeDownloadPolicy(model);if(!policy)return true;
+      if(window.VisionRuntimeBootstrap?.isIOS&&model.externalData?.requireJspiOnIOS){
+        const externalSupport=window.VisionExternalDataStore?.support?.()||{},jspi=typeof globalThis.WebAssembly?.Suspending==='function'&&typeof globalThis.WebAssembly?.promising==='function';
+        if(!jspi||!externalSupport.opfs||!externalSupport.crypto){
+          const missing=[!jspi?'WebAssembly JSPI':'',!externalSupport.opfs?'OPFS':'',!externalSupport.crypto?'Web Crypto':''].filter(Boolean).join(', ');
+          throw new Error(`${model.title} low-memory loading is unavailable in this browser because ${missing} is not exposed. The previous 516 MB full-buffer path is disabled on iPhone/iPad to avoid the reproduced page reload.`);
+        }
+      }
       const cache=await ModelLoader.status(model).catch(()=>({state:'not cached'}));
-      if(cache.state==='memory'||cache.state==='browser cache')return true;
+      if(cache.state==='memory'||cache.state==='browser cache'||cache.state==='persistent cache')return true;
       const hint=networkTransferHint(),warning=$('model-download-warning'),title=$('model-download-warning-title'),text=$('model-download-warning-text'),go=$('model-download-continue'),cancel=$('model-download-cancel');
       if(!warning||!title||!text||!go||!cancel)return true;
       title.textContent=hint.cellular?'Large model · cellular data warning':'Large model download';
       const prefix=`${model.title} requires about ${bytes(model.bytes)} before local inference can start.`;
-      const iosNote=window.VisionRuntimeBootstrap?.isIOS&&model.id==='yolov1-voc20-int8-browser'?' On iPhone/iPad this model uses an experimental low-memory WASM path; a browser reload is still possible until physical-device validation passes.':'';
+      const iosNote=window.VisionRuntimeBootstrap?.isIOS&&model.externalData?.enabled?' On iPhone/iPad this model uses the experimental OPFS + WebAssembly JSPI external-data path when those browser capabilities are available; the previous full-buffer path is not used on iOS. Physical-device success still requires validation.':'';
       text.textContent=`${prefix} ${hint.text}${iosNote} The transfer stays on your device cache; your selected image is not uploaded.`;
       go.textContent=`Download ${bytes(model.bytes)}`;go.hidden=false;cancel.textContent='Not now';warning.classList.remove('downloading');warning.hidden=false;
       return await new Promise(resolve=>{state.modelDownloadConsentResolver=resolve});

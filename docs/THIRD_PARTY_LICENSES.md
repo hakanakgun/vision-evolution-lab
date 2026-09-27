@@ -61,6 +61,7 @@ Most model checkpoints are not bundled in this repository. YOLOv1 uses a derived
 - Pinned converted source checkpoint: `LibreYOLO/LibreYOLO1b@4349c7a823974cea5d29c5f306a99bcf441ef437`.
 - Conversion tooling: `LibreYOLO/libreyolo@c25f6dffb521ea60bc0f63ae3dffb168a7edc466`; upstream repository license MIT.
 - Derived runtime artifact: `yolov1-voc20-int8.onnx`, 541,358,513 bytes, SHA-256 `122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49`, published under GitHub Release `yolov1-browser-int8-122bf7462747`.
+- v0.22 generated browser graph: `assets/models/yolov1/yolov1-voc20-int8-external.onnx`. It contains no second copy of the weights; its large initializers reference offsets in the exact canonical runtime artifact above. `assets/models/yolov1/external-data-manifest.json` pins the generated graph and canonical model relationship.
 - The project is an individual non-commercial educational/demo project. Provenance is still retained explicitly; Pascal VOC dataset terms are separate from code/model terms.
 
 ## Tiny YOLOv2 upstream checkpoint
