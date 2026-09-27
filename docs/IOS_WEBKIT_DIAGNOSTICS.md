@@ -83,60 +83,21 @@ RT-DETR alone has completed 20-run WebGPU fp16 testing without reproducing the d
 
 The pattern remains compatible with a cumulative high-water mark, delayed reclamation, allocator fragmentation, runtime construction overhead, or a browser content-process memory threshold crossed by the next large allocation.
 
-## Diagnostic modes
+## Diagnostic mode
 
-### diag=1
+Only `?diag=3` remains active in the runtime. The earlier `diag=1`, `diag=2`, and automated R1–R4 reclamation matrix were investigation scaffolding and are now retired from the shipped code after the standard-WASM iOS mitigation passed the current regression test. Their historical results remain documented above.
 
-Basic lifecycle breadcrumbing.
+Deep mode keeps the focused evidence path needed if an abrupt reload returns:
 
-### diag=2
+- manual model selection and optional inter-model settle delay;
+- manual backend selection where an adapter exposes a diagnostic backend;
+- one unmeasured warm-up plus 20 measured runs for the selected models;
+- optional final-runtime residency followed by a separate **Dispose resident** probe;
+- a bounded 200-event crash-safe journal and a lightweight durable critical-stage record;
+- window `error`, `unhandledrejection`, lifecycle, navigation, cache/fetch, session create/release, first-allocation, and RT-DETR pipeline boundaries;
+- copyable Black Box text and full diagnostic JSON.
 
-Lightweight Black Box plus the existing all-WASM reclamation matrix:
-
-- Tiny -> SSD -> YOLOX -> RT-DETR
-- one unmeasured warm-up + 20 measured warm runs for each model
-- 10 full attempts per case
-- inter-model settle 0 ms
-- R1 final RT resident / 0 ms inter-attempt delay
-- R2 final RT dispose / 0 ms
-- R3 final RT dispose / 3000 ms
-- R4 final RT dispose / 10000 ms
-
-### diag=3
-
-Deep diagnostic mode keeps the same benchmark mechanics and adds evidence around the boundaries most likely to disappear during abrupt process death.
-
-It records a bounded 200-event journal with:
-
-- sequence number
-- ISO wall-clock timestamp
-- `performance.now()`
-- benchmark attempt
-- matrix case and case attempt
-- model key
-- phase
-- requested and observed backend labels
-- runtime-resident booleans
-- bounded metadata
-
-A separate lightweight durable critical-stage record is written for important transitions so the last boundary has a better chance of surviving a process termination. The full ring is checkpointed periodically instead of rewriting a large JSON snapshot after every event.
-
-Deep mode also captures:
-
-- window `error`
-- `unhandledrejection`
-- `pageshow.persisted`
-- `pagehide.persisted`
-- visibility and ready state
-- navigation entry type and activation start when exposed
-- `freeze` / `resume` if the browser dispatches them
-- Cache API hit/miss boundaries
-- model fetch boundaries without asset URLs
-- raw model-buffer byte lengths and reference release
-- ORT session create/release boundaries
-- release method presence and measured release duration
-- first-run tensor/canvas allocation estimates when shape/dtype are known
-- RT-DETR module import, cache lookup, pipeline construction, staging-canvas, first pipeline call, and pipeline release boundaries
+For controlled ORT comparison, `?ort=jsep` and `?ort=wasm` remain available independently of `diag=3`. Do not load both ORT bundles into the same page.
 
 The diagnostic export does not claim to know process RSS. `performance.memory` remains unavailable where the browser does not expose it. WASM linear-memory bytes are only valid if an actual runtime object exposes them.
 
@@ -271,7 +232,7 @@ On non-iOS platforms, direct ORT keeps `ort.webgpu.min.js` so YOLOX retains WebG
 
 For controlled comparison, `?ort=jsep` and `?ort=wasm` override the bundle selection for the entire page. Do not load both bundles into the same page.
 
-The reclamation-matrix localStorage key was advanced to v2 so pre-architecture-change R1-R4 state cannot be resumed as though it were the same experiment.
+The retired reclamation-matrix state is no longer read by the shipped runtime; the historical R1–R4 results remain in this document.
 
 This is a production-path mitigation plus a focused A/B mechanism, not a claim that WebKit process memory reclamation is solved.
 
