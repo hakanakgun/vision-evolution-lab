@@ -102,7 +102,10 @@
       key,
       model,
       capabilities:model.capabilities,
-      run:adapter.run,
+      run:(...args)=>{
+        if(window.VisionModelCache?.isBusy())throw new Error('Finish or cancel the model storage operation first.');
+        return adapter.run(...args);
+      },
       release:adapter.release,
       backend:adapter.backend,
       prepare:typeof adapter.prepare==='function'?adapter.prepare:async()=>{},

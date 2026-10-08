@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="en" data-build="2026.10.08-v0.22.4">
+<html lang="en" data-build="2026.10.08-v0.23.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="description" content="Vision Evolution Lab: run object detection locally in your browser and explore how computer vision evolved.">
   <meta name="theme-color" content="#f5f0e7">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=0.22.4">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=0.23.0">
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.10.08-v0.22.4';
+      const CURRENT_BUILD = '2026.10.08-v0.23.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -52,7 +52,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=0.22.4">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.23.0">
 </head>
 <body>
   <main class="shell">
@@ -76,6 +76,7 @@
         <button class="tab" role="tab" aria-selected="false" aria-controls="efficiency-lab" data-tab="efficiency-lab">Efficiency Lab</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="resolution-microscope" data-tab="resolution-microscope">Resolution Microscope</button>
         <button class="tab" role="tab" aria-selected="false" aria-controls="architecture-explorer" data-tab="architecture-explorer">Architecture Explorer</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="model-cache" data-tab="model-cache">Model Storage</button>
       </nav>
       <div class="scroll-cue" aria-hidden="true">Swipe →</div>
     </div>
@@ -91,6 +92,14 @@
         </div>
         <div class="timeline-scroll" data-scroll-area role="region" tabindex="0" aria-label="Computer vision timeline, 1980 through 2024" aria-describedby="timeline-help">
           <div class="timeline-track" id="timeline-track"></div>
+        </div>
+        <div class="timeline-legend" role="group" aria-label="Timeline legend">
+          <span><i class="legend-marker legend-selected" aria-hidden="true"></i>Selected card</span>
+          <span><i class="legend-marker legend-experiment" aria-hidden="true"></i>Historical experiment</span>
+          <span><i class="legend-marker legend-transformer" aria-hidden="true"></i>Transformer</span>
+          <span><i class="legend-marker legend-history" aria-hidden="true"></i>History only</span>
+          <span><i class="legend-marker legend-runnable" aria-hidden="true"></i>Other runnable models</span>
+          <span class="legend-hint">Buttons run models or experiments; color does not indicate accuracy.</span>
         </div>
         <p class="timeline-help" id="timeline-help">Choose a local image, then select a milestone. Month labels mark the first public paper date when known; older milestones keep year-only dates. Each experiment keeps its own task and output on the same image.</p>
         <div class="note timeline-evolution" id="timeline-evolution">
@@ -518,6 +527,23 @@
       </div>
     </section>
 
+    <section class="panel" id="model-cache" role="tabpanel">
+      <div class="card cache-intro">
+        <div class="eyebrow">On your device</div>
+        <h2>Model downloads &amp; storage</h2>
+        <p>Download model files ahead of time, inspect saved files, or delete one model to free disk space. Your images are never stored here.</p>
+        <p class="tiny" id="cache-usage">Storage usage is not exposed by this browser.</p>
+        <div class="cache-actions">
+          <button class="btn secondary" id="cache-refresh" type="button">Refresh storage</button>
+          <button class="btn secondary" id="cache-cancel" type="button" hidden>Cancel download</button>
+        </div>
+        <progress id="cache-progress" max="100" hidden aria-label="Current model file download"></progress>
+        <p class="status" id="cache-status" role="status" aria-live="polite">Choose a model below. Saved model files do not guarantee offline readiness: runtime scripts and other assets may still require a connection.</p>
+      </div>
+      <div class="cache-models" id="cache-models" aria-label="Model storage inventory"></div>
+      <p class="note">Deleting saved files does not unload an existing session or prove memory reclamation. Storage may be evicted by your browser. Sizes are declared model sizes; origin storage usage is an estimate.</p>
+    </section>
+
     <section class="panel" id="architecture-explorer" role="tabpanel">
       <div class="card architecture-explorer-intro">
         <div class="architecture-explorer-copy">
@@ -547,23 +573,25 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.22.4 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.23.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="src/core/runtime-bootstrap.js?v=0.22.4"></script>
-  <script src="src/core/preprocessing.js?v=0.22.4"></script>
-  <script src="src/models/models.js?v=0.22.4"></script>
-  <script src="src/core/detection-metrics.js?v=0.22.4"></script>
-  <script src="src/core/model-runtime.js?v=0.22.4"></script>
-  <script src="src/core/model-loader.js?v=0.22.4"></script>
-  <script src="src/core/external-data-store.js?v=0.22.4"></script>
-  <script src="src/app.js?v=0.22.4"></script>
-  <script src="src/models/lwdetr-postprocess.js?v=0.22.4"></script>
-  <script src="src/models/historical-detectors.js?v=0.22.4"></script>
-  <script src="src/models/race.js?v=0.22.4"></script>
-  <script src="src/efficiency.js?v=0.22.4"></script>
-  <script src="src/resolution-microscope.js?v=0.22.4"></script>
-  <script src="src/architecture-explorer.js?v=0.22.4"></script>
-  <script src="src/history/history-experiments.js?v=0.22.4"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.23.0"></script>
+  <script src="src/core/preprocessing.js?v=0.23.0"></script>
+  <script src="src/models/models.js?v=0.23.0"></script>
+  <script src="src/core/detection-metrics.js?v=0.23.0"></script>
+  <script src="src/core/model-runtime.js?v=0.23.0"></script>
+  <script src="src/core/model-loader.js?v=0.23.0"></script>
+  <script src="src/core/external-data-store.js?v=0.23.0"></script>
+  <script src="src/core/model-storage.js?v=0.23.0"></script>
+  <script src="src/app.js?v=0.23.0"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.23.0"></script>
+  <script src="src/models/historical-detectors.js?v=0.23.0"></script>
+  <script src="src/models/race.js?v=0.23.0"></script>
+  <script src="src/efficiency.js?v=0.23.0"></script>
+  <script src="src/resolution-microscope.js?v=0.23.0"></script>
+  <script src="src/architecture-explorer.js?v=0.23.0"></script>
+  <script src="src/model-cache.js?v=0.23.0"></script>
+  <script src="src/history/history-experiments.js?v=0.23.0"></script>
 </body>
 </html>

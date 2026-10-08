@@ -20,6 +20,8 @@ const files={
   loader:read('src/core/model-loader.js'),
   externalDataStore:read('src/core/external-data-store.js'),
   app:read('src/app.js'),
+  storage:read('src/core/model-storage.js'),
+  cacheUi:read('src/model-cache.js'),
   historicalDetectors:read('src/models/historical-detectors.js'),
   lwdetrPostprocess:read('src/models/lwdetr-postprocess.js'),
   race:read('src/models/race.js'),
@@ -43,7 +45,7 @@ const files={
   version:JSON.parse(read('version.json'))
 };
 
-for(const [name,code] of Object.entries({bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,externalDataStore:files.externalDataStore,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,efficiency:files.efficiency,resolution:files.resolution,architectureExplorer:files.architectureExplorer,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
+for(const [name,code] of Object.entries({storage:files.storage,cacheUi:files.cacheUi,bootstrap:files.bootstrap,preprocessing:files.preprocessing,metrics:files.metrics,models:files.models,runtime:files.runtime,loader:files.loader,externalDataStore:files.externalDataStore,app:files.app,historicalDetectors:files.historicalDetectors,lwdetrPostprocess:files.lwdetrPostprocess,race:files.race,efficiency:files.efficiency,resolution:files.resolution,architectureExplorer:files.architectureExplorer,historyExperiments:files.historyExperiments,classicalWorker:files.classicalWorker})){
   try{new Function(code)}catch(error){fail(`${name}.js syntax: ${error.message}`)}
 }
 let relativeLoaderUrl='',relativeLoaderProgress=[];

@@ -84,3 +84,7 @@ Do not turn limited evidence into broader claims:
 - upstream paper metrics are not measurements of this browser implementation.
 
 When a check was not run, say so.
+
+## Model Storage verification
+
+The Chrome UI check also checks the visible timeline legend and 12-row Model Storage layout. Tiny deterministic assets exercise direct Cache API reuse, pinned Transformers.js cache keys, cancellation cleanup and scoped deletion preserving unrelated entries. A real pinned YOLOX and YOLOS-tiny downloads are then checked across page reload and deleted through the UI. No inference is needed for this storage-only path. Evidence includes Model Storage screenshots at desktop and mobile widths; physical iOS/WebKit storage behavior remains a separate check.

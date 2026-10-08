@@ -156,3 +156,18 @@
 
 .architecture-selectors label{min-width:0}.architecture-selectors select{min-width:0;cursor:pointer}.architecture-selectors select:hover{border-color:var(--accent)}.architecture-selectors select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .architecture-links{margin:14px 18px 0;gap:8px 14px}.architecture-links a{padding:4px 0;overflow-wrap:anywhere;cursor:pointer}.architecture-links a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}.architecture-links a:active{color:var(--ink)}.architecture-open{max-width:calc(100% - 36px);white-space:normal;overflow-wrap:anywhere;text-align:left}
+
+/* Timeline key and local model storage */
+.timeline-legend{display:flex;flex-wrap:wrap;gap:10px 18px;padding:10px 18px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
+.timeline-legend>span{display:inline-flex;align-items:center;gap:7px}
+.legend-marker{width:11px;height:11px;flex:none;border:2px solid var(--accent);border-radius:50%;background:var(--paper)}
+.legend-selected{border-radius:3px;background:var(--soft)}.legend-runnable{border-color:#8b8c84}.legend-experiment{border-color:var(--accent2);background:#fff7f2}
+.legend-transformer{border-color:#7057a3;background:#f4f0ff}.legend-history{border-color:#768b7e;background:#f3f7f2}
+.timeline-legend .legend-hint{flex-basis:100%;line-height:1.5}
+.cache-intro{padding:22px;margin-bottom:18px}.cache-intro h2{margin:6px 0 10px;font-size:clamp(24px,4vw,36px);letter-spacing:-.03em}
+.cache-intro>p{line-height:1.55}.cache-intro .status{margin:16px 0 0}.cache-intro progress{width:100%;height:8px;margin-top:16px;accent-color:var(--accent)}
+.cache-models{display:grid;gap:10px}.cache-model{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px;background:var(--paper);border:1px solid var(--line);border-radius:14px}
+.cache-model>div{min-width:0}.cache-model h3{margin:0 0 6px;font-size:16px}.cache-model p{margin:0;line-height:1.5;overflow-wrap:anywhere}
+.cache-actions{display:flex;flex-wrap:wrap;gap:8px}.cache-actions .btn{min-height:44px;white-space:normal}
+.cache-actions .btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:600px){.cache-model{align-items:stretch;flex-direction:column;gap:12px}.cache-actions .btn{flex:1}.timeline-legend{padding:10px 16px;gap:10px 14px}}

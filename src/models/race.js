@@ -522,5 +522,5 @@ ${tail||'—'}`;}
   $('race-benchmark').addEventListener('click',()=>benchmarkRace(false));
   $('race-benchmark-diag').addEventListener('click',()=>benchmarkRace(true));
   $('race-dispose-diag').addEventListener('click',diagnosticDisposeResident);
-  window.VisionRace=Object.freeze({runRace,benchmarkRace,runModel,getRuntimeInfo,getHeadMaps:()=>state.lastHeadMaps,getRTBackend:()=>state.rtBackend});
+  window.VisionRace=Object.freeze({isBusy:()=>state.running||state.benchmarking||state.sanityRunning,runRace,benchmarkRace,runModel,getRuntimeInfo,getHeadMaps:()=>state.lastHeadMaps,getRTBackend:()=>state.rtBackend});
 })();

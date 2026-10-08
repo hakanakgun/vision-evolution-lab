@@ -12,7 +12,7 @@
     const $ = id => document.getElementById(id);
     const DEFAULT_MODEL = REGISTRY.defaults?.timeMachine || Object.keys(REGISTRY).find(key=>REGISTRY[key]?.status==='runnable'&&RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine')) || 'yolox';
     const DEFAULT_LIVE_MODEL = REGISTRY.defaults?.live || RuntimeRegistry.modelKeys.find(key=>RuntimeRegistry.capabilityEnabled(REGISTRY[key],'live')) || '';
-    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,cameraFacing:'environment',cameraCanFlip:false,cameraZoom:null,cameraZoomChanging:false,liveInference:Promise.resolve(),liveTransition:Promise.resolve(),liveLoopToken:0,liveSwitching:false,runtimeTransition:Promise.resolve(),session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve(),modelDownloadController:null,modelDownloadConsentResolver:null,modelDownloadModel:''};
+    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,cameraStarting:false,cameraFacing:'environment',cameraCanFlip:false,cameraZoom:null,cameraZoomChanging:false,liveInference:Promise.resolve(),liveTransition:Promise.resolve(),liveLoopToken:0,liveSwitching:false,runtimeTransition:Promise.resolve(),session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve(),modelDownloadController:null,modelDownloadConsentResolver:null,modelDownloadModel:''};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -450,6 +450,7 @@
     function applyExternalRun(model,result,targetCanvas){const runtime=RuntimeRegistry.get(model)?.runtimeInfo?.()||{},modelMeta=REGISTRY[model]||{},runtimeUi=modelMeta.ui?.runtime||{},size=sourceSize(state.image),w=size.w,h=size.h;state.lastResults=result.detections;state.lastRunResult=Object.assign({},result);state.lastDims={sourceW:w,sourceH:h,width:targetCanvas.width,height:targetCanvas.height};state.inferenceCount++;setMetric('m-run-label',state.inferenceCount===1?'first inference':'warm run #'+state.inferenceCount);setMetric('m-pre',ms(result.preMs));setMetric('m-inf',ms(result.infMs));setMetric('m-post',ms(result.postMs));setMetric('m-total',ms(result.totalMs));setMetric('m-count',String(result.visible));const hasModelInput=Number.isFinite(result.inputWidth)&&Number.isFinite(result.inputHeight),inputWidth=hasModelInput?result.inputWidth:result.width,inputHeight=hasModelInput?result.inputHeight:result.height,inputLabel=hasModelInput?'model input':'browser staging';$('input-size').textContent=inputWidth+' × '+inputHeight+' '+inputLabel;setMetric('d-input',hasModelInput?inputWidth+'×'+inputHeight:`staging ${inputWidth}×${inputHeight} · processor-managed`);if(runtime.backend)$('backend-badge').textContent=runtime.dtype?runtime.backend.toUpperCase()+' · '+runtime.dtype:runtime.backend.toUpperCase();if(Number.isFinite(runtime.downloadMs))setMetric('m-download',ms(runtime.downloadMs));else if(runtimeUi.managedTransferWhenMissing)setMetric('m-download','managed by pipeline');if(Number.isFinite(runtime.initMs))setMetric('m-init',ms(runtime.initMs));if(runtime.bytes)setMetric('m-bytes',bytes(runtime.bytes));if(runtime.cacheState)setMetric('m-cache',runtime.source?runtime.cacheState+' · '+runtime.source:runtime.cacheState);updateInsideModelUI(model,state.lastRunResult,state.image);const boundary=runtimeUi.inferenceBoundaryNote?' '+runtimeUi.inferenceBoundaryNote:'';setStatus(result.visible+' detection'+(result.visible===1?'':'s')+' above confidence '+Number($('confidence').value).toFixed(2)+'.'+boundary);}
     async function runActiveModel(source,targetCanvas,{updateMain=true,benchmarking=false,downloadSignal}={}){const model=state.activeModel,adapter=RuntimeRegistry.get(model);if(!adapter)throw new Error('Active model runtime is not ready. Reload the page and try again.');const result=await adapter.run(source,targetCanvas,{benchmarking,updateMain,downloadSignal});if(updateMain&&!adapter.handlesMainUi&&model===state.activeModel)applyExternalRun(model,result,targetCanvas);return result;}
     async function runUploaded(){
+      if(window.VisionModelCache?.isBusy()){setStatus('Finish or cancel the model storage operation first.');return}
       if(!state.image||state.running||state.benchmarking)return;
       state.running=true;$('image-file').disabled=true;$('confidence').disabled=true;$('rerun').disabled=true;$('benchmark').disabled=true;$('history-run').disabled=true;
       let controller=null;
@@ -493,6 +494,7 @@
       $('benchmark-note').textContent=canBenchmark()?'Run one image first, then Benchmark ×20. Startup time is excluded.':'Individual Benchmark ×20 is not enabled for this model.';
     }
     async function runBenchmark(){
+      if(window.VisionModelCache?.isBusy()){setStatus('Finish or cancel the model storage operation first.');return}
       if(!state.image || state.benchmarking || state.historyExperiment) return;
       if(!canBenchmark()){setStatus('Individual Benchmark ×20 is not enabled for '+activeModel().title+'.');resetBenchmark();return}
       state.benchmarking=true;
@@ -733,10 +735,11 @@
       else if(adapter?.backend){const value=adapter.backend();if(value)$('live-backend').textContent=String(value)}
     }
     async function startCamera(){
+      if(window.VisionModelCache?.isBusy()){setStatus('Finish or cancel the model storage operation first.');return}
       if(state.live||state.liveSwitching)return;
       const modelKey=state.liveModel,token=++state.cameraStartToken,adapter=currentLiveAdapter();
       if(!adapter){renderLiveModels();setLiveStatus('Live Camera runtime is still loading.','error');return}
-      $('camera-start').disabled=true;setLiveStatus('Loading '+adapter.model.title+'…');
+      state.cameraStarting=true;$('camera-start').disabled=true;setLiveStatus('Loading '+adapter.model.title+'…');
       try{
         await state.liveTransition.catch(()=>{});
         await state.runtimeTransition.catch(()=>{});
@@ -757,7 +760,7 @@
         console.error(err);
         stopMediaStream(state.stream);state.stream=null;
         const video=$('camera-video');video.srcObject=null;$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Camera unavailable</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;renderLiveModels();renderCameraControls();setLiveStatus('Camera could not start with '+adapter.model.title+'.','error');
-      }
+      }finally{state.cameraStarting=false}
     }
 
     async function liveLoop(adapter,modelKey,loopToken){
@@ -804,6 +807,7 @@
       getActiveModel:()=>state.activeModel,
       getHistoryExperiment:()=>state.historyExperiment,
       isTimeMachineBusy:()=>state.running||state.benchmarking,
+      isCameraActive:()=>state.live||state.cameraStarting||state.liveSwitching,
       selectActiveModel,
       getLiveModel:()=>state.liveModel,
       selectLiveModel,
