@@ -47,8 +47,9 @@ async function main(){
       const page=await browser.newPage();
       await page.setViewport(viewport);
       await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
+      page.on('response',response=>{if(response.status()>=400)console.log('HTTP resource error:',response.status(),response.url());});
       page.on('pageerror',error=>errors.push(error.message));
-      page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
+      page.on('console',message=>{if(message.type()==='error')errors.push(message.text()+' at '+message.location().url);});
       try{
         await page.goto(target,{waitUntil:'networkidle2',timeout:60000});
         await page.waitForFunction(()=>window.VisionLab&&window.VisionArchitectureExplorer,{timeout:30000});
