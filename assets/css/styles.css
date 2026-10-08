@@ -161,7 +161,7 @@
 .timeline-legend{display:flex;flex-wrap:wrap;gap:10px 18px;padding:10px 18px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
 .timeline-legend>span{display:inline-flex;align-items:center;gap:7px}
 .legend-marker{width:11px;height:11px;flex:none;border:2px solid var(--accent);border-radius:50%;background:var(--paper)}
-.legend-selected{background:var(--accent)}.legend-experiment{border-color:var(--accent2);background:#fff7f2}
+.legend-selected{border-radius:3px;background:var(--soft)}.legend-runnable{border-color:#8b8c84}.legend-experiment{border-color:var(--accent2);background:#fff7f2}
 .legend-transformer{border-color:#7057a3;background:#f4f0ff}.legend-history{border-color:#768b7e;background:#f3f7f2}
 .timeline-legend .legend-hint{flex-basis:100%;line-height:1.5}
 .cache-intro{padding:22px;margin-bottom:18px}.cache-intro h2{margin:6px 0 10px;font-size:clamp(24px,4vw,36px);letter-spacing:-.03em}

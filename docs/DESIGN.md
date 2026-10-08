@@ -37,6 +37,6 @@ Keep the native, platform-owned model picker used by Live Camera. Both model cho
 
 ## Timeline legend and Model Storage
 
-Keep the timeline legend below the scrolling rail so it stays visible on narrow screens. Pair every marker color with text: selected model, historical experiment, transformer, and history only. Selection and architecture are different dimensions; color never represents accuracy.
+Keep the timeline legend below the scrolling rail so it stays visible on narrow screens. Pair every marker color with text: selected card, historical experiment, transformer, history only, and other runnable models. Selection and architecture are different dimensions; color never represents accuracy.
 
 Model Storage uses the same paper cards, native buttons and token focus rings. Stack each model's text and actions on phones; keep transfer progress and an accessible live status in the introduction card. Do not imply that saved files mean a model session is loaded or that the application is fully offline-ready.

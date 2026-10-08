@@ -103,7 +103,7 @@ async function main(){
         // Timeline legend stays outside the scrolling rail.
         await tab('time-machine');
         assert.equal(await page.$eval('.timeline-legend',el=>el.closest('.timeline-scroll')===null),true);
-        assert.equal(await page.$eval('.timeline-legend .legend-marker',nodes=>nodes.length),4);
+        assert.equal(await page.$eval('.timeline-legend .legend-marker',nodes=>nodes.length),5);
         await tab('model-cache');
         await page.waitForFunction(()=>document.querySelectorAll('.cache-model').length===12);
         assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),'yolox');
