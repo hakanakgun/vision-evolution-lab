@@ -34,3 +34,9 @@ Do not add a UI dependency, new palette, dark theme, or animated transition that
 ## Architecture Explorer
 
 Keep the native, platform-owned model picker used by Live Camera. Both model choices survive tab navigation within the current page session. Use the existing paper surfaces, sage links, and token-based focus rings. Profiles include the same research and provenance links as Time Machine, with model-specific accessible names; long action labels wrap inside the card on narrow screens.
+
+## Timeline legend and Model Storage
+
+Keep the timeline legend below the scrolling rail so it stays visible on narrow screens. Pair every marker color with text: selected model, historical experiment, transformer, and history only. Selection and architecture are different dimensions; color never represents accuracy.
+
+Model Storage uses the same paper cards, native buttons and token focus rings. Stack each model's text and actions on phones; keep transfer progress and an accessible live status in the introduction card. Do not imply that saved files mean a model session is loaded or that the application is fully offline-ready.
