@@ -154,8 +154,9 @@ async function main(){
           // Real pinned YOLOX download, refresh-time persistence and scoped deletion.
           page.on('dialog',dialog=>dialog.accept());
           for(const key of ['yolox','yolos']){
+            await page.waitForFunction(()=>document.getElementById('cache-models').getAttribute('aria-busy')==='false');
             await page.click('.cache-model[data-model="'+key+'"] [data-cache-action="download"]');
-            await page.waitForFunction(()=>!window.VisionModelCache.isBusy()&&document.getElementById('cache-status').textContent.includes('model files saved'),{timeout:120000});
+            await page.waitForFunction(()=>!window.VisionModelCache.isBusy()&&document.getElementById('cache-models').getAttribute('aria-busy')==='false'&&document.getElementById('cache-status').textContent.includes('model files saved'),{timeout:120000});
             await page.reload({waitUntil:'networkidle2'});
             await tab('model-cache');
             await page.waitForFunction(key=>document.querySelector('.cache-model[data-model="'+key+'"] p')?.textContent.includes('Model files saved'),{},key);
@@ -172,7 +173,7 @@ async function main(){
               assert.deepEqual(repeated,[],'YOLOS pipeline must reuse prefetched model/config files');
             }
             await page.click('.cache-model[data-model="'+key+'"] [data-cache-action="delete"]');
-            await page.waitForFunction(()=>!window.VisionModelCache.isBusy()&&document.getElementById('cache-status').textContent.includes('saved files deleted'));
+            await page.waitForFunction(()=>!window.VisionModelCache.isBusy()&&document.getElementById('cache-models').getAttribute('aria-busy')==='false'&&document.getElementById('cache-status').textContent.includes('saved files deleted'));
           }
           assert.equal(await page.evaluate(()=>window.VisionLab.getActiveModel()),'yolox');
         }
