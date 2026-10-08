@@ -18,3 +18,5 @@ Stable project reference documents live alongside the implementation notes in th
 - [Model catalog](MODEL_CATALOG.md)
 - [Model sources and provenance](MODEL_SOURCES.md)
 - [Third-party licenses](THIRD_PARTY_LICENSES.md)
+
+- [Compact detector review](MODEL_REVIEW.md) — source-backed LW-DETR-tiny / D-FINE-N comparison and the decision to reuse existing browser adapters.

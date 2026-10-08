@@ -6,7 +6,7 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.22.3',
+    version:'0.22.4',
     runtime:Object.freeze({ort:'1.30.0',ortDistUrl:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/',ortJspiUrl:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.jspi.min.mjs',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),

@@ -534,4 +534,42 @@ for(const file of markdown){
 }
 check(broken.length===0,`broken local markdown links: ${broken.join(' | ')}`);
 
+
+{
+  class ExplorerElement {
+    constructor(){this.childNodes=[];this.listeners={};this.attributes={};this.value='';}
+    append(...children){this.childNodes.push(...children)}
+    appendChild(child){this.append(child);return child}
+    replaceChildren(...children){this.childNodes=[...children]}
+    setAttribute(name,value){this.attributes[name]=value}
+    addEventListener(name,listener){(this.listeners[name]??=[]).push(listener)}
+  }
+  const elements=Object.fromEntries(['architecture-a','architecture-b','architecture-status','architecture-profile-a','architecture-profile-b'].map(id=>[id,new ExplorerElement()]));
+  const listeners={};let selectedModel='',tabClicks=0;
+  const explorerWindow={
+    VisionModels:metadataRegistry,
+    VisionRuntimeRegistry:metadataWindow.VisionRuntimeRegistry,
+    VisionLab:{selectActiveModel:key=>{selectedModel=key}}
+  };
+  const explorerDocument={
+    getElementById:id=>elements[id],
+    createElement:()=>new ExplorerElement(),
+    addEventListener:(name,listener)=>(listeners[name]??=[]).push(listener),
+    querySelector:()=>({click:()=>{tabClicks++}})
+  };
+  vm.runInNewContext(files.architectureExplorer,{window:explorerWindow,document:explorerDocument},{filename:'architecture-explorer-navigation-test.js'});
+  elements['architecture-a'].value='lwdetr';elements['architecture-b'].value='dfine';
+  for(const listener of elements['architecture-a'].listeners.change)listener();
+  for(let returnCount=0;returnCount<5;returnCount++)for(const listener of listeners['vision:tabchange'])listener({detail:{tab:'architecture-explorer'}});
+  check(elements['architecture-a'].value==='lwdetr'&&elements['architecture-b'].value==='dfine','Architecture Explorer must preserve the compared pair across tab returns');
+  check(elements['architecture-a'].listeners.change.length===1&&elements['architecture-b'].listeners.change.length===1,'Architecture Explorer must not accumulate change listeners across tab returns');
+  check(elements['architecture-status'].textContent.includes('LW-DETR-tiny')&&elements['architecture-status'].textContent.includes('D-FINE-N'),'Architecture Explorer status must identify the compared pair');
+  const profile=elements['architecture-profile-a'];
+  const links=profile.childNodes.find(node=>node.className==='links architecture-links')?.childNodes||[];
+  check(links.some(link=>link.href==='https://arxiv.org/abs/2406.03459'),'Architecture Explorer must expose the selected model paper');
+  check(links.every(link=>link.rel==='noopener noreferrer'&&link.attributes['aria-label'].includes('LW-DETR-tiny')),'Architecture Explorer research links must identify their model and secure new tabs');
+  profile.childNodes.at(-1).listeners.click[0]();
+  check(selectedModel==='lwdetr'&&tabClicks===1,'Architecture Explorer action must select the compared model in Time Machine');
+}
+
 console.log(`validate: PASS · ${files.version.version} · ${timeMachineModels.length} AI Time Machine models · ${Object.keys(historyExperiments).length} historical experiments · ${liveKeys.length} live models · ${raceModels.length} race models · shared-image UI`);

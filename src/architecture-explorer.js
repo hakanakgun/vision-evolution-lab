@@ -58,16 +58,29 @@
     );
     root.appendChild(details);
     const note=document.createElement('div');note.className='note architecture-note';note.textContent=intermediate.note||'No deeper intermediate tensor claim is made.';root.appendChild(note);
+    const links=document.createElement('div');links.className='links architecture-links';
+    for(const source of model.ui?.links||[]){
+      const link=document.createElement('a');link.href=source.url;link.textContent=source.label;
+      link.target='_blank';link.rel='noopener noreferrer';
+      link.setAttribute('aria-label',source.label.replace(' ↗','')+' for '+model.title+' (opens in a new tab)');links.appendChild(link);
+    }
+    if(links.childNodes.length)root.appendChild(links);
     const action=document.createElement('button');action.className='btn secondary architecture-open';action.type='button';action.textContent='Select '+model.title+' in Time Machine';
     action.addEventListener('click',()=>{lab?.selectActiveModel?.(key,{scroll:false});document.querySelector('[data-tab="time-machine"]')?.click()});root.appendChild(action);
   }
+  let initialized=false;
+  function render(){
+    const a=$('architecture-a'),b=$('architecture-b'),status=$('architecture-status');if(!a||!b||!status)return;
+    renderProfile('a',a.value);renderProfile('b',b.value);
+    status.textContent='Comparing '+(registry[a.value]?.title||'Architecture A')+' with '+(registry[b.value]?.title||'Architecture B')+'. Declared browser contracts only; no inference or hidden-layer reconstruction.';
+  }
   function populate(){
+    if(initialized){render();return;}
     const items=entries(),a=$('architecture-a'),b=$('architecture-b');if(!a||!b)return;
     for(const select of [a,b]){select.replaceChildren();for(const item of items){const option=document.createElement('option');option.value=item.key;option.textContent=(item.timeline.month?item.timeline.year+'-'+String(item.timeline.month).padStart(2,'0'):item.timeline.year)+' · '+item.model.title;select.appendChild(option)}}
     a.value=items.some(item=>item.key==='fasterrcnn')?'fasterrcnn':items[0]?.key||'';
     b.value=items.some(item=>item.key==='rtdetr')?'rtdetr':items.at(-1)?.key||'';
-    const render=()=>{renderProfile('a',a.value);renderProfile('b',b.value);$('architecture-status').textContent='Comparing declared browser contracts only. No inference, hidden-layer reconstruction, or synthetic architecture tensor is used.'};
-    a.addEventListener('change',render);b.addEventListener('change',render);render();
+    a.addEventListener('change',render);b.addEventListener('change',render);initialized=true;render();
   }
   document.addEventListener('vision:tabchange',event=>{if(event.detail?.tab==='architecture-explorer')populate()});
   window.VisionArchitectureExplorer=Object.freeze({render:populate});
