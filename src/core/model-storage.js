@@ -50,7 +50,8 @@
   async function download(model,{signal,onProgress}={}){
     check(signal);
     if(!('caches'in window))throw new Error('Persistent model storage is unavailable.');
-    if(model.externalData?.enabled&&window.VisionExternalDataStore.support().opfs){
+    if(model.externalData?.enabled){
+      if(!window.VisionExternalDataStore.support().opfs)throw new Error('Pre-downloading this large model requires OPFS storage in this browser.');
       await window.VisionExternalDataStore.prepare(model,{signal,onProgress});
       check(signal);return;
     }
