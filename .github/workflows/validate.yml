@@ -25,3 +25,31 @@ jobs:
         run: |
           node --version
           node scripts/validate.mjs
+
+  architecture-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install isolated browser test tooling
+        run: npm install --prefix "$RUNNER_TEMP/vision-ui-test" --no-save --no-audit --no-fund puppeteer-core@24.23.0
+      - name: Test Architecture Explorer in desktop and mobile Chrome
+        env:
+          NODE_PATH: ${{ runner.temp }}/vision-ui-test/node_modules
+          VISION_UI_EVIDENCE: ${{ runner.temp }}/vision-ui-evidence/local
+        run: node tools/test_architecture_explorer_browser.cjs
+      - name: Verify the deployed release after a main push
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          NODE_PATH: ${{ runner.temp }}/vision-ui-test/node_modules
+          VISION_UI_EVIDENCE: ${{ runner.temp }}/vision-ui-evidence/live
+          VISION_LAB_URL: https://hakanakgun.github.io/vision-evolution-lab/
+        run: node tools/test_architecture_explorer_browser.cjs
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: architecture-browser-evidence
+          path: ${{ runner.temp }}/vision-ui-evidence
+          retention-days: 7

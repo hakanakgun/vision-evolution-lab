@@ -30,3 +30,7 @@ Runnable controls use a transparent reset with visible hover, keyboard-focus, an
 The timeline scroll area has an accessible region label and description. Model and experiment buttons expose their pressed state and a visible keyboard focus ring. Keep normal page scrolling vertical; horizontal scrolling belongs only to the timeline. Respect reduced-motion preferences and retain touch-sized controls.
 
 Do not add a UI dependency, new palette, dark theme, or animated transition that changes inference or model-selection behavior.
+
+## Architecture Explorer
+
+Keep the native, platform-owned model picker used by Live Camera. Both model choices survive tab navigation within the current page session. Use the existing paper surfaces, sage links, and token-based focus rings. Profiles include the same research and provenance links as Time Machine, with model-specific accessible names; long action labels wrap inside the card on narrow screens.
