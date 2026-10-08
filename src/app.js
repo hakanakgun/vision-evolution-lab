@@ -12,7 +12,7 @@
     const $ = id => document.getElementById(id);
     const DEFAULT_MODEL = REGISTRY.defaults?.timeMachine || Object.keys(REGISTRY).find(key=>REGISTRY[key]?.status==='runnable'&&RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine')) || 'yolox';
     const DEFAULT_LIVE_MODEL = REGISTRY.defaults?.live || RuntimeRegistry.modelKeys.find(key=>RuntimeRegistry.capabilityEnabled(REGISTRY[key],'live')) || '';
-    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,cameraFacing:'environment',cameraCanFlip:false,cameraZoom:null,cameraZoomChanging:false,liveInference:Promise.resolve(),liveTransition:Promise.resolve(),liveLoopToken:0,liveSwitching:false,runtimeTransition:Promise.resolve(),session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve(),modelDownloadController:null,modelDownloadConsentResolver:null,modelDownloadModel:''};
+    const state = {activeModel:DEFAULT_MODEL,liveModel:DEFAULT_LIVE_MODEL,cameraStartToken:0,cameraStarting:false,cameraFacing:'environment',cameraCanFlip:false,cameraZoom:null,cameraZoomChanging:false,liveInference:Promise.resolve(),liveTransition:Promise.resolve(),liveLoopToken:0,liveSwitching:false,runtimeTransition:Promise.resolve(),session:null, provider:'', modelBuffer:null, image:null, lastResults:null, lastRunResult:null, lastDims:null, live:false, stream:null, liveSamples:[], liveFrameCount:0,inferenceCount:0,running:false,benchmarking:false,historyExperiment:'',historyTransition:Promise.resolve(),modelDownloadController:null,modelDownloadConsentResolver:null,modelDownloadModel:''};
 
     if (!window.ort || !window.WebAssembly) {
       $('unsupported').textContent = 'This browser is missing WebAssembly or ONNX Runtime failed to load. Try a current Chrome, Edge, Safari, or Firefox build.';
@@ -739,7 +739,7 @@
       if(state.live||state.liveSwitching)return;
       const modelKey=state.liveModel,token=++state.cameraStartToken,adapter=currentLiveAdapter();
       if(!adapter){renderLiveModels();setLiveStatus('Live Camera runtime is still loading.','error');return}
-      $('camera-start').disabled=true;setLiveStatus('Loading '+adapter.model.title+'…');
+      state.cameraStarting=true;$('camera-start').disabled=true;setLiveStatus('Loading '+adapter.model.title+'…');
       try{
         await state.liveTransition.catch(()=>{});
         await state.runtimeTransition.catch(()=>{});
@@ -760,7 +760,7 @@
         console.error(err);
         stopMediaStream(state.stream);state.stream=null;
         const video=$('camera-video');video.srcObject=null;$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Camera unavailable</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;renderLiveModels();renderCameraControls();setLiveStatus('Camera could not start with '+adapter.model.title+'.','error');
-      }
+      }finally{state.cameraStarting=false}
     }
 
     async function liveLoop(adapter,modelKey,loopToken){
@@ -807,7 +807,7 @@
       getActiveModel:()=>state.activeModel,
       getHistoryExperiment:()=>state.historyExperiment,
       isTimeMachineBusy:()=>state.running||state.benchmarking,
-      isCameraActive:()=>state.live,
+      isCameraActive:()=>state.live||state.cameraStarting||state.liveSwitching,
       selectActiveModel,
       getLiveModel:()=>state.liveModel,
       selectLiveModel,
