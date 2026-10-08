@@ -15,7 +15,7 @@ function chromeExecutable(){
 }
 async function main(){
   let server,browser;
-  const errors=[],results=[];
+  const errors=[],results=[],optionalProbes=[];
   try{
     let target=process.env.VISION_LAB_URL;
     if(!target){
@@ -49,7 +49,16 @@ async function main(){
       await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
       page.on('response',response=>{if(response.status()>=400)console.log('HTTP resource error:',response.status(),response.url());});
       page.on('pageerror',error=>errors.push(error.message));
-      page.on('console',message=>{if(message.type()==='error')errors.push(message.text()+' at '+message.location().url);});
+      const optionalTokenizerProbe='https://huggingface.co/Xenova/yolos-tiny/resolve/main/tokenizer_config.json';
+      page.on('console',message=>{
+        if(message.type()!=='error')return;
+        // Transformers.js performs this optional tokenizer lookup even for an
+        // image-only pipeline. The model/config cache-reuse assertion remains strict.
+        if(message.location().url===optionalTokenizerProbe&&message.text().includes('404')){
+          optionalProbes.push({url:optionalTokenizerProbe,status:404});return;
+        }
+        errors.push(message.text()+' at '+message.location().url);
+      });
       try{
         await page.goto(target,{waitUntil:'networkidle2',timeout:60000});
         await page.waitForFunction(()=>window.VisionLab&&window.VisionArchitectureExplorer,{timeout:30000});
@@ -184,7 +193,7 @@ async function main(){
       }finally{await page.close();}
     }
     assert.deepEqual(errors,[],'Browser errors');
-    const report={url:target,build:manifest.build,browser:await browser.version(),results,errors};
+    const report={url:target,build:manifest.build,browser:await browser.version(),results,errors,optionalProbes};
     fs.writeFileSync(path.join(output,'report.json'),JSON.stringify(report,null,2));
     console.log('Architecture Explorer browser checks: PASS '+JSON.stringify(report));
   }finally{
