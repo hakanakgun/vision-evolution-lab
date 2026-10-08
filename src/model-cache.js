@@ -6,7 +6,7 @@
   let operation=null,generation=0;
   const size=value=>Number.isFinite(value)&&value>0?window.VisionModelLoader.formatBytes(value):'Size not declared';
   const status=text=>{$('cache-status').textContent=text};
-  const busy=()=>window.VisionLab?.isTimeMachineBusy()||window.VisionLab?.isCameraActive()||Array.from(document.querySelectorAll('button')).some(node=>node.disabled&&/running|benchmarking/i.test(node.textContent));
+  const busy=()=>window.VisionLab?.isTimeMachineBusy()||window.VisionLab?.isCameraActive()||window.VisionRace?.isBusy()||window.VisionResolutionMicroscope?.isBusy();
   function button(text,action,key){
     const node=document.createElement('button');node.type='button';node.className='btn secondary';node.textContent=text;
     node.dataset.cacheAction=action;node.dataset.model=key;

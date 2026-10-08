@@ -101,6 +101,6 @@
     if(lastModel&&(lastModel!==model||lastSource!==source))clearResults();
     setContext();
   });
-  window.VisionResolutionMicroscope=Object.freeze({run:runMicroscope,clear:clearResults});
+  window.VisionResolutionMicroscope=Object.freeze({isBusy:()=>running,run:runMicroscope,clear:clearResults});
   setContext();
 })();
