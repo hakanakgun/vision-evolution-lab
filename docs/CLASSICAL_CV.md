@@ -50,6 +50,8 @@ The cascade XML is a later OpenCV-distributed asset credited to Rainer Lienhart.
 
 The worker uses OpenCV's `HOGDescriptor` and `getDefaultPeopleDetector()`. The default window is 64×128; `detectMultiScale` uses 8×8 stride, 8×8 padding, scale 1.05, and group threshold 2. The coefficients are supplied by OpenCV.js; this repository does not claim they are the exact Dalal–Triggs paper checkpoint.
 
+The displayed count is a count of candidate regions, not unique tracked people; grouped windows can overlap or refer to one pedestrian. OpenCV’s default hit threshold is 0 and its grouping threshold is 2; the Time Machine AI confidence slider does not apply to this historical experiment.
+
 A zero-result run is valid. It means that this detector returned no pedestrian boxes under this method and input; it does not establish image-level accuracy.
 
 ## 2012 · AlexNet ImageNet classification

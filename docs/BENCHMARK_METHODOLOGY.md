@@ -15,9 +15,9 @@ The UI reports startup and per-run costs separately.
 ### Current run
 
 - **Preprocess**: source-image resize / tensor preparation performed by the page.
-- **Inference**: the awaited runtime model execution only.
-- **Postprocess + draw**: output decoding, threshold/NMS where applicable, and overlay drawing.
-- **End-to-end**: preprocess + inference + postprocess/draw for that run. The first run excludes model transfer, integrity verification, and session creation just like later runs.
+- **Inference**: the awaited ONNX `session.run()` or Transformers.js pipeline call. Pipeline timing includes its processor/model/postprocessor work.
+- **Postprocess + draw**: output validation/decoding, threshold/NMS where applicable, canvas refresh, and overlay drawing performed outside that inference call.
+- **End-to-end**: the sum of the measured preprocess, inference, and postprocess/draw phases. Runtime preparation is awaited before the inference timer starts, so the first run excludes model transfer, integrity verification, and session/pipeline creation just like later runs. The total is not wall-clock time from clicking Run.
 
 ## 2. Warm benchmark
 

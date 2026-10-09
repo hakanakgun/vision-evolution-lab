@@ -111,6 +111,67 @@ async function main(){
         }
         // Timeline legend stays outside the scrolling rail.
         await tab('time-machine');
+        await page.evaluate(()=>{
+          document.getElementById('m-download').textContent='900 ms';
+          document.getElementById('m-init').textContent='800 ms';
+          document.getElementById('m-bytes').textContent='3.49 MB';
+          document.getElementById('m-cache').textContent='stale cache entry';
+          document.getElementById('m-inf').textContent='700 ms';
+          document.getElementById('m-total').textContent='2400 ms';
+        });
+        await page.$eval('[data-history-experiment="hog-pedestrians"]',el=>el.scrollIntoView({block:'center',inline:'center'}));
+        await page.click('[data-history-experiment="hog-pedestrians"]');
+        const historyUi=await page.evaluate(()=>({
+          panelHidden:document.getElementById('history-experiment-panel').hidden,
+          confidenceHidden:document.getElementById('confidence-control').hidden,
+          confidenceDisabled:document.getElementById('confidence').disabled,
+          startupHidden:document.getElementById('model-startup-metrics').hidden,
+          runHidden:document.getElementById('model-run-metrics').hidden,
+          deviceCardHidden:document.getElementById('model-device-card').hidden,
+          historicalLayout:document.getElementById('time-machine-workspace').classList.contains('historical-mode'),
+          bytes:document.getElementById('m-bytes').textContent,
+          cache:document.getElementById('m-cache').textContent,
+          transfer:document.getElementById('m-download').textContent,
+          inference:document.getElementById('m-inf').textContent,
+          total:document.getElementById('m-total').textContent,
+          badge:document.getElementById('backend-badge').textContent
+        }));
+        assert.deepEqual(historyUi,{panelHidden:false,confidenceHidden:true,confidenceDisabled:true,startupHidden:true,runHidden:true,deviceCardHidden:true,historicalLayout:true,bytes:'—',cache:'—',transfer:'—',inference:'—',total:'—',badge:'Historical method'});
+        await page.screenshot({path:path.join(output,'historical-state-'+viewport.width+'.png'),fullPage:true});
+        await page.$eval('[data-runnable-model="dfine"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+        await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='dfine');
+        assert.deepEqual(await page.evaluate(()=>({
+          confidenceHidden:document.getElementById('confidence-control').hidden,
+          startupHidden:document.getElementById('model-startup-metrics').hidden,
+          runHidden:document.getElementById('model-run-metrics').hidden,
+          deviceCardHidden:document.getElementById('model-device-card').hidden,
+          historicalLayout:document.getElementById('time-machine-workspace').classList.contains('historical-mode')
+        })),{confidenceHidden:false,startupHidden:false,runHidden:false,deviceCardHidden:false,historicalLayout:false});
+        const units=await page.evaluate(()=>({
+          mb:window.VisionModelLoader.formatBytes(7_809_003),
+          kb:window.VisionModelLoader.formatBytes(26_143)
+        }));
+        assert.deepEqual(units,{mb:'7.81 MB',kb:'26 KB'});
+        let realInference=null;
+        if(viewport.width===1440){
+          await page.setInputFiles('#image-file',path.join(root,'assets/benchmark/coco-val-000000397133.jpg'));
+          await page.waitForFunction(()=>document.getElementById('m-run-label').textContent==='first inference',{timeout:120000});
+          await page.waitForFunction(()=>!window.VisionLab.isTimeMachineBusy());
+          realInference=await page.evaluate(()=>{
+            const ms=id=>Number.parseFloat(document.getElementById(id).textContent);
+            return {
+              preprocess:ms('m-pre'),inference:ms('m-inf'),postprocess:ms('m-post'),total:ms('m-total'),
+              detections:Number(document.getElementById('m-count').textContent),
+              bytes:document.getElementById('m-bytes').textContent,
+              formattedBytes:window.VisionModelLoader.formatBytes(window.VisionModels.dfine.runtime.wasm.modelBytes)
+            };
+          });
+          for(const [name,value] of Object.entries(realInference))if(name!=='bytes'&&name!=='formattedBytes')assert.ok(Number.isFinite(value)&&value>=0,'D-FINE real inference metric '+name);
+          assert.equal(realInference.bytes,realInference.formattedBytes);
+          assert.ok(Math.abs(realInference.total-(realInference.preprocess+realInference.inference+realInference.postprocess))<1,'end-to-end time must equal measured phases and exclude setup');
+        }
+        await page.$eval('[data-runnable-model="yolox"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+        await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='yolox'&&!window.VisionLab.isTimeMachineBusy());
         assert.equal(await page.$eval('.timeline-legend',el=>el.closest('.timeline-scroll')===null),true);
         assert.equal(await page.$$eval('.timeline-legend .legend-marker',nodes=>nodes.length),5);
         await tab('model-cache');
@@ -186,7 +247,7 @@ async function main(){
           }
           assert.equal(await page.evaluate(()=>window.VisionLab.getActiveModel()),'yolox');
         }
-        results.push({viewport,status:'PASS',models:keys.length,build:manifest.build});
+        results.push({viewport,status:'PASS',models:keys.length,build:manifest.build,historicalState:historyUi,units,realInference});
       }catch(error){
         await page.screenshot({path:path.join(output,'failure-'+viewport.width+'.png'),fullPage:true}).catch(()=>{});
         throw error;

@@ -4,7 +4,7 @@
   const hasParts=source=>Array.isArray(source?.parts)&&source.parts.length>0;
   const resolveUrl=value=>new URL(value,window.location.href).href;
   const resolveSourceUrl=source=>resolveUrl(source.url||source.cacheKey||source.parts?.[0]?.url||'');
-  const formatBytes=v=>{if(!Number.isFinite(v)||v<=0)return '—';const mb=v/1048576;return mb>=1?`${mb.toFixed(mb<10?2:1)} MB`:`${(v/1024).toFixed(0)} KB`;};
+  const formatBytes=v=>{if(!Number.isFinite(v)||v<=0)return '—';const mb=v/1e6;return mb>=1?`${mb.toFixed(mb<10?2:1)} MB`:`${(v/1000).toFixed(0)} KB`;};
   const abortError=()=>{const error=new Error('Model download cancelled.');error.name='AbortError';return error};
   const throwIfAborted=signal=>{if(signal?.aborted)throw abortError()};
   async function sha256Hex(view){if(!globalThis.crypto?.subtle)throw new Error('SHA-256 verification is unavailable in this browser.');const digest=await crypto.subtle.digest('SHA-256',view);return[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('')}

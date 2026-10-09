@@ -292,7 +292,7 @@
     drawBoxes(source,work.width,work.height,visible,item=>item.digit+' · score '+Math.round(item.score*100)+'%');
     setText('history-input-size',work.width+'×'+work.height+' → 28×28 crops');
     setText('history-output-count',visible.length+' digit'+(visible.length===1?'':'s')+' · '+detections.length+' candidates');
-    setText('history-preprocess',ms(proposalMs+cropPrepMs));setText('history-inference',ms(inferenceMs));setText('history-load',ms(loaded.elapsedMs)+' · '+Math.round(loaded.bytes/1024)+' KB');
+    setText('history-preprocess',ms(proposalMs+cropPrepMs));setText('history-inference',ms(inferenceMs));setText('history-load',ms(loaded.elapsedMs)+' · '+Math.round(loaded.bytes/1000)+' KB');
     if(visible.length)setStatus(visible.length+' handwritten digit candidate'+(visible.length===1?'':'s')+' shown. The model only classifies digit crops; this is not general object detection.');
     else setStatus('No digit candidate reached the 70% display score. This experiment recognizes isolated handwritten digits only; it does not detect general objects or arbitrary text.');
   }
@@ -326,7 +326,7 @@
         const result=await runWorker(spec.workerMethod,work);
         if(runId!==state.runToken)return;
         drawBoxes(source,work.width,work.height,result.boxes,()=>spec.workerMethod==='face'?'frontal face':'person');
-        setText('history-input-size',work.width+'×'+work.height+' · working image');setText('history-output-count',result.boxes.length+' '+(spec.workerMethod==='face'?'face':'pedestrian')+(result.boxes.length===1?'':'s'));
+        setText('history-input-size',work.width+'×'+work.height+' · working image');setText('history-output-count',result.boxes.length+' '+(spec.workerMethod==='face'?'face':'pedestrian region')+(result.boxes.length===1?'':'s'));
         setText('history-preprocess',spec.workerMethod==='face'?'RGBA → grayscale → histogram equalization':'RGBA → RGB → 64×128 sliding windows');setText('history-inference',ms(result.inferenceMs));
         const assetMs=Number.isFinite(result.asset?.loadMs)?result.asset.loadMs:workerInfo.elapsed;
         setText('history-load',result.asset?(result.asset.reused?'cached cascade':ms(assetMs)+' · cascade'):ms(workerInfo.elapsed)+' · OpenCV.js');
