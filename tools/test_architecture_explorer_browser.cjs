@@ -51,7 +51,8 @@ async function main(){
       page.on('pageerror',error=>errors.push(error.message));
       const optionalTokenizerProbes=new Set([
         'https://huggingface.co/Xenova/yolos-tiny/resolve/main/tokenizer_config.json',
-        'https://huggingface.co/onnx-community/dfine_n_coco-ONNX/resolve/main/tokenizer_config.json'
+        'https://huggingface.co/onnx-community/dfine_n_coco-ONNX/resolve/main/tokenizer_config.json',
+        'https://huggingface.co/onnx-community/rfdetr_nano-ONNX/resolve/main/tokenizer_config.json'
       ]);
       page.on('console',message=>{
         if(message.type()!=='error')return;
