@@ -4,7 +4,7 @@
   if(!api||!registry||!runtimes)return;
 
   const $=id=>document.getElementById(id),VERSION=registry.version||'0.11.0',WORK_MAX=640,DIGIT_SCORE_FLOOR=.70;
-  const state={worker:null,workerReady:null,pending:new Map(),seq:0,runToken:0,running:false,digitSession:null,alexnetSession:null,alexnetAbort:null,imagenetLabels:null,result:null,image:null};
+  const state={worker:null,workerReady:null,pending:new Map(),seq:0,runToken:0,running:false,digitSession:null,alexnetSession:null,alexnetAbort:null,dinoPipeline:null,dinoLoadPromise:null,dinoGeneration:0,imagenetLabels:null,result:null,image:null};
 
   const ms=value=>Number.isFinite(value)?value.toFixed(1)+' ms':'—';
   const setText=(id,value)=>{const element=$(id);if(element)element.textContent=String(value)};
@@ -20,7 +20,7 @@
   }
 
   function drawBase(source,width,height){
-    const canvas=$('image-canvas');canvas.width=width;canvas.height=height;
+    const canvas=$('image-canvas');canvas.classList.remove('feature-map-active');canvas.removeAttribute('aria-label');const featureControls=$('history-feature-controls');if(featureControls)featureControls.hidden=true;canvas.width=width;canvas.height=height;
     const context=canvas.getContext('2d');context.clearRect(0,0,width,height);context.drawImage(source,0,0,width,height);
     canvas.hidden=false;$('image-empty').hidden=true;
     return canvas;
@@ -141,7 +141,7 @@
 
   async function releaseAll({status='released'}={}){
     state.runToken++;state.running=false;disposeWorker();
-    await Promise.all([releaseDigitSession(),releaseAlexNetSession()]);
+    await Promise.all([releaseDigitSession(),releaseAlexNetSession(),releaseDinoSession()]);
     if(status)setRuntime(status);
   }
 
@@ -297,6 +297,133 @@
     else setStatus('No digit candidate reached the 70% display score. This experiment recognizes isolated handwritten digits only; it does not detect general objects or arbitrary text.');
   }
 
+  async function disposeDinoPipeline(pipeline){
+    if(!pipeline)return;
+    try{
+      if(typeof pipeline.dispose==='function')await pipeline.dispose();
+      else if(typeof pipeline.model?.dispose==='function')await pipeline.model.dispose();
+    }catch(error){console.warn('Historical DINOv3 session release failed',error)}
+  }
+
+  function clearFeatureUi(){const controls=$('history-feature-controls'),canvas=$('image-canvas');if(controls)controls.hidden=true;if(canvas){canvas.classList.remove('feature-map-active');canvas.removeAttribute('aria-label')}}
+
+  async function releaseDinoSession(){
+    state.dinoGeneration++;
+    const pipeline=state.dinoPipeline;state.dinoPipeline=null;
+    await disposeDinoPipeline(pipeline);
+  }
+
+  async function ensureDinoPipeline(spec,runId){
+    if(state.dinoPipeline)return{pipeline:state.dinoPipeline,loadMs:0,reused:true};
+    if(state.dinoLoadPromise){
+      const pipeline=await state.dinoLoadPromise;
+      if(runId!==state.runToken)return null;
+      if(pipeline)return{pipeline,loadMs:0,reused:true};
+    }
+    const generation=state.dinoGeneration,started=performance.now();
+    setRuntime('Loading DINOv3 · q4/WASM…');
+    let pending;
+    pending=(async()=>{
+      const transformers=await import(registry.runtime.transformersJsUrl);
+      const pipeline=await transformers.pipeline('image-feature-extraction',spec.model.modelId,{
+        device:'wasm',dtype:spec.model.dtype,revision:spec.model.revision,
+        progress_callback:info=>{
+          if(runId!==state.runToken||generation!==state.dinoGeneration)return;
+          if(info?.status==='progress'&&Number.isFinite(info.progress)){
+            const progress=Math.round(info.progress<=1?info.progress*100:info.progress);
+            setRuntime('Loading DINOv3 · q4/WASM · '+progress+'%');
+          }else if(info?.status==='initiate')setRuntime('Loading DINOv3 model files · q4/WASM');
+        }
+      });
+      if(generation!==state.dinoGeneration){await disposeDinoPipeline(pipeline);return null}
+      state.dinoPipeline=pipeline;return pipeline;
+    })().finally(()=>{if(state.dinoLoadPromise===pending)state.dinoLoadPromise=null});
+    state.dinoLoadPromise=pending;
+    const pipeline=await pending;
+    if(runId!==state.runToken)return null;
+    if(!pipeline)return ensureDinoPipeline(spec,runId);
+    return{pipeline,loadMs:performance.now()-started,reused:false};
+  }
+
+  function interpolateRgb(a,b,amount){
+    return a.map((value,index)=>Math.round(value+(b[index]-value)*amount));
+  }
+
+  function tokenRgb(name,fallback){
+    const value=getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const match=value.match(/^#([\da-f]{3}|[\da-f]{6})$/i);if(!match)return fallback;
+    const hex=match[1].length===3?match[1].split('').map(part=>part+part).join(''):match[1];
+    return[parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)];
+  }
+
+  function dinoSimilarities(result,referenceIndex){
+    const {features,gridWidth,gridHeight,dimension,tokenOffset}=result,count=gridWidth*gridHeight;
+    const referenceOffset=(tokenOffset+referenceIndex)*dimension;
+    let referenceNorm=0;
+    for(let i=0;i<dimension;i++)referenceNorm+=features[referenceOffset+i]*features[referenceOffset+i];
+    referenceNorm=Math.sqrt(referenceNorm);
+    const output=new Float32Array(count);
+    for(let patch=0;patch<count;patch++){
+      const offset=(tokenOffset+patch)*dimension;let dot=0,norm=0;
+      for(let i=0;i<dimension;i++){const value=features[offset+i];dot+=features[referenceOffset+i]*value;norm+=value*value}
+      const score=referenceNorm&&norm?dot/(referenceNorm*Math.sqrt(norm)):0;
+      output[patch]=Math.max(-1,Math.min(1,Number.isFinite(score)?score:0));
+    }
+    return output;
+  }
+
+  function renderDinoFeatureMap(result,referenceIndex){
+    const count=result.gridWidth*result.gridHeight,index=Math.max(0,Math.min(count-1,Number(referenceIndex)||0));
+    result.referenceIndex=index;const similarities=dinoSimilarities(result,index),canvas=drawBase(result.source,result.work.width,result.work.height);
+    const context=canvas.getContext('2d'),width=canvas.width,height=canvas.height;
+    const low=tokenRgb('--accent2',[187,91,55]),middle=tokenRgb('--muted',[105,107,100]),high=tokenRgb('--accent',[29,111,99]);
+    context.save();context.globalAlpha=.58;
+    for(let patch=0;patch<count;patch++){
+      const score=similarities[patch],color=score<0?interpolateRgb(low,middle,score+1):interpolateRgb(middle,high,score);
+      const column=patch%result.gridWidth,row=Math.floor(patch/result.gridWidth);
+      const x=column*width/result.gridWidth,y=row*height/result.gridHeight,right=(column+1)*width/result.gridWidth,bottom=(row+1)*height/result.gridHeight;
+      context.fillStyle='rgb('+color.join(',')+')';context.fillRect(x,y,right-x,bottom-y);
+      context.globalAlpha=.24;context.strokeStyle='#fff';context.lineWidth=Math.max(1,width/900);context.strokeRect(x,y,right-x,bottom-y);context.globalAlpha=.58;
+    }
+    const column=index%result.gridWidth,row=Math.floor(index/result.gridWidth),x=column*width/result.gridWidth,y=row*height/result.gridHeight;
+    context.globalAlpha=1;context.strokeStyle='#fff';context.lineWidth=Math.max(2,width/220);context.strokeRect(x+1,y+1,width/result.gridWidth-2,height/result.gridHeight-2);context.restore();
+    canvas.classList.add('feature-map-active');canvas.setAttribute('aria-label','DINOv3 patch cosine-similarity map. Colors range from lower similarity in terracotta to higher similarity in sage. Use the Reference patch slider to choose a patch.');
+    const input=$('feature-reference'),output=$('feature-reference-value');
+    if(input){input.value=String(index);input.setAttribute('aria-valuetext','row '+(row+1)+', column '+(column+1)+' of '+result.gridWidth+' by '+result.gridHeight)}
+    if(output)output.textContent='row '+(row+1)+', column '+(column+1)+' / '+result.gridWidth+'×'+result.gridHeight;
+    setStatus('Reference patch row '+(row+1)+', column '+(column+1)+'. Colors show cosine similarity from −1 to 1 within this image; they are not labels, object masks, or confidence.');
+    const controls=$('history-feature-controls');if(controls)controls.hidden=false;
+  }
+
+  async function runDinoFeatures(spec,source,runId){
+    const work=workingImage(source),loaded=await ensureDinoPipeline(spec,runId);
+    if(!loaded||runId!==state.runToken)return;
+    setRuntime('DINOv3 · q4/WASM · extracting patch features');
+    const started=performance.now(),tensor=await loaded.pipeline(work.canvas,{pool:false});
+    const inferenceMs=performance.now()-started;
+    if(runId!==state.runToken){tensor?.dispose?.();return}
+    const dims=Array.isArray(tensor?.dims)?tensor.dims.map(Number):[],model=spec.model;
+    const expectedTokens=model.tokenOffset+model.patchTokens;
+    if(dims.length!==3||dims[0]!==1||dims[1]!==expectedTokens||dims[2]!==model.hiddenSize){
+      tensor?.dispose?.();throw new Error('DINOv3 returned an unexpected feature tensor shape ('+dims.join('×')+').');
+    }
+    if(!tensor.data||tensor.data.length!==dims[0]*dims[1]*dims[2]){
+      tensor?.dispose?.();throw new Error('DINOv3 did not return the expected patch feature values.');
+    }
+    const features=Float32Array.from(tensor.data);tensor.dispose?.();
+    for(let i=0;i<features.length;i++)if(!Number.isFinite(features[i]))throw new Error('DINOv3 returned a non-finite patch feature.');
+    const result={kind:'dinov3-features',source,work,features,gridWidth:model.grid.width,gridHeight:model.grid.height,dimension:model.hiddenSize,tokenOffset:model.tokenOffset,patchTokens:model.patchTokens};
+    state.result=result;
+    setText('history-input-size',work.width+'×'+work.height+' → '+model.input.width+'×'+model.input.height);
+    setText('history-output-count',model.patchTokens+' patch vectors · '+model.hiddenSize+'D');
+    setText('history-preprocess','RGB → 224×224 · processor/ImageNet normalization');
+    setText('history-inference',ms(inferenceMs)+' · processor + encoder');
+    setText('history-load',loaded.reused?'already loaded · q4/WASM · '+model.approximateBytes:ms(loaded.loadMs)+' · q4/WASM · '+model.approximateBytes);
+    const reference=$('feature-reference');renderDinoFeatureMap(result,reference?Number(reference.value):Math.floor(model.patchTokens/2));
+    const featureControls=$('history-feature-controls');if(featureControls)featureControls.hidden=false;
+    setRuntime('DINOv3 · q4/WASM · ready');
+  }
+
   async function runExperiment(key,source){
     const spec=registry.historyExperiments?.[key];if(!spec)throw new Error('Historical image experiment is not registered.');
     if(!source)throw new Error('Choose an image in Time Machine first.');
@@ -309,7 +436,7 @@
     const initialWork=workingImage(source);drawBase(source,initialWork.width,initialWork.height);
     setRuntime('Releasing active model runtimes…');setStatus('Preparing the selected historical method on the current image…','loading');
     try{
-      await Promise.all([releaseDigitSession(),releaseAlexNetSession()]);
+      await Promise.all([releaseDigitSession(),releaseAlexNetSession(),spec.runner==='dinov3-image-features'?Promise.resolve():releaseDinoSession()]);
       await runtimes.releaseAll();
       if(runId!==state.runToken)return;
       if(spec.runner==='pattern-response'){
@@ -335,10 +462,12 @@
         await runDigits(spec,source,runId);
       }else if(spec.runner==='alexnet-image-classification'){
         await runAlexNet(spec,source,runId);
+      }else if(spec.runner==='dinov3-image-features'){
+        await runDinoFeatures(spec,source,runId);
       }else throw new Error('No browser runner is registered for this historical experiment.');
     }catch(error){
       if(runId!==state.runToken) return;
-      disposeWorker('after experiment failure');await Promise.all([releaseDigitSession(),releaseAlexNetSession()]);setRuntime('error');
+      disposeWorker('after experiment failure');await Promise.all([releaseDigitSession(),releaseAlexNetSession(),spec.runner==='dinov3-image-features'?releaseDinoSession():Promise.resolve()]);setRuntime('error');
       setStatus(error?.message||String(error),'error');throw error;
     }finally{
       if(runId===state.runToken)state.running=false;
@@ -346,12 +475,12 @@
   }
 
   function clear(){
-    state.result=null;state.image=null;clearClassification();
+    state.result=null;state.image=null;clearClassification();clearFeatureUi();
     return releaseAll({status:'released'});
   }
 
   function reset(){
-    state.result=null;state.image=null;clearClassification();
+    state.result=null;state.image=null;clearClassification();clearFeatureUi();
     return releaseAll({status:'not loaded'});
   }
 
@@ -359,6 +488,18 @@
     await releaseAll({status:'released'});
     setStatus(state.result?'Historical runtime released. The displayed result remains available; run again to reinitialize.':'Historical runtime released. Run the selected experiment to initialize it again.');
   }
+
+  $('feature-reference')?.addEventListener('input',event=>{
+    const result=state.result;if(result?.kind!=='dinov3-features')return;
+    renderDinoFeatureMap(result,Number(event.currentTarget.value));
+  });
+  $('image-canvas')?.addEventListener('click',event=>{
+    const result=state.result;if(result?.kind!=='dinov3-features')return;
+    const rect=event.currentTarget.getBoundingClientRect();if(!rect.width||!rect.height)return;
+    const column=Math.max(0,Math.min(result.gridWidth-1,Math.floor((event.clientX-rect.left)*result.gridWidth/rect.width)));
+    const row=Math.max(0,Math.min(result.gridHeight-1,Math.floor((event.clientY-rect.top)*result.gridHeight/rect.height)));
+    const input=$('feature-reference');if(input){input.value=String(row*result.gridWidth+column);input.dispatchEvent(new Event('input',{bubbles:true}))}
+  });
 
   document.addEventListener('vision:tabchange',event=>{
     if(event.detail?.tab!=='time-machine')void release();

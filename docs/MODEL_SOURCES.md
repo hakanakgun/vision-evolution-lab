@@ -282,6 +282,15 @@ The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Comm
 - Source links: [pinned files](https://huggingface.co/onnx-community/rfdetr_nano-ONNX/tree/eae21ce), [model card](https://huggingface.co/onnx-community/rfdetr_nano-ONNX), and [official code](https://github.com/roboflow/rf-detr).
 - File SHA-256 values are not published in this project for the Transformers.js-managed Hub files; the Hub revision is pinned, but no per-file digest verification is claimed.
 
+## DINOv3 · same-image patch-feature experiment
+
+- Paper: Siméoni et al., *DINOv3*, first published August 13, 2025; [arXiv](https://arxiv.org/abs/2508.10104) · [Meta research page](https://ai.meta.com/research/publications/dinov3/) · [official project](https://github.com/facebookresearch/dinov3).
+- Browser conversion: [onnx-community/dinov3-vits16-pretrain-lvd1689m-ONNX](https://huggingface.co/onnx-community/dinov3-vits16-pretrain-lvd1689m-ONNX), pinned revision `48988dfe73065df8d6f5ccc0edc7c8bcf307de41`; q4 ONNX graph plus external data is approximately 14.9 MB. The app fetches these files through Transformers.js and does not bundle them.
+- Runtime: Transformers.js 4.3.0 image-feature-extraction pipeline on WASM with q4 weights. Model files use the Transformers.js-managed browser cache; the historical experiment stays outside the detector registry, Model Race, and Live Camera.
+- Input: the processor converts to RGB, directly resizes to 224×224, and applies ImageNet mean/std normalization. The inference timing covers the Transformers.js processor and encoder call.
+- Output: `[1, 201, 384]` last hidden state: one CLS token, four register tokens, and 196 spatial patch vectors on a 14×14 grid. Selecting a patch displays its cosine similarity to the other patch vectors on the same image; colors are not class labels, object masks, or confidence.
+- License: the Hugging Face conversion declares `license: other` / `dinov3-license`. DINOv3 uses Meta's custom terms; review the [pinned model-card/license metadata](https://huggingface.co/onnx-community/dinov3-vits16-pretrain-lvd1689m-ONNX/tree/48988dfe73065df8d6f5ccc0edc7c8bcf307de41) before use. The conversion does not make the weights Apache/MIT licensed, and no per-file digest is asserted here.
+
 ## 2024–2026 research-only candidates
 
 These entries add paper/release context to the timeline without fetching their weights. Integration remains blocked on artifact revision/hash, preprocessing/output contract, runtime fit, and license review.
@@ -291,7 +300,6 @@ These entries add paper/release context to the timeline without fetching their w
 | DEIM / DEIM-Nano | [paper](https://arxiv.org/abs/2412.04234) · [official project](https://github.com/ShihuaHuang95/DEIM) | Paper and compact checkpoint family; no browser artifact pinned. |
 | YOLOv12 | [paper](https://arxiv.org/abs/2502.12524) · [official project](https://github.com/sunsmarterjie/yolov12) | Attention-centric YOLO design; verify source/export license and browser graph. |
 | YOLOE | [paper](https://arxiv.org/abs/2503.07465) · [official project](https://github.com/THU-MIG/yoloe) | Prompted open-vocabulary boxes/masks require their own prompt/task interface. |
-| DINOv3 | [paper](https://arxiv.org/abs/2508.10104) · [Meta page](https://ai.meta.com/research/publications/dinov3/) | General representation model; not a detector without a compatible head. |
 | DEIMv2 | [paper](https://arxiv.org/abs/2509.20787) · [official project](https://github.com/Intellindust-AI-Lab/DEIMv2) | Atto/Femto/Pico/Nano are candidates; review custom license and export/runtime. |
 | SAM 3 | [paper](https://arxiv.org/abs/2511.16719) · [official project](https://github.com/facebookresearch/sam3) | Concept-prompted masks/identities and video tracker; separate task. |
 | YOLO26-Nano | [official model docs](https://docs.ultralytics.com/models/yolo26) | Release-only milestone; review Ultralytics license and ONNX output contract. |

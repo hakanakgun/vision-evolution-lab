@@ -6,7 +6,7 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.24.0',
+    version:'0.25.0',
     runtime:Object.freeze({ort:'1.30.0',ortDistUrl:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/',ortJspiUrl:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.jspi.min.mjs',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),
@@ -33,7 +33,7 @@
       Object.freeze({year:2025,month:2,title:'YOLOv12',note:'research · attention-centric YOLO',kind:'research'}),
       Object.freeze({year:2025,month:3,title:'YOLOE',note:'research · open-vocabulary detection',kind:'research'}),
       Object.freeze({year:2025,month:3,title:'DEIM-Nano',note:'research · compact DETR variant',kind:'research',className:'transformer'}),
-      Object.freeze({year:2025,month:8,title:'DINOv3',note:'research · general visual features',kind:'research',className:'transformer'}),
+      Object.freeze({year:2025,month:8,title:'DINOv3',note:'run · 14×14 patch similarity',kind:'history-experiment',experiment:'dinov3-features',className:'transformer',evolution:'DINOv3 exposes self-supervised dense patch representations. This same-image experiment compares the selected patch with the other 195 patches; it adds no detector or classifier head.'}),
       Object.freeze({year:2025,month:9,title:'DEIMv2',note:'research · DINOv3-era detector family',kind:'research',className:'transformer'}),
       Object.freeze({year:2025,month:11,model:'rfdetr',title:'RF-DETR Nano',note:'research preview · tap to run',kind:'runnable',className:'transformer',evolution:'A real-time detection transformer family with neural-architecture-search variants; this browser preview uses a pinned Nano ONNX Community conversion and stays separate from the general Model Race until device behavior is checked.'}),
       Object.freeze({year:2025,month:11,title:'SAM 3',note:'research · concept segmentation + tracking',kind:'research',className:'transformer'}),
@@ -78,6 +78,19 @@
           sha256:'d53bbedf100be79277cf55d78c72bdcb67d88786988561bf5d530f038e443c7b',
           input:Object.freeze({width:224,height:224,layout:'NCHW',dtype:'float32',sourceResize:'direct stretch',channels:'BGR',mean:Object.freeze([103.939,116.779,123.68]),scale:1}),
           labels:'assets/models/imagenet-1k-labels.json',labelsSha256:'495a1f028e7b3b1878dbc4ec2e66f9a9a9c89c48abb007a9c954faa13571c33a',provider:'wasm',licenseMetadata:'Apache-2.0',licenseCard:'BSD-3-Clause'
+        })
+      }),
+      'dinov3-features':Object.freeze({
+        id:'dinov3-features',year:2025,title:'DINOv3 · patch feature similarity',runner:'dinov3-image-features',input:'image',
+        task:'self-supervised image feature extraction',output:'patch-cosine-similarity-map',
+        description:'Runs the pinned DINOv3 ViT-S/16 q4 ONNX conversion on the same Time Machine image and visualizes cosine similarity from one selected image patch to the other patches.',
+        note:'This is image feature extraction, not object detection, classification, segmentation, or confidence. The Hugging Face conversion is pinned to a repository revision and uses the Meta DINOv3 custom license; review its terms before use.',
+        model:Object.freeze({
+          modelId:'onnx-community/dinov3-vits16-pretrain-lvd1689m-ONNX',revision:'48988dfe73065df8d6f5ccc0edc7c8bcf307de41',
+          dtype:'q4',device:'wasm',approximateBytes:'≈14.9 MB',
+          input:Object.freeze({width:224,height:224,channels:'RGB',resize:'direct stretch',normalization:'ImageNet mean/std'}),
+          grid:Object.freeze({width:14,height:14}),hiddenSize:384,tokenOffset:5,registerTokens:4,classTokens:1,patchTokens:196,
+          licenseMetadata:'other',licenseName:'dinov3-license'
         })
       })
     }),
