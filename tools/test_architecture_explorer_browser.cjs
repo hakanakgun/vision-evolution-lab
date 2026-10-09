@@ -49,13 +49,17 @@ async function main(){
       await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
       page.on('response',response=>{if(response.status()>=400)console.log('HTTP resource error:',response.status(),response.url());});
       page.on('pageerror',error=>errors.push(error.message));
-      const optionalTokenizerProbe='https://huggingface.co/Xenova/yolos-tiny/resolve/main/tokenizer_config.json';
+      const optionalTokenizerProbes=new Set([
+        'https://huggingface.co/Xenova/yolos-tiny/resolve/main/tokenizer_config.json',
+        'https://huggingface.co/onnx-community/dfine_n_coco-ONNX/resolve/main/tokenizer_config.json'
+      ]);
       page.on('console',message=>{
         if(message.type()!=='error')return;
-        // Transformers.js performs this optional tokenizer lookup even for an
-        // image-only pipeline. The model/config cache-reuse assertion remains strict.
-        if(message.location().url===optionalTokenizerProbe&&message.text().includes('404')){
-          optionalProbes.push({url:optionalTokenizerProbe,status:404});return;
+        // These image-only Transformers.js pipelines may probe for a tokenizer
+        // file they do not use. Model/config cache-reuse assertions remain strict.
+        const url=message.location().url;
+        if(optionalTokenizerProbes.has(url)&&message.text().includes('404')){
+          optionalProbes.push({url,status:404});return;
         }
         errors.push(message.text()+' at '+message.location().url);
       });
