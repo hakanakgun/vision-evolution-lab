@@ -171,3 +171,5 @@
 .cache-actions{display:flex;flex-wrap:wrap;gap:8px}.cache-actions .btn{min-height:44px;white-space:normal}
 .cache-actions .btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:600px){.cache-model{align-items:stretch;flex-direction:column;gap:12px}.cache-actions .btn{flex:1}.timeline-legend{padding:10px 16px;gap:10px 14px}}
+
+    .grid.historical-mode{grid-template-columns:minmax(0,1fr)}

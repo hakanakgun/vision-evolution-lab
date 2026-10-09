@@ -25,17 +25,17 @@
     ort.env.wasm.numThreads = WASM_THREADS;
 
     function ms(v){ return Number.isFinite(v) ? `${v.toFixed(v < 10 ? 2 : 1)} ms` : '—'; }
-    function bytes(v){ if(!v) return '—'; const mb=v/1048576; return `${mb.toFixed(mb<10?2:1)} MB`; }
+    function bytes(v){ return ModelLoader.formatBytes(v); }
     function setStatus(message, kind=''){ const el=$('status'); el.textContent=message; el.className=`status ${kind}`.trim(); }
     function setMetric(id,value){ $(id).textContent=value; }
     function activeModel(){ return REGISTRY[state.activeModel] || MODEL; }
     function resetRunMetrics(){['m-pre','m-inf','m-post','m-total','m-count'].forEach(id=>setMetric(id,'—'));setMetric('m-run-label','not run');state.lastResults=null;state.lastRunResult=null;state.lastDims=null;state.inferenceCount=0;}
-    function resetStartupMetrics(){setMetric('m-download','—');setMetric('m-init','—');$('m-progress-bar').style.width='0%';$('m-progress-text').textContent='No model transfer yet.';$('backend-badge').textContent='Not loaded';}
+    function resetStartupMetrics(){setMetric('m-download','—');setMetric('m-init','—');setMetric('m-bytes','—');setMetric('m-cache','—');$('m-progress-bar').style.width='0%';$('m-progress-text').textContent='No model transfer yet.';$('backend-badge').textContent=state.historyExperiment?'Historical method':'Not loaded';}
     function drawSourceOnly(source=state.image){if(!source)return;const canvas=$('image-canvas'),{w,h}=sourceSize(source),scale=Math.min(1,640/Math.max(w,h));canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));canvas.getContext('2d').drawImage(source,0,0,canvas.width,canvas.height);$('image-empty').hidden=true;canvas.hidden=false;}
     function renderProvenance(model){const ui=model.ui||{};$('active-provenance-title').textContent=model.title;$('active-provenance-text').textContent=ui.provenance||`${model.family} · ${model.license}`;const links=$('active-provenance-links');links.replaceChildren();for(const link of ui.links||[]){const a=document.createElement('a');a.href=link.url;a.textContent=link.label;a.target='_blank';a.rel='noreferrer';links.appendChild(a);}}
     function canBenchmark(model=activeModel()){return RuntimeRegistry.capabilityEnabled(model,'benchmark')}
     function updateActiveModelUI(){const model=activeModel(),ui=model.ui||{},runtimeUi=ui.runtime||{},inspection=model.capabilities?.inspection;$('active-model-title').textContent=model.title;$('active-model-subtitle').textContent=ui.subtitle||`${model.task} · ${model.family}`;$('rerun').textContent=`Run ${model.title}`;$('m-transfer-label').textContent='Model transfer';$('m-init-label').textContent=runtimeUi.initLabel||'Session init';setMetric('m-bytes',runtimeUi.bytesText||bytes(model.bytes));setMetric('m-cache',runtimeUi.cacheInitial||'checking…');setMetric('d-input',inspection&&typeof inspection==='object'?inspection.input:(model.input?`${model.input}×${model.input}`:'dynamic'));$('input-size').textContent=state.image?'Source ready · not run':'No input';$('benchmark').disabled=!state.image||!canBenchmark(model);renderProvenance(model);updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}
-    async function updateActiveCacheState(){const key=state.activeModel,model=activeModel();if(!Array.isArray(model.sources)||!model.sources.length)return;try{const info=await ModelLoader.status(model);if(state.activeModel===key)setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state);}catch(_){}}
+    async function updateActiveCacheState(){const key=state.activeModel,model=activeModel();if(!Array.isArray(model.sources)||!model.sources.length)return;try{const info=await ModelLoader.status(model);if(state.activeModel===key&&!state.historyExperiment)setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state);}catch(_){}}
     function selectActiveModel(key,{scroll=true}={}){
       if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}
       if(!REGISTRY[key]||!RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine'))return;
@@ -50,7 +50,7 @@
       }else setStatus(activeModel().title+' selected. Choose an image to run this generation.');
       if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});
     }
-    function reportRuntimeEvent(model,event){if(model!==state.activeModel||!event)return;if(event.type==='progress')updateMainModelProgress(event.info||{});if(event.type==='cache')setMetric('m-cache',event.text||'checking…');if(event.type==='runtime'){if(event.backend)$('backend-badge').textContent=event.dtype?`${String(event.backend).toUpperCase()} · ${event.dtype}`:String(event.backend).toUpperCase();if(Number.isFinite(event.downloadMs))setMetric('m-download',ms(event.downloadMs));if(Number.isFinite(event.initMs))setMetric('m-init',ms(event.initMs));if(event.bytes)setMetric('m-bytes',bytes(event.bytes));if(event.source)setMetric('m-cache',event.cacheState?`${event.cacheState} · ${event.source}`:event.source);}}
+    function reportRuntimeEvent(model,event){if(model!==state.activeModel||state.historyExperiment||!event)return;if(event.type==='progress')updateMainModelProgress(event.info||{});if(event.type==='cache')setMetric('m-cache',event.text||'checking…');if(event.type==='runtime'){if(event.backend)$('backend-badge').textContent=event.dtype?`${String(event.backend).toUpperCase()} · ${event.dtype}`:String(event.backend).toUpperCase();if(Number.isFinite(event.downloadMs))setMetric('m-download',ms(event.downloadMs));if(Number.isFinite(event.initMs))setMetric('m-init',ms(event.initMs));if(event.bytes)setMetric('m-bytes',bytes(event.bytes));if(event.source)setMetric('m-cache',event.cacheState?`${event.cacheState} · ${event.source}`:event.source);}}
     let diagnosticHook=null,baselineSessionRuns=0;
     function traceDiagnostic(event,meta={}){if(typeof diagnosticHook!=='function')return;try{diagnosticHook(event,meta)}catch(_){}}
 
@@ -125,7 +125,7 @@
     function syncHistoryControls(){
       const active=Boolean(state.historyExperiment),spec=REGISTRY.historyExperiments?.[state.historyExperiment];
       $('history-experiment-panel').hidden=!active;$('rerun').hidden=active;$('benchmark').hidden=active;
-      $('confidence').disabled=active||state.running||state.benchmarking;
+      $('confidence-control').hidden=active;$('model-startup-metrics').hidden=active;$('model-run-metrics').hidden=active;$('model-device-card').hidden=active;$('time-machine-workspace').classList.toggle('historical-mode',active);$('confidence').disabled=active||state.running||state.benchmarking;if(active)$('backend-badge').textContent='Historical method';
       $('history-run').disabled=!state.image||state.running||state.benchmarking||!active;
       document.querySelectorAll('[data-runnable-model]').forEach(button=>{const selected=!active&&button.dataset.runnableModel===state.activeModel;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});
       document.querySelectorAll('[data-history-experiment]').forEach(button=>{const selected=button.dataset.historyExperiment===state.historyExperiment;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});

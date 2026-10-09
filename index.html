@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="en" data-build="2026.10.08-v0.23.0">
+<html lang="en" data-build="2026.10.09-v0.23.1">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="description" content="Vision Evolution Lab: run object detection locally in your browser and explore how computer vision evolved.">
   <meta name="theme-color" content="#f5f0e7">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=0.23.0">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=0.23.1">
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.10.08-v0.23.0';
+      const CURRENT_BUILD = '2026.10.09-v0.23.1';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -52,7 +52,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=0.23.0">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.23.1">
 </head>
 <body>
   <main class="shell">
@@ -108,7 +108,7 @@
         </div>
       </div>
 
-      <div class="grid">
+      <div class="grid" id="time-machine-workspace">
         <section class="card stage-card">
           <div class="stage-head"><div><div class="stage-title" id="active-model-title">YOLOX-Nano</div><div class="tiny" id="active-model-subtitle">COCO object detection · ONNX · anchor-free CNN</div></div><div class="tiny" id="input-size">No input</div></div>
           <div class="stage" id="image-stage">
@@ -121,7 +121,7 @@
             <button class="btn secondary" id="rerun" disabled>Run YOLOX-Nano</button>
             <button class="btn secondary" id="benchmark" disabled>Benchmark ×20</button>
             <span class="control-spacer"></span>
-            <label class="range-wrap">AI confidence <input id="confidence" type="range" min="0.10" max="0.90" step="0.05" value="0.40"><b id="confidence-value">0.40</b></label>
+            <label class="range-wrap" id="confidence-control">AI confidence <input id="confidence" type="range" min="0.10" max="0.90" step="0.05" value="0.40"><b id="confidence-value">0.40</b></label>
           </div>
           <section class="history-experiment-panel" id="history-experiment-panel" hidden aria-live="polite">
             <div class="history-experiment-head">
@@ -150,7 +150,7 @@
           </section>
         </section>
 
-        <aside class="card">
+        <aside class="card" id="model-device-card">
           <div class="side-head"><div class="side-title">On your device</div><div class="tiny" id="backend-badge">Not loaded</div></div>
           <div id="status" class="status">Choose an image to load the model and run the first measurement.</div>
           <section class="model-download-warning" id="model-download-warning" hidden aria-live="polite">
@@ -163,7 +163,7 @@
               <button class="btn secondary" id="model-download-cancel" type="button">Not now</button>
             </div>
           </section>
-          <div class="metric-section">
+          <div class="metric-section" id="model-startup-metrics">
             <div class="metric-section-head"><span>Startup</span><small>once per page session</small></div>
             <div class="metrics">
               <div class="metric"><span id="m-transfer-label">Model transfer</span><b id="m-download">—</b></div>
@@ -174,7 +174,7 @@
             <div class="model-progress"><div class="model-progress-bar" id="m-progress-bar"></div></div>
             <div class="progress-caption" id="m-progress-text">No model transfer yet.</div>
           </div>
-          <div class="metric-section">
+          <div class="metric-section" id="model-run-metrics">
             <div class="metric-section-head"><span>Current run</span><small id="m-run-label">not run</small></div>
             <div class="metrics">
               <div class="metric"><span>Preprocess</span><b id="m-pre">—</b></div>
@@ -573,25 +573,25 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.23.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.23.1 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="src/core/runtime-bootstrap.js?v=0.23.0"></script>
-  <script src="src/core/preprocessing.js?v=0.23.0"></script>
-  <script src="src/models/models.js?v=0.23.0"></script>
-  <script src="src/core/detection-metrics.js?v=0.23.0"></script>
-  <script src="src/core/model-runtime.js?v=0.23.0"></script>
-  <script src="src/core/model-loader.js?v=0.23.0"></script>
-  <script src="src/core/external-data-store.js?v=0.23.0"></script>
-  <script src="src/core/model-storage.js?v=0.23.0"></script>
-  <script src="src/app.js?v=0.23.0"></script>
-  <script src="src/models/lwdetr-postprocess.js?v=0.23.0"></script>
-  <script src="src/models/historical-detectors.js?v=0.23.0"></script>
-  <script src="src/models/race.js?v=0.23.0"></script>
-  <script src="src/efficiency.js?v=0.23.0"></script>
-  <script src="src/resolution-microscope.js?v=0.23.0"></script>
-  <script src="src/architecture-explorer.js?v=0.23.0"></script>
-  <script src="src/model-cache.js?v=0.23.0"></script>
-  <script src="src/history/history-experiments.js?v=0.23.0"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.23.1"></script>
+  <script src="src/core/preprocessing.js?v=0.23.1"></script>
+  <script src="src/models/models.js?v=0.23.1"></script>
+  <script src="src/core/detection-metrics.js?v=0.23.1"></script>
+  <script src="src/core/model-runtime.js?v=0.23.1"></script>
+  <script src="src/core/model-loader.js?v=0.23.1"></script>
+  <script src="src/core/external-data-store.js?v=0.23.1"></script>
+  <script src="src/core/model-storage.js?v=0.23.1"></script>
+  <script src="src/app.js?v=0.23.1"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.23.1"></script>
+  <script src="src/models/historical-detectors.js?v=0.23.1"></script>
+  <script src="src/models/race.js?v=0.23.1"></script>
+  <script src="src/efficiency.js?v=0.23.1"></script>
+  <script src="src/resolution-microscope.js?v=0.23.1"></script>
+  <script src="src/architecture-explorer.js?v=0.23.1"></script>
+  <script src="src/model-cache.js?v=0.23.1"></script>
+  <script src="src/history/history-experiments.js?v=0.23.1"></script>
 </body>
 </html>
