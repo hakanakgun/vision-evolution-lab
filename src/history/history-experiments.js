@@ -362,6 +362,7 @@
         const result=await runWorker(method,work);
         if(runId!==state.runToken)return;
         setText('history-input-size',work.width+'×'+work.height+' · working image');
+        state.result={kind:'classical-method',source,work,method};
         if(method==='face'||method==='hog'){
           drawBoxes(source,work.width,work.height,result.boxes,()=>method==='face'?'frontal face':'person');
           setText('history-output-count',result.boxes.length+' '+(method==='face'?'face':'pedestrian')+(result.boxes.length===1?'':'s'));
