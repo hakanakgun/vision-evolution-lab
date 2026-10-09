@@ -196,7 +196,7 @@ async function main(){
         await page.$eval('[data-runnable-model="yolox"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
         await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='yolox'&&!window.VisionLab.isTimeMachineBusy());
         assert.equal(await page.$eval('.timeline-legend',el=>el.closest('.timeline-scroll')===null),true);
-        assert.equal(await page.$eval('.timeline-legend .legend-marker',nodes=>nodes.length),6);
+        assert.equal(await page.$$eval('.timeline-legend .legend-marker',nodes=>nodes.length),6);
         await tab('model-cache');
         await page.waitForFunction(()=>document.querySelectorAll('.cache-model').length===13);
         assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),'yolox');
