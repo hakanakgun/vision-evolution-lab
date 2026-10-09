@@ -173,6 +173,24 @@ async function main(){
           for(const [name,value] of Object.entries(realInference))if(name!=='bytes'&&name!=='formattedBytes')assert.ok(Number.isFinite(value)&&value>=0,'D-FINE real inference metric '+name);
           assert.equal(realInference.bytes,realInference.formattedBytes);
           assert.ok(Math.abs(realInference.total-(realInference.preprocess+realInference.inference+realInference.postprocess))<1,'end-to-end time must equal measured phases and exclude setup');
+          // The first frontier integration must execute on the same local image in CI.
+          await page.$eval('[data-runnable-model="rfdetr"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+          await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='rfdetr'&&Boolean(window.VisionLab.getImage())&&window.VisionLab.isTimeMachineBusy(),{timeout:30000});
+          await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='rfdetr'&&Boolean(window.VisionLab.getImage())&&!window.VisionLab.isTimeMachineBusy(),{timeout:180000});
+          const rfInference=await page.evaluate(()=>{
+            const value=id=>document.getElementById(id).textContent.trim();
+            return {
+              inference:Number.parseFloat(value('m-inf')),postprocess:Number.parseFloat(value('m-post')),
+              total:Number.parseFloat(value('m-total')),detections:Number(value('m-count')),
+              bytes:value('m-bytes'),backend:value('backend-badge')
+            };
+          });
+          assert.ok(Number.isFinite(rfInference.inference)&&rfInference.inference>0,'RF-DETR must complete real browser inference');
+          assert.ok(Number.isFinite(rfInference.postprocess)&&Number.isFinite(rfInference.total),'RF-DETR timing must be reported');
+          assert.ok(Math.abs(rfInference.total-(rfInference.inference+rfInference.postprocess))<1,'RF-DETR pipeline end-to-end timing must match inference plus drawing');
+          assert.ok(Number.isFinite(rfInference.detections)&&rfInference.detections>=0,'RF-DETR detections must be a numeric pipeline result');
+          assert.match(rfInference.bytes,/28\.8 MB|54\.4 MB/,'RF-DETR must report the selected pinned runtime size');
+          assert.match(rfInference.backend,/WASM|WebGPU/i,'RF-DETR must report its selected browser backend');
         }
         await page.$eval('[data-runnable-model="yolox"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
         await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='yolox'&&!window.VisionLab.isTimeMachineBusy());
