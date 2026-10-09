@@ -270,3 +270,30 @@ The base model repository explicitly declares Apache-2.0 and COCO. The ONNX Comm
 - The COCO checkpoint is used; Objects365-derived variants are not.
 - Purpose: Time Machine and Live Camera. It is not in Model Race or individual benchmark runs. Inside the Model documents the verified processor and DETR-style query/regression pipeline while explicitly withholding internal tensors that the current Transformers.js pipeline does not expose. The existing Transformers.js WASM fp32 adapter is reused for sequential camera-frame inference. Browser performance and iOS/WebKit Live Camera compatibility have not been tested.
 - Month labels use the first public arXiv paper date where verified; this is not necessarily the date weights or software were released.
+
+## RF-DETR Nano · browser research preview
+
+- Research paper: Robinson et al., *RF-DETR: Neural Architecture Search for Real-Time Detection Transformers*, [arXiv:2511.09554](https://arxiv.org/abs/2511.09554); official implementation: [roboflow/rf-detr](https://github.com/roboflow/rf-detr).
+- Browser model: [onnx-community/rfdetr_nano-ONNX](https://huggingface.co/onnx-community/rfdetr_nano-ONNX), Transformers.js object-detection conversion, Hub revision prefix `eae21ce` (the Hub’s visible commit for the processor update on 2025-07-24). The revision is passed to the Transformers.js loader; model files are not copied into this repository.
+- Hub metadata identifies the conversion as `rf_detr`, Transformers.js, and Apache-2.0. The upstream project states Apache-2.0 for the base RF-DETR code/model family and distinguishes Plus components under PML 1.0; the browser entry uses the Hub conversion labelled Nano, not a Plus checkpoint.
+- At the pinned revision, Hub files include `onnx/model_quantized.onnx` (28.8 MB, used as WASM q8) and `onnx/model_fp16.onnx` (54.4 MB, used as WebGPU fp16); the full-precision `onnx/model.onnx` is 108 MB and is not selected. These are Hub file sizes, not a measured transfer total for every auxiliary config file.
+- The pinned `preprocessor_config.json` specifies 384×384 resize, RGB rescaling by 1/255, no padding, and `do_normalize: false`. Transformers.js owns preprocessing and postprocessing; the app displays final scored COCO boxes and does not fabricate internal query tensors.
+- The adapter is enabled in Time Machine and the individual warm benchmark only. It is not in Model Race or Live Camera pending a real browser run and device checks. No paper AP/latency is presented as this app’s measurement.
+- Source links: [pinned files](https://huggingface.co/onnx-community/rfdetr_nano-ONNX/tree/eae21ce), [model card](https://huggingface.co/onnx-community/rfdetr_nano-ONNX), and [official code](https://github.com/roboflow/rf-detr).
+- File SHA-256 values are not published in this project for the Transformers.js-managed Hub files; the Hub revision is pinned, but no per-file digest verification is claimed.
+
+## 2024–2026 research-only candidates
+
+These entries add paper/release context to the timeline without fetching their weights. Integration remains blocked on artifact revision/hash, preprocessing/output contract, runtime fit, and license review.
+
+| Candidate | Source | Current boundary |
+| --- | --- | --- |
+| DEIM / DEIM-Nano | [paper](https://arxiv.org/abs/2412.04234) · [official project](https://github.com/ShihuaHuang95/DEIM) | Paper and compact checkpoint family; no browser artifact pinned. |
+| YOLOv12 | [paper](https://arxiv.org/abs/2502.12524) · [official project](https://github.com/sunsmarterjie/yolov12) | Attention-centric YOLO design; verify source/export license and browser graph. |
+| YOLOE | [paper](https://arxiv.org/abs/2503.07465) · [official project](https://github.com/THU-MIG/yoloe) | Prompted open-vocabulary boxes/masks require their own prompt/task interface. |
+| DINOv3 | [paper](https://arxiv.org/abs/2508.10104) · [Meta page](https://ai.meta.com/research/publications/dinov3/) | General representation model; not a detector without a compatible head. |
+| DEIMv2 | [paper](https://arxiv.org/abs/2509.20787) · [official project](https://github.com/Intellindust-AI-Lab/DEIMv2) | Atto/Femto/Pico/Nano are candidates; review custom license and export/runtime. |
+| SAM 3 | [paper](https://arxiv.org/abs/2511.16719) · [official project](https://github.com/facebookresearch/sam3) | Concept-prompted masks/identities and video tracker; separate task. |
+| YOLO26-Nano | [official model docs](https://docs.ultralytics.com/models/yolo26) | Release-only milestone; review Ultralytics license and ONNX output contract. |
+| EdgeCrafter | [paper](https://arxiv.org/abs/2603.18739) · [official project](https://github.com/Intellindust-AI-Lab/EdgeCrafter) | Dense prediction heads and custom license require separate review. |
+| SAM 3.1 | [release notes](https://github.com/facebookresearch/sam3/blob/main/RELEASE_SAM3p1.md) | March 27, 2026 video tracking update; not a box detector. |
