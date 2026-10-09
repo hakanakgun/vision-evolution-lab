@@ -298,7 +298,8 @@ const expectedExperiments=[
   [1998,'mnist-digits','LeNet-era MNIST CNN'],
   [2001,'viola-jones','Viola–Jones'],
   [2005,'hog-pedestrians','HOG + SVM'],
-  [2012,'alexnet-classification','AlexNet']
+  [2012,'alexnet-classification','AlexNet'],
+  [2025,'dinov3-features','DINOv3']
 ];
 check(experimentEntries.length===expectedExperiments.length,'Time Machine historical experiment count changed');
 check(Object.keys(historyExperiments).length===expectedExperiments.length,'historical experiment registry count changed');
@@ -337,8 +338,32 @@ check(files.index.includes('Historical experiment · same image')&&historyExperi
 check(files.catalog.includes('| 1980 | Neocognitron-inspired feature response | Runnable historical experiment |')&&files.catalog.includes('| 1998 | LeNet-era MNIST CNN reference | Runnable historical experiment |')&&files.catalog.includes('| 2001 | Viola–Jones method family / OpenCV frontal-face cascade | Runnable historical experiment |')&&files.catalog.includes('| 2005 | HOG + linear SVM pedestrian detector | Runnable historical experiment |')&&files.catalog.includes('| 2012 | AlexNet · ImageNet classification | Runnable historical experiment |'),'catalog must distinguish runnable historical experiments');
 check(files.readme.includes('one image selected in Time Machine')&&files.docsIndex.includes('[Time Machine historical experiments](CLASSICAL_CV.md)'),'README/docs map must describe and link to same-image history experiments');
 for(const source of ['https://doi.org/10.1007/BF00344251','https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf','https://doi.org/10.1109/CVPR.2001.990517','https://doi.org/10.1109/CVPR.2005.177','https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2014/html/Girshick_Rich_Feature_Hierarchies_2014_CVPR_paper.html','https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html','https://research.google/pubs/ssd-single-shot-multibox-detector/','https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php'])check(files.history.includes(source),'historical primary-paper source missing: '+source);
-check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===12,'Time Machine registry should contain five race models and seven additional Time Machine runtimes');
-check(timeMachineModels.length===12,'Time Machine must expose twelve runnable model generations');
+check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===13,'Time Machine registry should contain five race models and eight additional Time Machine runtimes');
+check(timeMachineModels.length===13,'Time Machine must expose thirteen runnable model generations');
+const rfDetr=metadataRegistry.rfdetr,rfDetrEntry=metadataRegistry.timeline.find(item=>item.model==='rfdetr');
+check(rfDetrEntry?.year===2025&&rfDetrEntry?.month===11&&rfDetrEntry.kind==='runnable','RF-DETR Nano research-preview timeline entry is missing');
+check(rfDetr?.modelId==='onnx-community/rfdetr_nano-ONNX'&&rfDetr.revision==='eae21ce'&&rfDetr.input===384,'RF-DETR Nano pinned Transformers.js contract changed');
+check(rfDetr.bytes===54400000&&rfDetr.runtime?.webgpu?.modelBytes===54400000&&rfDetr.runtime?.wasm?.modelBytes===28800000,'RF-DETR Nano precision asset sizes changed');
+check(rfDetr.capabilities.timeMachine&&rfDetr.capabilities.benchmark&&rfDetr.capabilities.live===false&&rfDetr.capabilities.race===false,'RF-DETR Nano must stay Time Machine/individual benchmark only');
+check(rfDetr.capabilities.inspection?.comparison?.input==='384×384'&&rfDetr.capabilities.inspection?.normalization==='rescale 1/255 · no mean/std normalization · no padding','RF-DETR Nano processor contract missing');
+check(files.race.includes("runtimeRegistry.register('rfdetr',createRtResearchAdapter('rfdetr'))"),'RF-DETR Nano Transformers.js adapter is not registered');
+check(files.race.includes("raceMeta&&typeof raceMeta==='object'&&raceMeta.enabled!==false"),'generic Transformers.js adapter must work without Model Race DOM');
+const expectedResearch=[
+  [2024,12,'DEIM'],[2025,2,'YOLOv12'],[2025,3,'YOLOE'],[2025,3,'DEIM-Nano'],
+  [2025,9,'DEIMv2'],[2025,11,'SAM 3'],[2026,1,'YOLO26-Nano'],
+  [2026,3,'EdgeCrafter'],[2026,3,'SAM 3.1']
+];
+for(const [year,month,title] of expectedResearch){
+  const entry=metadataRegistry.timeline.find(item=>item.year===year&&item.month===month&&item.title===title);
+  check(entry?.kind==='research'&&!entry.model&&!entry.experiment,'research-only timeline card is missing or runnable: '+title);
+}
+const dinoFeatures=historyExperiments['dinov3-features'];
+check(dinoFeatures?.model?.modelId==='onnx-community/dinov3-vits16-pretrain-lvd1689m-ONNX'&&dinoFeatures.model.revision==='48988dfe73065df8d6f5ccc0edc7c8bcf307de41','DINOv3 model and Hub revision must stay pinned');
+check(dinoFeatures.model.dtype==='q4'&&dinoFeatures.model.device==='wasm'&&dinoFeatures.model.input?.width===224&&dinoFeatures.model.input?.height===224,'DINOv3 q4/WASM input contract changed');
+check(dinoFeatures.model.grid?.width===14&&dinoFeatures.model.grid?.height===14&&dinoFeatures.model.hiddenSize===384&&dinoFeatures.model.tokenOffset===5&&dinoFeatures.model.patchTokens===196,'DINOv3 patch-token contract changed');
+check(dinoFeatures.output==='patch-cosine-similarity-map'&&dinoFeatures.model.licenseMetadata==='other'&&!metadataRegistry.dinov3,'DINOv3 must remain a truthful historical feature experiment with explicit license metadata');
+check(files.historyExperiments.includes("image-feature-extraction")&&files.historyExperiments.includes("pool:false")&&files.historyExperiments.includes("not labels, object masks, or confidence"),'DINOv3 feature pipeline contract missing');
+check(files.index.includes('id="history-feature-controls"')&&files.styles.includes('.feature-similarity-gradient'),'DINOv3 must expose the accessible patch selector and similarity legend');
 const yolov1=metadataRegistry.yolov1,yolov1Entry=metadataRegistry.timeline.find(item=>item.model==='yolov1');
 check(yolov1Entry?.year===2016&&yolov1Entry.kind==='runnable','YOLOv1 2016 runnable Time Machine entry is missing');
 check(yolov1?.bytes===541358513&&yolov1.sha256==='122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49','YOLOv1 published asset size or checksum changed');
@@ -423,7 +448,7 @@ check(files.historicalDetectors.includes("const keepLiveKey=event.detail?.tab===
 check(files.historicalDetectors.includes("runtimes.register('fasterrcnn'")&&files.historicalDetectors.includes("runtimes.register('ssd2016'")&&files.historicalDetectors.includes("runtimes.register('detr'")&&files.historicalDetectors.includes("runtimes.register('yolos'")&&files.historicalDetectors.includes("executionProviders:['wasm']")&&files.historicalDetectors.includes("subtle.digest('SHA-256'"),'Time Machine-only model adapters must remain registered with their pinned WASM/integrity contracts');
 check((files.index.match(/id="image-file"/g)||[]).length===1,'Time Machine must keep one shared image input');
 check(!files.index.includes('data-tab="classical-cv"')&&!files.index.includes('id="classical-cv"'),'separate Classical CV tab/panel must not return');
-for(const id of ['history-experiment-panel','history-experiment-title','history-experiment-description','history-experiment-note','history-runtime-state','history-input-size','history-output-count','history-preprocess','history-inference','history-load','history-classification','history-classification-results','history-run','history-release','history-status','confidence-control','model-startup-metrics','model-run-metrics'])check(files.index.includes('id="'+id+'"'),'historical experiment DOM contract missing: '+id);
+for(const id of ['history-experiment-panel','history-experiment-title','history-experiment-description','history-experiment-note','history-runtime-state','history-input-size','history-output-count','history-preprocess','history-inference','history-load','history-classification','history-classification-results','history-feature-controls','feature-reference','feature-reference-value','feature-map-note','history-run','history-release','history-status','confidence-control','model-startup-metrics','model-run-metrics'])check(files.index.includes('id="'+id+'"'),'historical experiment DOM contract missing: '+id);
 check(files.index.includes('id="image-canvas"')&&files.historyExperiments.includes("getContext('2d')"),'historical experiments must render on the shared Time Machine canvas');
 check(files.index.includes('id="time-machine-workspace"')&&files.index.includes('id="model-device-card"')&&files.app.includes("classList.toggle('historical-mode',active)")&&files.styles.includes('.grid.historical-mode{grid-template-columns:minmax(0,1fr)}'),'historical mode must expand its task card and hide unrelated model/device context');
 check(files.app.includes("new CustomEvent('vision:tabchange'"),'generic tab lifecycle event missing');

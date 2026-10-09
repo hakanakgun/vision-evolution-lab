@@ -51,7 +51,8 @@ async function main(){
       page.on('pageerror',error=>errors.push(error.message));
       const optionalTokenizerProbes=new Set([
         'https://huggingface.co/Xenova/yolos-tiny/resolve/main/tokenizer_config.json',
-        'https://huggingface.co/onnx-community/dfine_n_coco-ONNX/resolve/main/tokenizer_config.json'
+        'https://huggingface.co/onnx-community/dfine_n_coco-ONNX/resolve/main/tokenizer_config.json',
+        'https://huggingface.co/onnx-community/rfdetr_nano-ONNX/resolve/main/tokenizer_config.json'
       ]);
       page.on('console',message=>{
         if(message.type()!=='error')return;
@@ -173,13 +174,50 @@ async function main(){
           for(const [name,value] of Object.entries(realInference))if(name!=='bytes'&&name!=='formattedBytes')assert.ok(Number.isFinite(value)&&value>=0,'D-FINE real inference metric '+name);
           assert.equal(realInference.bytes,realInference.formattedBytes);
           assert.ok(Math.abs(realInference.total-(realInference.preprocess+realInference.inference+realInference.postprocess))<1,'end-to-end time must equal measured phases and exclude setup');
+          // The first frontier integration must execute on the same local image in CI.
+          await page.$eval('[data-runnable-model="rfdetr"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+          await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='rfdetr'&&Boolean(window.VisionLab.getImage())&&window.VisionLab.isTimeMachineBusy(),{timeout:30000});
+          await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='rfdetr'&&Boolean(window.VisionLab.getImage())&&!window.VisionLab.isTimeMachineBusy(),{timeout:180000});
+          const rfInference=await page.evaluate(()=>{
+            const value=id=>document.getElementById(id).textContent.trim();
+            return {
+              inference:Number.parseFloat(value('m-inf')),postprocess:Number.parseFloat(value('m-post')),
+              total:Number.parseFloat(value('m-total')),detections:Number(value('m-count')),
+              bytes:value('m-bytes'),backend:value('backend-badge')
+            };
+          });
+          assert.ok(Number.isFinite(rfInference.inference)&&rfInference.inference>0,'RF-DETR must complete real browser inference');
+          assert.ok(Number.isFinite(rfInference.postprocess)&&Number.isFinite(rfInference.total),'RF-DETR timing must be reported');
+          assert.ok(Math.abs(rfInference.total-(rfInference.inference+rfInference.postprocess))<1,'RF-DETR pipeline end-to-end timing must match inference plus drawing');
+          assert.ok(Number.isFinite(rfInference.detections)&&rfInference.detections>=0,'RF-DETR detections must be a numeric pipeline result');
+          assert.match(rfInference.bytes,/28\.8 MB|54\.4 MB/,'RF-DETR must report the selected pinned runtime size');
+          assert.match(rfInference.backend,/WASM|WebGPU/i,'RF-DETR must report its selected browser backend');
+          await page.$eval('[data-history-experiment="dinov3-features"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+          await page.waitForFunction(()=>window.VisionLab.isTimeMachineBusy(),{timeout:30000});
+          await page.waitForFunction(()=>!window.VisionLab.isTimeMachineBusy()&&document.getElementById('history-output-count').textContent.includes('196 patch vectors'),{timeout:180000});
+          const dinoResult=await page.evaluate(()=>{
+            const value=id=>document.getElementById(id).textContent.trim();
+            return {input:value('history-input-size'),output:value('history-output-count'),preprocess:value('history-preprocess'),inference:value('history-inference'),runtime:value('history-runtime-state'),load:value('history-load'),canvasClass:document.getElementById('image-canvas').classList.contains('feature-map-active')};
+          });
+          assert.match(dinoResult.input,/224×224/,'DINOv3 input resize must be shown');
+          assert.equal(dinoResult.output,'196 patch vectors · 384D','DINOv3 must return the expected patch feature grid');
+          assert.match(dinoResult.preprocess,/ImageNet normalization/,'DINOv3 processor contract must be reported');
+          assert.match(dinoResult.inference,/^[0-9.]+ ms/,'DINOv3 pipeline inference time must be measured');
+          assert.match(dinoResult.runtime,/DINOv3.*q4\/WASM.*ready/,'DINOv3 must report q4/WASM runtime state');
+          assert.match(dinoResult.load,/≈14\.9 MB/,'DINOv3 model footprint must be shown');
+          assert.equal(dinoResult.canvasClass,true,'DINOv3 similarity map must render over the current image');
+          await page.$eval('#image-canvas',el=>{const rect=el.getBoundingClientRect();el.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:rect.left+rect.width*.25,clientY:rect.top+rect.height*.25}))});
+          assert.equal(await page.$eval('#feature-reference',el=>el.value),'45','clicking the patch map must select its 14×14 reference patch');
+          assert.match(await page.$eval('#history-status',el=>el.textContent),/patch row 4, column 4/,'selected patch feedback must be readable');
+          await page.focus('#feature-reference');await page.keyboard.press('ArrowRight');
+          assert.equal(await page.$eval('#feature-reference',el=>el.value),'46','the reference patch must also be keyboard selectable');
         }
         await page.$eval('[data-runnable-model="yolox"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
         await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='yolox'&&!window.VisionLab.isTimeMachineBusy());
         assert.equal(await page.$eval('.timeline-legend',el=>el.closest('.timeline-scroll')===null),true);
-        assert.equal(await page.$$eval('.timeline-legend .legend-marker',nodes=>nodes.length),5);
+        assert.equal(await page.$$eval('.timeline-legend .legend-marker',nodes=>nodes.length),6);
         await tab('model-cache');
-        await page.waitForFunction(()=>document.querySelectorAll('.cache-model').length===12);
+        await page.waitForFunction(()=>document.querySelectorAll('.cache-model').length===13);
         assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),'yolox');
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
         // Exercise the real storage implementation with tiny deterministic assets.
