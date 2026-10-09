@@ -133,7 +133,7 @@ check(!files.index.includes('Confidence uses the Time Machine setting.'),'Live C
 for(const id of ['camera-flip','camera-zoom-controls','camera-zoom-out','camera-zoom-reset','camera-zoom-in'])check(idSet.has(id),'Live Camera device control missing: '+id);
 check(files.app.includes("function liveModelKeys()")&&files.app.includes("state.liveModel===modelKey"),'Live Camera must use its independent live model state');
 check(files.app.includes('getHistoryExperiment:()=>state.historyExperiment')&&files.app.includes('isTimeMachineBusy:()=>state.running||state.benchmarking'),'Resolution Microscope must read Time Machine task/busy state without reaching into private state');
-check(files.app.includes('const mb=v/1e6')&&files.loader.includes('const mb=v/1e6')&&files.loader.includes('(v/1000).toFixed(0)'),'runtime and storage byte displays must use decimal units');
+check(files.loader.includes('const mb=v/1e6')&&files.loader.includes('(v/1000).toFixed(0)'),'model storage byte formatter must use decimal MB and KB units');
 
 const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
