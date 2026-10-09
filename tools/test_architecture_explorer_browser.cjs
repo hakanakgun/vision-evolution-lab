@@ -154,7 +154,7 @@ async function main(){
         assert.deepEqual(units,{mb:'7.81 MB',kb:'26 KB'});
         let realInference=null;
         if(viewport.width===1440){
-          await page.setInputFiles('#image-file',path.join(root,'assets/benchmark/coco-val-000000397133.jpg'));
+          const imageInput=await page.$('#image-file');assert.ok(imageInput,'Time Machine image input missing');await imageInput.uploadFile(path.join(root,'assets/benchmark/coco-val-000000397133.jpg'));
           await page.waitForFunction(()=>document.getElementById('m-run-label').textContent==='first inference',{timeout:120000});
           await page.waitForFunction(()=>!window.VisionLab.isTimeMachineBusy());
           realInference=await page.evaluate(()=>{
