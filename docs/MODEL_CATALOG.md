@@ -9,7 +9,7 @@ Status meanings:
 - **Research-only** — reference or candidate shown without downloading or executing its checkpoint.
 - **Candidate** — may become runnable only after browser compatibility plus checkpoint/license provenance are verified.
 
-Timeline month labels use the first public arXiv paper date when one is available. Entries without a verified month retain year-only labels; this is a paper-date convention, not a claim about release or deployment dates.
+Timeline month labels use the first public paper date when one is available; release-only milestones use the source-backed release date and are labelled. Entries without a verified month retain year-only labels. Dates do not imply a checkpoint release or deployment date.
 
 | Year | Model | Status | Architecture shift | Upstream license/provenance | Browser note |
 | --- | --- | --- | --- | --- | --- |
@@ -31,6 +31,17 @@ Timeline month labels use the first public arXiv paper date when one is availabl
 | 2024-06 | LW-DETR-tiny | Runnable | lightweight ViT encoder + shallow DETR decoder | Pinned `AnnaZhang/lwdetr_tiny_60e_coco` checkpoint metadata declares Apache-2.0; derived browser export and revisions in `MODEL_SOURCES.md` | Time Machine + individual Benchmark ×20 + Live Camera · direct ONNX Runtime Web/WASM fp32; physical iPhone / Brave-WebKit / iOS 18.7 ×20 completed 2026-09-24 and 2026-09-27; sustained camera stability and broader compatibility remain unverified |
 | 2024-07 | RT-DETRv2 R18 | Research preview | improved end-to-end DETR training recipe | base `PekingU/rtdetr_v2_r18vd`; Apache-2.0 ONNX Community conversion pinned in `MODEL_SOURCES.md`; COCO | User-reported iOS 18.7 / Brave-WebKit WebGPU fp16 inference plus ×20 warm benchmark on 2026-09-23; broader device/sample validation remains pending |
 | 2024-10 | D-FINE-N | Runnable | fine-grained distribution refinement for DETR box regression | Apache-2.0 COCO checkpoint and pinned ONNX Community Transformers.js conversion; exact revisions in `MODEL_SOURCES.md` | Time Machine + individual Benchmark ×20 + Live Camera; WASM fp32; physical iPhone / Brave-WebKit / iOS 18.7 ×20 completed 2026-09-27; sustained camera stability remains unverified |
+| 2024-12 | DEIM | Research-only | Improved DETR matching/convergence | [DEIM paper](https://arxiv.org/abs/2412.04234) | No checkpoint/runtime integrated. |
+| 2025-02 | YOLOv12 | Research-only | Attention-centric YOLO detector | [paper](https://arxiv.org/abs/2502.12524) | Architecture study only; no browser artifact pinned. |
+| 2025-03 | YOLOE | Research-only | Text-/visual-prompt open-vocabulary detection and segmentation | [paper](https://arxiv.org/abs/2503.07465) | Prompt UI and segmentation outputs need a separate task surface. |
+| 2025-03 | DEIM-Nano | Research-only | Compact DEIM family variant | [official DEIM project](https://github.com/ShihuaHuang95/DEIM) | Export, license and browser runtime still need pinning. |
+| 2025-08 | DINOv3 | Research-only | Self-supervised visual representations and dense features | [paper](https://arxiv.org/abs/2508.10104) | Foundation backbone, not an object detector by itself. |
+| 2025-09 | DEIMv2 | Research-only | DINOv3-era and pruned-backbone detector family | [paper](https://arxiv.org/abs/2509.20787) | Atto/Femto/Pico/Nano merit export/runtime review; license is custom. |
+| 2025-11 | RF-DETR Nano | Research preview · runnable | NAS real-time detection transformer | [paper](https://arxiv.org/abs/2511.09554) · [official repo](https://github.com/roboflow/rf-detr) | Pinned HF ONNX conversion; Time Machine + warm benchmark only; device checks pending. |
+| 2025-11 | SAM 3 | Research-only | Concept-prompted detection, segmentation and tracking | [paper](https://arxiv.org/abs/2511.16719) | Promptable masks/identities are a different task from fixed COCO boxes. |
+| 2026-01 | YOLO26-Nano | Research-only | NMS-free end-to-end detector family | [official docs](https://docs.ultralytics.com/models/yolo26) | Release-month entry; weight/license and browser output contract review pending. |
+| 2026-03 | EdgeCrafter | Research-only | Compact ViT dense prediction across detection/segmentation/pose | [paper](https://arxiv.org/abs/2603.18739) | Custom license and task-specific output contract need review. |
+| 2026-03-27 | SAM 3.1 | Research-only | Joint multi-object video tracking | [release notes](https://github.com/facebookresearch/sam3/blob/main/RELEASE_SAM3p1.md) | Video/mask task; not a still-image box detector. |
 
 ## License policy
 
