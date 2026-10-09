@@ -6,7 +6,7 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.23.1',
+    version:'0.24.0',
     runtime:Object.freeze({ort:'1.30.0',ortDistUrl:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/',ortJspiUrl:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.jspi.min.mjs',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),
@@ -28,7 +28,18 @@
       Object.freeze({year:2023,month:4,model:'rtdetr',title:'RT-DETR R18',note:'tap to run',kind:'runnable',className:'transformer',evolution:'Query-based end-to-end DETR detection is redesigned for real-time use, keeping set prediction while reducing the latency gap to one-stage detectors.'}),
       Object.freeze({year:2024,month:6,model:'lwdetr',title:'LW-DETR-tiny',note:'run · Time Machine · WASM fp32',kind:'runnable',className:'transformer',evolution:'A lightweight DETR design reduces encoder/decoder cost while retaining query-based end-to-end predictions for smaller deployment targets.'}),
       Object.freeze({year:2024,month:7,model:'rtdetrv2',title:'RT-DETRv2 R18',note:'research preview · tap to run',kind:'runnable',className:'transformer',evolution:'RT-DETRv2 refines the real-time DETR training and deployment recipe while preserving end-to-end query-based detection without page-side NMS.'}),
-      Object.freeze({year:2024,month:10,model:'dfine',title:'D-FINE-N',note:'tap to run · Time Machine',kind:'runnable',className:'transformer',evolution:'A compact modern end-to-end detector focuses on finer box-regression modeling while keeping a deployment-oriented transformer detection pipeline.'})
+      Object.freeze({year:2024,month:10,model:'dfine',title:'D-FINE-N',note:'tap to run · Time Machine',kind:'runnable',className:'transformer',evolution:'A compact modern end-to-end detector focuses on finer box-regression modeling while keeping a deployment-oriented transformer detection pipeline.'}),
+      Object.freeze({year:2024,month:12,title:'DEIM',note:'research · improved DETR matching',kind:'research',className:'transformer'}),
+      Object.freeze({year:2025,month:2,title:'YOLOv12',note:'research · attention-centric YOLO',kind:'research'}),
+      Object.freeze({year:2025,month:3,title:'YOLOE',note:'research · open-vocabulary detection',kind:'research'}),
+      Object.freeze({year:2025,month:3,title:'DEIM-Nano',note:'research · compact DETR variant',kind:'research',className:'transformer'}),
+      Object.freeze({year:2025,month:8,title:'DINOv3',note:'research · general visual features',kind:'research',className:'transformer'}),
+      Object.freeze({year:2025,month:9,title:'DEIMv2',note:'research · DINOv3-era detector family',kind:'research',className:'transformer'}),
+      Object.freeze({year:2025,month:11,model:'rfdetr',title:'RF-DETR Nano',note:'research preview · tap to run',kind:'runnable',className:'transformer',evolution:'A real-time detection transformer family with neural-architecture-search variants; this browser preview uses a pinned Nano ONNX Community conversion and stays separate from the general Model Race until device behavior is checked.'}),
+      Object.freeze({year:2025,month:11,title:'SAM 3',note:'research · concept segmentation + tracking',kind:'research',className:'transformer'}),
+      Object.freeze({year:2026,month:1,title:'YOLO26-Nano',note:'research · end-to-end detection',kind:'research'}),
+      Object.freeze({year:2026,month:3,title:'EdgeCrafter',note:'research · task-specific dense prediction',kind:'research',className:'transformer'}),
+      Object.freeze({year:2026,month:3,title:'SAM 3.1',note:'research · video object tracking',kind:'research',className:'transformer'}),
     ]),
     historyExperiments:Object.freeze({
       'neocognitron':Object.freeze({
@@ -69,6 +80,27 @@
           labels:'assets/models/imagenet-1k-labels.json',labelsSha256:'495a1f028e7b3b1878dbc4ec2e66f9a9a9c89c48abb007a9c954faa13571c33a',provider:'wasm',licenseMetadata:'Apache-2.0',licenseCard:'BSD-3-Clause'
         })
       })
+    }),
+    rfdetr:Object.freeze({
+      id:'rfdetr-nano-onnx-community',title:'RF-DETR Nano',year:2025,status:'runnable',family:'RF-DETR · Nano',task:'object-detection',license:'Apache-2.0 · Hugging Face Hub metadata',
+      modelId:'onnx-community/rfdetr_nano-ONNX',baseModel:'roboflow/rf-detr',revision:'eae21ce',parameters:'Nano variant',input:384,bytes:54400000,
+      capabilities:Object.freeze({timeMachine:true,benchmark:true,live:false,race:false,inspection:Object.freeze({
+        mode:'transformer-contract-only',stages:Object.freeze(['preprocessing']),
+        input:'384×384',resize:'source stage ≤384 px, then processor resize to 384×384',tensor:'float32 · NCHW',channels:'RGB',normalization:'rescale 1/255 · no mean/std normalization · no padding',
+        preview:Object.freeze({mode:'stretch',width:384,height:384,caption:'RF-DETR Nano processor 384×384 preview'}),shape:Object.freeze({layout:'NCHW',channels:3}),
+        pipeline:Object.freeze({
+          step2:Object.freeze({title:'384×384 processor input',text:'The browser preserves the source aspect ratio while staging it to a 384 px maximum edge; the pinned processor then resizes to 384×384 without padding.'}),
+          step3:Object.freeze({title:'RGB rescaling',text:'The pinned processor rescales RGB values by 1/255. Its config disables ImageNet mean/std normalization and padding.'}),
+          step4:Object.freeze({title:'Prompt-free COCO detector',text:'Transformers.js runs the RF-DETR Nano ONNX conversion and returns scored COCO boxes; internal query tensors are not exposed.'})
+        }),
+        comparison:Object.freeze({label:'RF-DETR Nano',input:'384×384',resize:'source stage + processor resize',padding:'none',layout:'NCHW',dtype:'fp16 WebGPU / q8 WASM weights',channels:'RGB · 1/255'}),
+        intermediate:Object.freeze({title:'RF-DETR query internals not exposed',subtitle:'The Hugging Face Transformers.js pipeline returns postprocessed detections, not internal decoder query tensors.',note:'No query, attention, or feature-map visualization is fabricated.',emptyText:'Final pipeline detections are visible; internal query states are not exposed.',data:'none',status:'Query internals not exposed'}),
+        resultNote:'Research preview. The pipeline’s scored COCO detections are real model outputs; no browser accuracy or cross-device performance claim is made.'
+      })}),
+      runtime:Object.freeze({webgpu:Object.freeze({device:'webgpu',dtype:'fp16',modelBytes:54400000}),wasm:Object.freeze({device:'wasm',dtype:'q8',modelBytes:28800000})}),
+      decoder:'Transformers.js object-detection postprocessor',
+      ui:Object.freeze({subtitle:'COCO object detection · RF-DETR Nano · Transformers.js',provenance:'Pinned Hugging Face ONNX Community conversion at revision eae21ce. First browser integration; not yet validated across devices or on a dataset.',runtime:Object.freeze({initLabel:'Pipeline load',bytesText:'28.8 MB q8 · 54.4 MB fp16',cacheInitial:'downloaded when selected',managedTransferWhenMissing:true,inferenceBoundaryNote:'Inference is the Transformers.js processor/model/postprocessor call.',benchmarkBoundary:'Warm pipeline calls after the one-time model transfer and pipeline initialization; no paper latency is presented.'}),links:Object.freeze([Object.freeze({label:'RF-DETR paper ↗',url:'https://arxiv.org/abs/2511.09554'}),Object.freeze({label:'Pinned Nano conversion ↗',url:'https://huggingface.co/onnx-community/rfdetr_nano-ONNX/tree/eae21ce'}),Object.freeze({label:'Official repository ↗',url:'https://github.com/roboflow/rf-detr'}),Object.freeze({label:'License/provenance ↗',url:'docs/MODEL_SOURCES.md#rf-detr-nano'})])}),
+      source:'https://huggingface.co/onnx-community/rfdetr_nano-ONNX'
     }),
     yolov1:Object.freeze({
       id:'yolov1-voc20-int8-browser',title:'YOLOv1',year:2016,status:'runnable',family:'YOLOv1 · original full Darknet architecture',task:'object-detection',
