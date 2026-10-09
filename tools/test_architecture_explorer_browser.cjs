@@ -177,9 +177,9 @@ async function main(){
         await page.$eval('[data-runnable-model="yolox"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
         await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='yolox'&&!window.VisionLab.isTimeMachineBusy());
         assert.equal(await page.$eval('.timeline-legend',el=>el.closest('.timeline-scroll')===null),true);
-        assert.equal(await page.$$eval('.timeline-legend .legend-marker',nodes=>nodes.length),5);
+        assert.equal(await page.$eval('.timeline-legend .legend-marker',nodes=>nodes.length),6);
         await tab('model-cache');
-        await page.waitForFunction(()=>document.querySelectorAll('.cache-model').length===12);
+        await page.waitForFunction(()=>document.querySelectorAll('.cache-model').length===13);
         assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),'yolox');
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
         // Exercise the real storage implementation with tiny deterministic assets.
