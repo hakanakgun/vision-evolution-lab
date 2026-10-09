@@ -168,3 +168,9 @@ For the three additional images, the COCO instance metadata used to construct th
 - fp16 asset SHA-256: `2922e7137689ac648cd99f0aa33b885d681fd981302ac5c77ed9a4ee946eaa36`.
 - Quantized asset SHA-256: `4b839c46187b77fc620c770de0be6790637b98afde9b386232b0fcf74382eb3`.
 - The pinned ONNX files are fetched at runtime and are not bundled in this repository.
+
+## RF-DETR Nano browser checkpoint
+
+- Runtime-loaded conversion: [onnx-community/rfdetr_nano-ONNX](https://huggingface.co/onnx-community/rfdetr_nano-ONNX), pinned revision prefix `eae21ce`; files are stored by the browser Transformers.js cache and are not redistributed here.
+- Hugging Face Hub repository metadata declares Apache-2.0. The upstream [RF-DETR README](https://github.com/roboflow/rf-detr) says the open-source base is Apache-2.0 and explicitly distinguishes Plus components under PML 1.0. This app uses the Hub conversion labelled RF-DETR Nano, not a Plus component.
+- The project does not make a per-file license or checksum claim beyond those upstream declarations. Review any future variant or locally mirrored file independently.
