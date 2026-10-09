@@ -2,7 +2,7 @@
 
 ## How to read the timeline
 
-The Time Machine keeps one selected image while users move through its history. The 1980 pattern-response preview, 1998 MNIST digit task, 2001 face cascade, 2005 pedestrian detector, and 2012 AlexNet classifier run on that same image, each with its native task and output. Historical experiments do not change the selected general-object AI model or enter Model Race.
+The Time Machine keeps one selected image while users move through its history. Hough lines (1962), the 1980 pattern-response preview, Canny edges (1986), Harris corners (1988), the 1998 MNIST digit task, 2001 face cascade, 2005 pedestrian detector, ORB local features (2011), and the 2012 AlexNet classifier run on that same image with method-specific outputs. These milestones include image-processing methods as well as learned models; they are not a shared accuracy ranking.
 
 For older milestones, the timeline shows the year only. Recent model entries show the first public arXiv paper month where verified; this is not necessarily the model-weight or software release date. YOLOv1 is dated 2016 for its CVPR paper; its arXiv preprint appeared in 2015. These entries are a selected lineage, not a claim that computer vision followed a single path.
 
@@ -10,10 +10,14 @@ For older milestones, the timeline shows the year only. Recent model entries sho
 
 | Year | Model or method | Original task / contribution | In-app treatment | What it should not be confused with |
 | --- | --- | --- | --- | --- |
+| 1962 | Hough transform | Global voting in polar line-parameter space. | Runnable · up to 24 line hypotheses | OpenCV standard HoughLines over Canny edges; no learned weights or object labels. |
 | 1980 | Neocognitron-inspired preview | Orientation responses followed by local max pooling. | Runnable · feature map | Educational approximation with fixed filters; no original trained weights or object labels. |
+| 1986 | Canny edge detector | Multi-stage edge detection with smoothing, gradients, suppression, and hysteresis. | Runnable · binary edge overlay | OpenCV.js fixed 50 / 120 thresholds; edges are not object detections. |
+| 1988 | Harris–Stephens corner detector | Local second-moment corner response. | Runnable · spatially thinned corner points | Display filtering does not make points semantic detections or calibrated scores. |
 | 1998 | LeNet-era MNIST CNN reference | Handwritten-digit classification on candidate image crops. | Runnable · digits only | Later ONNX Model Zoo checkpoint, not original LeNet-5 weights; it does not detect general objects or arbitrary printed text. |
 | 2001 | Viola–Jones | Boosted cascade family for rapid frontal-face detection; the app uses a later OpenCV cascade representative. | Runnable · face boxes | The OpenCV XML is not the original paper's trained weights. |
 | 2005 | HOG + linear SVM | Hand-crafted gradient descriptor with a sliding-window pedestrian classifier; the app uses OpenCV's default people detector. | Runnable · pedestrian boxes | Pedestrian detection, not general-object detection or the exact original paper weights. |
+| 2011 | ORB | Oriented FAST keypoints with rotated BRIEF descriptors. | Runnable · keypoints and descriptor count | Single-image feature extraction only; no matching or object recognition. |
 | 2012 | AlexNet | Deep CNN for 1,000-class ImageNet classification. | Runnable · top-five class labels | BVLC AlexNet-family INT8 checkpoint, not the exact 2012 paper weights; full-image classification, no object boxes. |
 | 2014 | R-CNN | Selective-search region proposals classified with CNN features and class-specific SVMs. | History only | A region-based detector, not a one-pass detector or a runnable app model. |
 | 2015 | Faster R-CNN · ResNet-50 FPN INT8 | A learned Region Proposal Network shares convolutional features with a two-stage detection network. | Runnable · Time Machine only | Later ONNX Model Zoo COCO reference checkpoint, not original 2015 paper weights; known dynamic-shape portability risk remains. |
@@ -29,7 +33,11 @@ For older milestones, the timeline shows the year only. Recent model entries sho
 
 ## Primary papers
 
+- Hough, “Method and Means for Recognizing Complex Patterns,” U.S. Patent 3,069,654 (granted 1962), [patent](https://patents.google.com/patent/US3069654A/en).
 - Fukushima, “Neocognitron: A Self-Organizing Neural Network Model for a Mechanism of Pattern Recognition Unaffected by Shift in Position,” *Biological Cybernetics* (1980), [DOI: 10.1007/BF00344251](https://doi.org/10.1007/BF00344251).
+- Canny, “A Computational Approach to Edge Detection,” *IEEE Transactions on Pattern Analysis and Machine Intelligence* (1986), [DOI: 10.1109/TPAMI.1986.4767851](https://doi.org/10.1109/TPAMI.1986.4767851).
+- Harris & Stephens, “A Combined Corner and Edge Detector,” *Alvey Vision Conference* (1988), [paper](https://www.bmva-archive.org.uk/bmvc/1988/avc-88-023.pdf).
+- Rublee et al., “ORB: An efficient alternative to SIFT or SURF,” *International Conference on Computer Vision* (2011), [DOI: 10.1109/ICCV.2011.6126544](https://doi.org/10.1109/ICCV.2011.6126544).
 - LeCun et al., “Gradient-Based Learning Applied to Document Recognition,” *Proceedings of the IEEE* (1998), [paper](https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf).
 - Viola & Jones, “Rapid Object Detection using a Boosted Cascade of Simple Features” (2001), [paper](https://doi.org/10.1109/CVPR.2001.990517).
 - Dalal & Triggs, “Histograms of Oriented Gradients for Human Detection” (2005), [CVPR paper](https://doi.org/10.1109/CVPR.2005.177).

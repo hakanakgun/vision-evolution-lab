@@ -39,6 +39,42 @@
     return canvas;
   }
 
+
+  function drawEdgeOverlay(source,width,height,edges){
+    const canvas=drawBase(source,width,height),context=canvas.getContext('2d'),overlay=document.createElement('canvas');
+    overlay.width=width;overlay.height=height;
+    const layer=overlay.getContext('2d'),image=layer.createImageData(width,height),data=image.data;
+    for(let index=0;index<Math.min(width*height,edges.length);index++)if(edges[index]){const offset=index*4;data[offset]=29;data[offset+1]=111;data[offset+2]=99;data[offset+3]=215}
+    layer.putImageData(image,0,0);
+    context.drawImage(overlay,0,0);
+    return canvas;
+  }
+
+  function drawHoughLines(source,width,height,lines){
+    const canvas=drawBase(source,width,height),context=canvas.getContext('2d'),reach=Math.hypot(width,height)*1.2;
+    context.save();context.strokeStyle='#c15f3f';context.globalAlpha=.88;context.lineWidth=Math.max(1.5,width/360);
+    for(const line of lines){const dx=Math.cos(line.theta),dy=Math.sin(line.theta),x=line.rho*dx,y=line.rho*dy;context.beginPath();context.moveTo(x-reach*dy,y+reach*dx);context.lineTo(x+reach*dy,y-reach*dx);context.stroke()}
+    context.restore();return canvas;
+  }
+
+  function drawHarrisCorners(source,width,height,corners){
+    const canvas=drawBase(source,width,height),context=canvas.getContext('2d'),radius=Math.max(2,width/260);
+    context.save();context.strokeStyle='#b47527';context.fillStyle='rgba(255,255,255,.82)';context.lineWidth=Math.max(1,width/500);
+    for(const point of corners){context.beginPath();context.arc(point.x,point.y,radius,0,Math.PI*2);context.fill();context.stroke()}
+    context.restore();return canvas;
+  }
+
+  function drawOrbKeypoints(source,width,height,keypoints){
+    const canvas=drawBase(source,width,height),context=canvas.getContext('2d');
+    context.save();context.strokeStyle='#1d6f63';context.globalAlpha=.82;context.lineWidth=Math.max(1,width/560);
+    for(const point of keypoints){
+      const radius=Math.max(2,Math.min(11,(Number(point.size)||8)*.24));
+      context.beginPath();context.arc(point.x,point.y,radius,0,Math.PI*2);context.stroke();
+      if(point.angle>=0){const angle=point.angle*Math.PI/180;context.beginPath();context.moveTo(point.x,point.y);context.lineTo(point.x+Math.cos(angle)*radius,point.y+Math.sin(angle)*radius);context.stroke()}
+    }
+    context.restore();return canvas;
+  }
+
   function poolMax(source,width,height){
     const outWidth=Math.ceil(width/2),outHeight=Math.ceil(height/2),out=new Float32Array(outWidth*outHeight);
     for(let y=0;y<height;y++)for(let x=0;x<width;x++){
@@ -320,17 +356,45 @@
         setText('history-preprocess','grayscale + oriented filters');setText('history-inference',ms(response.durationMs));setText('history-load','not applicable · no weights');
         setRuntime('CPU feature preview · no checkpoint');
         setStatus('Pattern-response preview complete. The overlay shows local edge-pattern responses, not recognized objects.');
-      }else if(spec.workerMethod==='face'||spec.workerMethod==='hog'){
-        const work=workingImage(source),workerInfo=await ensureWorker();
+      }else if(['face','hog','hough-lines','canny-edges','harris-corners','orb-features'].includes(spec.workerMethod)){
+        const method=spec.workerMethod,work=workingImage(source),workerInfo=await ensureWorker();
         if(runId!==state.runToken)return;
-        const result=await runWorker(spec.workerMethod,work);
+        const result=await runWorker(method,work);
         if(runId!==state.runToken)return;
-        drawBoxes(source,work.width,work.height,result.boxes,()=>spec.workerMethod==='face'?'frontal face':'person');
-        setText('history-input-size',work.width+'×'+work.height+' · working image');setText('history-output-count',result.boxes.length+' '+(spec.workerMethod==='face'?'face':'pedestrian')+(result.boxes.length===1?'':'s'));
-        setText('history-preprocess',spec.workerMethod==='face'?'RGBA → grayscale → histogram equalization':'RGBA → RGB → 64×128 sliding windows');setText('history-inference',ms(result.inferenceMs));
-        const assetMs=Number.isFinite(result.asset?.loadMs)?result.asset.loadMs:workerInfo.elapsed;
-        setText('history-load',result.asset?(result.asset.reused?'cached cascade':ms(assetMs)+' · cascade'):ms(workerInfo.elapsed)+' · OpenCV.js');
-        setStatus(result.boxes.length?result.boxes.length+' task-specific region'+(result.boxes.length===1?'':'s')+' found. This method does not detect general objects.':'Completed with 0 regions. This detector only searches for '+(spec.workerMethod==='face'?'frontal faces.':'pedestrians.'));
+        setText('history-input-size',work.width+'×'+work.height+' · working image');
+        if(method==='face'||method==='hog'){
+          drawBoxes(source,work.width,work.height,result.boxes,()=>method==='face'?'frontal face':'person');
+          setText('history-output-count',result.boxes.length+' '+(method==='face'?'face':'pedestrian')+(result.boxes.length===1?'':'s'));
+          setText('history-preprocess',method==='face'?'RGBA → grayscale → histogram equalization':'RGBA → RGB → 64×128 sliding windows');
+          const assetMs=Number.isFinite(result.asset?.loadMs)?result.asset.loadMs:workerInfo.elapsed;
+          setText('history-load',result.asset?(result.asset.reused?'cached cascade':ms(assetMs)+' · cascade'):ms(workerInfo.elapsed)+' · OpenCV.js');
+          setStatus(result.boxes.length?result.boxes.length+' task-specific region'+(result.boxes.length===1?'':'s')+' found. This method does not detect general objects.':'Completed with 0 regions. This detector only searches for '+(method==='face'?'frontal faces.':'pedestrians.'));
+        }else if(method==='canny-edges'){
+          drawEdgeOverlay(source,work.width,work.height,result.edges);
+          setText('history-output-count',result.edgePixels.toLocaleString()+' edge pixels · binary overlay');
+          setText('history-preprocess','RGBA → grayscale → Canny 50 / 120');
+          setText('history-load',ms(workerInfo.elapsed)+' · OpenCV.js · no checkpoint');
+          setStatus('Canny marked edge pixels in the working image. Edge responses do not classify or locate general objects.');
+        }else if(method==='hough-lines'){
+          drawHoughLines(source,work.width,work.height,result.lines);
+          setText('history-output-count',result.lines.length+' straight-line hypotheses');
+          setText('history-preprocess','RGBA → grayscale → Canny → polar Hough');
+          setText('history-load',ms(workerInfo.elapsed)+' · OpenCV.js · no checkpoint');
+          setStatus(result.lines.length?'Hough returned global line hypotheses from the image edges. Lines do not identify objects.':'No line hypothesis passed the current vote threshold.');
+        }else if(method==='harris-corners'){
+          drawHarrisCorners(source,work.width,work.height,result.corners);
+          setText('history-output-count',result.corners.length+' spatially thinned corners');
+          setText('history-preprocess','RGBA → grayscale → Harris response');
+          setText('history-load',ms(workerInfo.elapsed)+' · OpenCV.js · no checkpoint');
+          setStatus('Harris highlights local corner responses. These points are not object detections or calibrated scores.');
+        }else{
+          drawOrbKeypoints(source,work.width,work.height,result.keypoints);
+          setText('history-output-count',result.keypoints.length+' keypoints · '+result.descriptorCount+' descriptors');
+          setText('history-preprocess','RGBA → grayscale → ORB · max 500');
+          setText('history-load',ms(workerInfo.elapsed)+' · OpenCV.js · no checkpoint');
+          setStatus('ORB marks local keypoints and computes descriptors, but this single-image preview does not match them or recognize objects.');
+        }
+        setText('history-inference',ms(result.inferenceMs));
       }else if(spec.runner==='mnist-digit-cnn'){
         await runDigits(spec,source,runId);
       }else if(spec.runner==='alexnet-image-classification'){

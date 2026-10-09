@@ -4,12 +4,16 @@
 
 Time Machine keeps one locally selected image while the user moves through the early timeline. Selecting a runnable historical experiment processes that same image and draws the method's native output on the main image canvas.
 
-The five experiments cover different tasks and output types:
+The nine experiments cover different tasks and output types:
 
+- **1962 · Hough transform** — votes over a polar parameter space and returns straight-line hypotheses from image edges. It uses no trained weights and does not name objects.
 - **1980 · Neocognitron-inspired pattern response** — an educational response map built from fixed edge orientations and two local max-pooling stages. It has no original trained weights and makes no object-label claims.
+- **1986 · Canny edge detector** — produces a binary edge map with fixed thresholds; it does not recognize objects.
+- **1988 · Harris–Stephens corner detector** — marks local corner responses after display-oriented spatial thinning; it does not classify them.
 - **1998 · LeNet-era MNIST CNN reference** — proposes digit-like crops, then classifies each crop as a handwritten digit from 0 to 9. The checkpoint is a later ONNX Model Zoo MNIST CNN, not LeNet-5's original 1998 weights.
 - **2001 · Viola–Jones method family** — a frontal-face cascade.
 - **2005 · HOG + linear SVM** — a pedestrian detector.
+- **2011 · ORB local features** — detects oriented keypoints and computes binary descriptors; the preview does not match features between images or recognize objects.
 - **2012 · AlexNet** — ranks the full image against 1,000 ImageNet classes and shows its top five labels.
 
 The methods have different native tasks. Image classification, face detection, pedestrian detection, handwritten-digit classification, feature responses, and general-object detection are not interchangeable and are not presented as one accuracy leaderboard. The 1998, 2001, 2005, and 2012 methods remain outside Model Race.
@@ -20,6 +24,12 @@ There is one Time Machine image picker. The original file stays in browser memor
 
 Clicking an earlier milestone with no image selected opens its method details and asks for an image. Choosing an image afterward runs the selected method automatically. Clicking another historical milestone reuses the same selected image. A historical experiment does not change the selected AI model; clicking a general-object model returns Time Machine to its regular AI controls.
 
+## 1962 · Hough transform
+
+The worker converts the working image to grayscale, runs Canny at thresholds 50 / 120, and applies OpenCV.js `HoughLines` with one-pixel rho bins, one-degree theta bins, and a vote threshold set to the larger of 18 or 8% of the shorter image side. The overlay draws up to 24 returned polar line hypotheses across the image. This is line structure, not object detection.
+
+The year marks Paul Hough’s U.S. patent grant for a method of recognizing complex patterns: [US3069654A](https://patents.google.com/patent/US3069654A/en). The browser runs the standard Hough line transform supplied by OpenCV.js; it does not recreate a machine-learned detector.
+
 ## 1980 · Neocognitron-inspired pattern response
 
 A small browser implementation computes four oriented 3×3 edge responses on grayscale pixels, combines their local maximum, and applies two 2×2 max-pooling stages. The result is drawn as a response overlay on the selected image.
@@ -27,6 +37,18 @@ A small browser implementation computes four oriented 3×3 edge responses on gra
 The original Neocognitron was a self-organizing hierarchical pattern-recognition network. A public-domain 1992 C simulator is listed by the CMU Artificial Intelligence Repository, but this project does not redistribute that simulator or claim to load its trained weights. The on-page preview is an educational approximation of hierarchical local responses; it is not an exact Neocognitron implementation or an object detector.
 
 Primary reference: Fukushima, “Neocognitron: A Self-Organizing Neural Network Model for a Mechanism of Pattern Recognition Unaffected by Shift in Position,” *Biological Cybernetics* (1980), [DOI 10.1007/BF00344251](https://doi.org/10.1007/BF00344251). The CMU archive records its separate 1992 simulator as public domain: [NeoCognitron simulator](https://www.cs.cmu.edu/afs/cs/project/ai-repository/ai/areas/neural/systems/neocog/0.html).
+
+## 1986 · Canny edge detector
+
+OpenCV.js converts the working image to grayscale and runs `Canny` with low / high thresholds 50 / 120, aperture size 3, and the default gradient norm. The binary edge map is shown as a teal overlay on the same image. Thresholds are fixed for this illustration, not tuned to a dataset. The method returns boundaries, not labels or object boxes.
+
+Primary paper: Canny, “A Computational Approach to Edge Detection,” *IEEE Transactions on Pattern Analysis and Machine Intelligence* (1986), [DOI 10.1109/TPAMI.1986.4767851](https://doi.org/10.1109/TPAMI.1986.4767851).
+
+## 1988 · Harris–Stephens corner detector
+
+The worker computes `cornerHarris` with block size 2, aperture 3, and `k = 0.04`. It keeps positive local maxima above 1.5% of the image’s maximum response, selects one strongest candidate per 8×8 display cell, and draws at most 120 points. Spatial thinning makes the overlay readable; it is not an accuracy threshold or model confidence.
+
+Primary paper: Harris and Stephens, “A Combined Corner and Edge Detector,” *Alvey Vision Conference* (1988), [paper](https://www.bmva-archive.org.uk/bmvc/1988/avc-88-023.pdf).
 
 ## 1998 · handwritten-digit experiment
 
@@ -52,6 +74,12 @@ The worker uses OpenCV's `HOGDescriptor` and `getDefaultPeopleDetector()`. The d
 
 A zero-result run is valid. It means that this detector returned no pedestrian boxes under this method and input; it does not establish image-level accuracy.
 
+## 2011 · ORB local features
+
+The worker runs the OpenCV.js ORB detector with a 500-feature cap and computes its binary descriptors. Up to 500 keypoints are shown with their scale and orientation. This single-image view does not compare descriptors, track motion, or assign semantic labels.
+
+Primary paper: Rublee et al., “ORB: An efficient alternative to SIFT or SURF,” *International Conference on Computer Vision* (2011), [DOI 10.1109/ICCV.2011.6126544](https://doi.org/10.1109/ICCV.2011.6126544).
+
 ## 2012 · AlexNet ImageNet classification
 
 The selected image is resized directly to 224×224, converted from RGB to BGR, has the channel means `[103.939, 116.779, 123.68]` subtracted, and is packed as float32 NCHW. This follows Intel Neural Compressor's pinned AlexNet evaluation script (RGB resize to 224×224, channel mean subtraction, then RGB→BGR). The browser runs the top-1/top-5-producing graph in ONNX Runtime Web WASM and lists the five highest-scoring labels. It leaves the image itself unchanged; AlexNet classification does not yield object locations.
@@ -62,9 +90,9 @@ The INT8 model file is approximately 58.2 MiB / 61.0 MB and loads only when Alex
 
 ## Runtime and memory ownership
 
-- OpenCV.js is loaded by `classical-cv-worker.js` only after one of the region-based historical methods runs.
-- The worker receives only the downscaled pixel copy; it returns rectangles and timings.
-- OpenCV objects such as `cv.Mat`, `cv.MatVector`, `cv.RectVector`, classifiers, and HOG objects are deleted in cleanup paths when the binding exposes `.delete()`.
+- OpenCV.js is loaded by `classical-cv-worker.js` only when an OpenCV-backed historical method is selected.
+- The worker receives only the downscaled pixel copy and returns the selected method’s output (rectangles, edges, lines, or points) with timings.
+- OpenCV objects such as `cv.Mat`, `cv.MatVector`, `cv.RectVector`, classifiers, HOG, ORB, and keypoint vectors are deleted in cleanup paths when the binding exposes `.delete()`.
 - The MNIST ONNX session is loaded only after digit-like regions are proposed; the OpenCV worker is terminated before session initialization.
 - The AlexNet INT8 ONNX session is loaded only when its timeline entry is selected. Leaving Time Machine, selecting another experiment, releasing the historical runtime, or leaving the page aborts any in-flight model request and releases the session.
 - Historical experiments release registered AI adapters before running. The experiment does not change Time Machine's selected general-object model.

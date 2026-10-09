@@ -152,6 +152,84 @@ async function runDigitCandidates(cv,width,height,pixels){
   }finally{safeDelete(gray);safeDelete(src)}
 }
 
+
+function requireFeatureApi(cv,names){
+  for(const name of names)if(typeof cv[name]!=='function')throw new Error('This OpenCV.js build does not expose '+name+'.');
+}
+
+function runCannyEdges(cv,width,height,pixels){
+  requireFeatureApi(cv,['cvtColor','Canny']);
+  const src=makeRgbaMat(cv,width,height,pixels),gray=new cv.Mat(),edges=new cv.Mat();
+  try{
+    cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY,0);
+    const started=performance.now();
+    cv.Canny(gray,edges,50,120,3,false);
+    const data=edges.data,copy=new Uint8Array(data.length);copy.set(data);
+    let edgePixels=0;for(const value of copy)if(value)edgePixels++;
+    return{edges:copy,edgePixels,inferenceMs:performance.now()-started,lowThreshold:50,highThreshold:120};
+  }finally{safeDelete(edges);safeDelete(gray);safeDelete(src)}
+}
+
+function runHoughLines(cv,width,height,pixels){
+  requireFeatureApi(cv,['cvtColor','Canny','HoughLines']);
+  const src=makeRgbaMat(cv,width,height,pixels),gray=new cv.Mat(),edges=new cv.Mat(),lines=new cv.Mat();
+  try{
+    cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY,0);
+    const started=performance.now(),voteThreshold=Math.max(18,Math.round(Math.min(width,height)*.08));
+    cv.Canny(gray,edges,50,120,3,false);
+    cv.HoughLines(edges,lines,1,Math.PI/180,voteThreshold);
+    const values=lines.data32F||[],items=[];
+    for(let index=0;index<Math.min(lines.rows,24);index++){
+      const rho=Number(values[index*2]),theta=Number(values[index*2+1]);
+      if(Number.isFinite(rho)&&Number.isFinite(theta))items.push({rho,theta});
+    }
+    return{lines:items,inferenceMs:performance.now()-started,voteThreshold};
+  }finally{safeDelete(lines);safeDelete(edges);safeDelete(gray);safeDelete(src)}
+}
+
+function runHarrisCorners(cv,width,height,pixels){
+  requireFeatureApi(cv,['cvtColor','cornerHarris']);
+  const src=makeRgbaMat(cv,width,height,pixels),gray=new cv.Mat(),response=new cv.Mat();
+  try{
+    cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY,0);
+    const started=performance.now();
+    cv.cornerHarris(gray,response,2,3,.04);
+    const values=response.data32F||new Float32Array(0);let maximum=0;
+    for(const value of values)if(Number.isFinite(value)&&value>maximum)maximum=value;
+    const gridWidth=Math.ceil(width/8),gridHeight=Math.ceil(height/8),best=new Array(gridWidth*gridHeight),cutoff=maximum*.015;
+    for(let y=2;y<height-2;y++)for(let x=2;x<width-2;x++){
+      const index=y*width+x,value=Number(values[index]);if(!(value>cutoff))continue;
+      let peak=true;
+      for(let dy=-1;dy<=1&&peak;dy++)for(let dx=-1;dx<=1;dx++)if((dx||dy)&&Number(values[(y+dy)*width+x+dx])>value){peak=false;break}
+      if(!peak)continue;
+      const cell=Math.floor(y/8)*gridWidth+Math.floor(x/8),current=best[cell];
+      if(!current||value>current.response)best[cell]={x,y,response:value};
+    }
+    const corners=best.filter(Boolean).sort((a,b)=>b.response-a.response).slice(0,120);
+    return{corners,inferenceMs:performance.now()-started,thresholdRatio:.015};
+  }finally{safeDelete(response);safeDelete(gray);safeDelete(src)}
+}
+
+function runOrbFeatures(cv,width,height,pixels){
+  requireFeatureApi(cv,['cvtColor']);
+  if(typeof cv.ORB!=='function'||typeof cv.KeyPointVector!=='function')throw new Error('This OpenCV.js build does not expose ORB keypoints.');
+  const src=makeRgbaMat(cv,width,height,pixels),gray=new cv.Mat(),mask=new cv.Mat(),descriptors=new cv.Mat(),keypoints=new cv.KeyPointVector(),detector=new cv.ORB(500);
+  try{
+    cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY,0);
+    const started=performance.now();
+    detector.detectAndCompute(gray,mask,keypoints,descriptors);
+    const points=[];
+    for(let index=0;index<Math.min(keypoints.size(),500);index++){
+      const point=keypoints.get(index);
+      try{
+        const x=Number(point.pt?.x),y=Number(point.pt?.y),size=Number(point.size),angle=Number(point.angle),response=Number(point.response);
+        if(Number.isFinite(x)&&Number.isFinite(y))points.push({x,y,size:Number.isFinite(size)?size:8,angle:Number.isFinite(angle)?angle:-1,response:Number.isFinite(response)?response:0});
+      }finally{safeDelete(point)}
+    }
+    return{keypoints:points,descriptorCount:Number(descriptors.rows)||0,inferenceMs:performance.now()-started};
+  }finally{safeDelete(detector);safeDelete(keypoints);safeDelete(descriptors);safeDelete(mask);safeDelete(gray);safeDelete(src)}
+}
+
 self.onmessage=async event=>{
   const message=event.data||{},id=message.id;
   try{
@@ -163,13 +241,17 @@ self.onmessage=async event=>{
     if(message.type!=='run')throw new Error('Unknown classical CV worker request.');
     const width=Number(message.width),height=Number(message.height);
     if(!Number.isFinite(width)||!Number.isFinite(height)||width<1||height<1||!message.pixels)throw new Error('Invalid image payload.');
-    const result=message.method==='face'
-      ?await runFace(cv,width,height,message.pixels)
-      :message.method==='hog'
-        ?await runHog(cv,width,height,message.pixels)
-        :message.method==='digits'
-          ?await runDigitCandidates(cv,width,height,message.pixels)
-          :(()=>{throw new Error('Unknown historical image method.');})();
+    let result;
+    switch(message.method){
+      case 'face':result=await runFace(cv,width,height,message.pixels);break;
+      case 'hog':result=await runHog(cv,width,height,message.pixels);break;
+      case 'digits':result=await runDigitCandidates(cv,width,height,message.pixels);break;
+      case 'canny-edges':result=runCannyEdges(cv,width,height,message.pixels);break;
+      case 'hough-lines':result=runHoughLines(cv,width,height,message.pixels);break;
+      case 'harris-corners':result=runHarrisCorners(cv,width,height,message.pixels);break;
+      case 'orb-features':result=runOrbFeatures(cv,width,height,message.pixels);break;
+      default:throw new Error('Unknown historical image method.');
+    }
     self.postMessage({id,ok:true,type:'result',method:message.method,width,height,...result});
   }catch(error){
     self.postMessage({id,ok:false,error:{name:error?.name||'Error',message:String(error?.message||error).slice(0,800)}});

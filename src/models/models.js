@@ -6,15 +6,19 @@
   const runtimeBootstrap=window.VisionRuntimeBootstrap||Object.freeze({ortVersion:'1.30.0',ortMode:'jsep',ortEntrypoint:'ort.webgpu.min.js',isIOS:false,reason:'legacy fallback'});
   const directOrtWebGPU=runtimeBootstrap.ortMode==='jsep';
   window.VisionModels=Object.freeze({
-    version:'0.23.0',
+    version:'0.24.0',
     runtime:Object.freeze({ort:'1.30.0',ortDistUrl:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/',ortJspiUrl:'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.jspi.min.mjs',directOrtMode:runtimeBootstrap.ortMode,directOrtEntrypoint:runtimeBootstrap.ortEntrypoint,directOrtReason:runtimeBootstrap.reason,transformersJs:'4.3.0',transformersJsUrl:'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0'}),
     labels:Object.freeze({coco80,voc20,vocCanonical}),
     defaults:Object.freeze({timeMachine:'yolox',live:'yolox'}),
     timeline:Object.freeze([
+      Object.freeze({year:1962,title:'Hough transform',note:'run · straight-line hypotheses',kind:'history-experiment',experiment:'hough-lines',evolution:'A global voting transform turns local edge evidence into line hypotheses in parameter space; it does not learn semantic object categories.'}),
       Object.freeze({year:1980,title:'Neocognitron',note:'run · early pattern-response demo',kind:'history-experiment',experiment:'neocognitron',evolution:'Hierarchical local receptive fields and pooling introduced a shift-tolerant pattern-recognition idea before modern supervised CNN object detectors.'}),
+      Object.freeze({year:1986,title:'Canny edge detector',note:'run · edge map',kind:'history-experiment',experiment:'canny-edges',evolution:'A multi-stage edge detector combines smoothing, gradient strength, non-maximum suppression and hysteresis; its output is image structure, not object labels.'}),
+      Object.freeze({year:1988,title:'Harris–Stephens corners',note:'run · local corners',kind:'history-experiment',experiment:'harris-corners',evolution:'A local second-moment response identifies corner-like image structure without trained weights or semantic object classes.'}),
       Object.freeze({year:1998,title:'LeNet-era MNIST CNN',note:'run · handwritten digits only',kind:'history-experiment',experiment:'mnist-digits',evolution:'Learned convolutional features replaced hand-written image rules for a narrow recognition task: isolated handwritten digits.'}),
       Object.freeze({year:2001,title:'Viola–Jones',note:'run · frontal-face cascade',kind:'history-experiment',experiment:'viola-jones',evolution:'Hand-designed Haar-like features, an AdaBoost-selected cascade and fast rejection made real-time frontal-face detection practical, but the detector remains task-specific.'}),
       Object.freeze({year:2005,title:'HOG + SVM',note:'run · pedestrian detector',kind:'history-experiment',experiment:'hog-pedestrians',evolution:'Local gradient-orientation histograms describe human shape more robustly than raw pixels, while a linear SVM and sliding window still target one hand-engineered task.'}),
+      Object.freeze({year:2011,title:'ORB features',note:'run · local keypoints + descriptors',kind:'history-experiment',experiment:'orb-features',evolution:'Oriented FAST keypoints and rotated BRIEF descriptors made local matching more robust while keeping feature extraction fast and compact.'}),
       Object.freeze({year:2012,title:'AlexNet',note:'run · ImageNet top-5 classification',kind:'history-experiment',experiment:'alexnet-classification',evolution:'Deep learned visual representations scaled to large-category image classification; this milestone recognizes whole images rather than localizing objects.'}),
       Object.freeze({year:2014,title:'R-CNN',note:'history only · region proposals + CNN',kind:'historical'}),
       Object.freeze({year:2015,model:'fasterrcnn',title:'Faster R-CNN',note:'run · two-stage RPN · WASM INT8',kind:'runnable',evolution:'Region proposals became learned: a Region Proposal Network shares convolutional features with a second-stage RoI classifier/regressor instead of relying on an external proposal algorithm.'}),
@@ -31,10 +35,25 @@
       Object.freeze({year:2024,month:10,model:'dfine',title:'D-FINE-N',note:'tap to run · Time Machine',kind:'runnable',className:'transformer',evolution:'A compact modern end-to-end detector focuses on finer box-regression modeling while keeping a deployment-oriented transformer detection pipeline.'})
     ]),
     historyExperiments:Object.freeze({
+      'hough-lines':Object.freeze({
+        id:'hough-lines',year:1962,title:'Hough transform · straight-line hypotheses',runner:'opencv-classical',input:'image',task:'straight-line detection',output:'line-hypotheses',workerMethod:'hough-lines',
+        description:'Builds a polar Hough transform from Canny edges and draws up to 24 whole-image line hypotheses.',
+        note:'The 1962 milestone is the Hough patent. This uses OpenCV’s standard HoughLines implementation; line hypotheses are not object detections and use no trained weights.'
+      }),
       'neocognitron':Object.freeze({
         id:'neocognitron',year:1980,title:'Neocognitron · pattern-response preview',runner:'pattern-response',input:'image',task:'hierarchical visual pattern response',output:'response-map',
         description:'An early pattern-recognition idea explored on this image through oriented responses and local max pooling.',
         note:'Educational approximation with fixed edge filters and pooling. It is not a trained Neocognitron checkpoint and does not return object labels.'
+      }),
+      'canny-edges':Object.freeze({
+        id:'canny-edges',year:1986,title:'Canny · edge detector',runner:'opencv-classical',input:'image',task:'edge detection',output:'binary-edge-map',workerMethod:'canny-edges',
+        description:'Runs the Canny edge detector on the same aspect-preserving working image and overlays its binary edge map.',
+        note:'Uses fixed 50 / 120 thresholds with OpenCV.js. It marks local image boundaries; it does not identify or classify objects and uses no trained weights.'
+      }),
+      'harris-corners':Object.freeze({
+        id:'harris-corners',year:1988,title:'Harris–Stephens · corner detector',runner:'opencv-classical',input:'image',task:'corner detection',output:'corner-points',workerMethod:'harris-corners',
+        description:'Computes a Harris corner response, keeps local maxima, and thins nearby responses for a readable overlay.',
+        note:'This is a local feature response with spatial thinning for display. Points are not semantic detections, confidence scores, or trained-model outputs.'
       }),
       'mnist-digits':Object.freeze({
         id:'mnist-digits',year:1998,title:'LeNet-era · MNIST digit CNN reference',runner:'mnist-digit-cnn',input:'image',task:'handwritten-digit-recognition',output:'digit-boxes',
@@ -56,6 +75,11 @@
         id:'hog-pedestrians',year:2005,title:'HOG + linear SVM · pedestrian detector',runner:'opencv-hog',input:'image',task:'pedestrian-detection',output:'boxes',workerMethod:'hog',
         description:'Runs OpenCV HOG with its default 64×128 people detector on the same Time Machine image.',
         note:'Detects pedestrians only. OpenCV’s embedded coefficients are not claimed to be the exact original Dalal–Triggs training artifact.'
+      }),
+      'orb-features':Object.freeze({
+        id:'orb-features',year:2011,title:'ORB · oriented local features',runner:'opencv-classical',input:'image',task:'local keypoint and descriptor extraction',output:'keypoints',workerMethod:'orb-features',
+        description:'Runs OpenCV ORB on the same image and displays at most 500 detected, oriented keypoints with descriptor count.',
+        note:'ORB features support local matching workflows. This preview does not compare two images or recognize objects and loads no model weights.'
       }),
       'alexnet-classification':Object.freeze({
         id:'alexnet-classification',year:2012,title:'AlexNet · ImageNet classification',runner:'alexnet-image-classification',input:'image',task:'1000-class ImageNet image classification',output:'top-5-labels',
