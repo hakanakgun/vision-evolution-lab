@@ -171,7 +171,7 @@ ${tail||'—'}`;}
       throw lastError||new Error(`${model.title} could not be loaded.`);
     }
     async function run(source,canvas,{forceBackend='',allowFallback=true,confidence}={}){
-      let active=await create(forceBackend);const {w,h}=sourceDims(source),scale=Math.min(1,model.input/Math.max(w,h)),width=Math.max(1,Math.round(w*scale)),height=Math.max(1,Math.round(h*scale)),work;
+      let active=await create(forceBackend);const {w,h}=sourceDims(source),scale=Math.min(1,model.input/Math.max(w,h)),width=Math.max(1,Math.round(w*scale)),height=Math.max(1,Math.round(h*scale));
       work.width=width;work.height=height;work.getContext('2d').drawImage(source,0,0,width,height);
       let output,infMs;const started=performance.now();
       try{output=await active(work,{threshold:retainThreshold()});infMs=performance.now()-started}
