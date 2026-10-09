@@ -151,26 +151,27 @@ ${tail||'—'}`;}
   async function releaseYoloRuntime(){const session=state.yoloSession,rawBytes=state.yoloBuffer?.byteLength||0,methodPresent=Boolean(session&&typeof session.release==='function'),provider=state.yoloProvider||'';state.yoloSession=null;state.yoloSessionRuns=0;evictYoloRawBuffer();if(!session){if(DEEP&&rawBytes)deepStage('yolox-raw-buffer-reference-release',{model:'yolox',bytes:rawBytes,referencePresent:false});return}const start=performance.now();if(DEEP)deepStage('yolox-release-start',{model:'yolox',actualBackend:provider,methodPresent,jsReferenceNull:true});try{if(methodPresent)await session.release();if(DEEP)deepStage('yolox-release-complete',{model:'yolox',actualBackend:provider,methodPresent,jsReferenceNull:true,durationMs:performance.now()-start})}catch(err){if(DEEP)deepStage('yolox-release-error',{model:'yolox',actualBackend:provider,methodPresent,error:boundedError(err),durationMs:performance.now()-start});console.warn('YOLOX session release failed',err)}}
   async function releaseRTRuntime(){const pipe=state.rtPipe,methodPresent=Boolean(pipe&&typeof pipe.dispose==='function'),backend=state.rtBackend||'',dtype=state.rtDtype||'';state.rtPipe=null;state.rtPipeRuns=0;if(!pipe)return;const start=performance.now();if(DEEP)deepStage('rtdetr-release-start',{model:'rtdetr',actualBackend:backend,dtype,methodPresent,jsReferenceNull:true});try{if(methodPresent)await pipe.dispose();if(DEEP)deepStage('rtdetr-release-complete',{model:'rtdetr',actualBackend:backend,dtype,methodPresent,jsReferenceNull:true,durationMs:performance.now()-start})}catch(err){if(DEEP)deepStage('rtdetr-release-error',{model:'rtdetr',actualBackend:backend,dtype,methodPresent,error:boundedError(err),durationMs:performance.now()-start});console.warn('RT-DETR pipeline dispose failed',err)}}
   function createRtResearchAdapter(modelKey){
-    const model=registry[modelKey],meta=model.capabilities.race;let pipe=null,backend='',dtype='',loadMs=NaN;
+    const model=registry[modelKey],raceMeta=model.capabilities.race,meta=raceMeta&&typeof raceMeta==='object'&&raceMeta.enabled!==false?raceMeta:null;let pipe=null,backend='',dtype='',loadMs=NaN;
+    const work=meta?$(meta.workCanvasId):document.createElement('canvas');
     async function create(force=''){
       if(pipe&&(!force||backend===force))return pipe;
       const module=await importTransformers(),choices=force?[model.runtime[force]]:(navigator.gpu?[model.runtime.webgpu,model.runtime.wasm]:[model.runtime.wasm]);let lastError;
       for(const cfg of choices){if(!cfg)continue;try{
-        $(`race-${meta.prefix}-backend`).textContent=cfg.device.toUpperCase();$(`race-${meta.prefix}-asset`).textContent=`${cfg.dtype} · ~${loader.formatBytes(cfg.modelBytes)}`;
-        setStatus(`Loading ${model.title} on ${cfg.device.toUpperCase()} (${cfg.dtype})…`,'loading');
+        if(meta){$(`race-${meta.prefix}-backend`).textContent=cfg.device.toUpperCase();$(`race-${meta.prefix}-asset`).textContent=`${cfg.dtype} · ~${loader.formatBytes(cfg.modelBytes)}`;setStatus(`Loading ${model.title} on ${cfg.device.toUpperCase()} (${cfg.dtype})…`,'loading')}
+        else report(modelKey,{type:'cache',text:'Loading the pinned Transformers.js model…'});
         const started=performance.now();pipe=await module.pipeline(model.task,model.modelId,{device:cfg.device,dtype:cfg.dtype,revision:model.revision,progress_callback:progress=>{
           const value=Number(progress?.progress),status=String(progress?.status||'').replaceAll('_',' ');
-          if(Number.isFinite(value))$(`race-${meta.prefix}-progress-bar`).style.width=`${Math.max(0,Math.min(100,value))}%`;
-          if(status)$(`race-${meta.prefix}-progress-text`).textContent=status;
+          if(meta&&Number.isFinite(value))$(`race-${meta.prefix}-progress-bar`).style.width=`${Math.max(0,Math.min(100,value))}%`;
+          if(meta&&status)$(`race-${meta.prefix}-progress-text`).textContent=status;
         }});
         loadMs=performance.now()-started;backend=cfg.device;dtype=cfg.dtype;
-        $(`race-${meta.prefix}-load`).textContent=ms(loadMs);$(`race-${meta.prefix}-cache`).textContent='pipeline loaded';
-        $(`race-${meta.prefix}-progress-bar`).style.width='100%';$(`race-${meta.prefix}-progress-text`).textContent='Ready';return pipe;
+        if(meta){$(`race-${meta.prefix}-load`).textContent=ms(loadMs);$(`race-${meta.prefix}-cache`).textContent='pipeline loaded';$(`race-${meta.prefix}-progress-bar`).style.width='100%';$(`race-${meta.prefix}-progress-text`).textContent='Ready'}
+        report(modelKey,{type:'runtime',backend:cfg.device,dtype:cfg.dtype,initMs:loadMs,bytes:cfg.modelBytes,source:'HF pinned '+model.revision,cacheState:'pipeline ready'});return pipe;
       }catch(error){lastError=error;pipe=null;console.warn(`${model.title} pipeline load failed`,cfg,error)}}
       throw lastError||new Error(`${model.title} could not be loaded.`);
     }
     async function run(source,canvas,{forceBackend='',allowFallback=true,confidence}={}){
-      let active=await create(forceBackend);const {w,h}=sourceDims(source),scale=Math.min(1,model.input/Math.max(w,h)),width=Math.max(1,Math.round(w*scale)),height=Math.max(1,Math.round(h*scale)),work=$(meta.workCanvasId);
+      let active=await create(forceBackend);const {w,h}=sourceDims(source),scale=Math.min(1,model.input/Math.max(w,h)),width=Math.max(1,Math.round(w*scale)),height=Math.max(1,Math.round(h*scale)),work;
       work.width=width;work.height=height;work.getContext('2d').drawImage(source,0,0,width,height);
       let output,infMs;const started=performance.now();
       try{output=await active(work,{threshold:retainThreshold()});infMs=performance.now()-started}
@@ -210,6 +211,7 @@ ${tail||'—'}`;}
       diagnosticBackends:()=>[{value:'auto',label:'Auto'},{value:'webgpu',label:'WebGPU fp16',available:()=>Boolean(navigator.gpu)},{value:'wasm',label:'WASM q8'}]
     });
     if(!runtimeRegistry.get('rtdetrv2'))runtimeRegistry.register('rtdetrv2',createRtResearchAdapter('rtdetrv2'));
+    if(!runtimeRegistry.get('rfdetr'))runtimeRegistry.register('rfdetr',createRtResearchAdapter('rfdetr'));
     runtimeRegistry.assertRegistered({capability:'race',group:'general-object'});
     runtimeRegistry.assertRegistered({capability:'timeMachine'});
     runtimeRegistry.assertRegistered({capability:'live'});
