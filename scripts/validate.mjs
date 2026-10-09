@@ -338,7 +338,24 @@ check(files.catalog.includes('| 1980 | Neocognitron-inspired feature response | 
 check(files.readme.includes('one image selected in Time Machine')&&files.docsIndex.includes('[Time Machine historical experiments](CLASSICAL_CV.md)'),'README/docs map must describe and link to same-image history experiments');
 for(const source of ['https://doi.org/10.1007/BF00344251','https://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf','https://doi.org/10.1109/CVPR.2001.990517','https://doi.org/10.1109/CVPR.2005.177','https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2014/html/Girshick_Rich_Feature_Hierarchies_2014_CVPR_paper.html','https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html','https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html','https://research.google/pubs/ssd-single-shot-multibox-detector/','https://www.ecva.net/papers/eccv_2020/papers_ECCV/html/832_ECCV_2020_paper.php'])check(files.history.includes(source),'historical primary-paper source missing: '+source);
 check(metadataWindow.VisionRuntimeRegistry.modelKeys.length===12,'Time Machine registry should contain five race models and seven additional Time Machine runtimes');
-check(timeMachineModels.length===12,'Time Machine must expose twelve runnable model generations');
+check(timeMachineModels.length===13,'Time Machine must expose thirteen runnable model generations');
+const rfDetr=metadataRegistry.rfdetr,rfDetrEntry=metadataRegistry.timeline.find(item=>item.model==='rfdetr');
+check(rfDetrEntry?.year===2025&&rfDetrEntry?.month===11&&rfDetrEntry.kind==='runnable','RF-DETR Nano research-preview timeline entry is missing');
+check(rfDetr?.modelId==='onnx-community/rfdetr_nano-ONNX'&&rfDetr.revision==='eae21ce'&&rfDetr.input===384,'RF-DETR Nano pinned Transformers.js contract changed');
+check(rfDetr.bytes===54400000&&rfDetr.runtime?.webgpu?.modelBytes===54400000&&rfDetr.runtime?.wasm?.modelBytes===28800000,'RF-DETR Nano precision asset sizes changed');
+check(rfDetr.capabilities.timeMachine&&rfDetr.capabilities.benchmark&&rfDetr.capabilities.live===false&&rfDetr.capabilities.race===false,'RF-DETR Nano must stay Time Machine/individual benchmark only');
+check(rfDetr.capabilities.inspection?.comparison?.input==='384×384'&&rfDetr.capabilities.inspection?.normalization==='rescale 1/255 · no mean/std normalization · no padding','RF-DETR Nano processor contract missing');
+check(files.race.includes("runtimeRegistry.register('rfdetr',createRtResearchAdapter('rfdetr'))"),'RF-DETR Nano Transformers.js adapter is not registered');
+check(files.race.includes("raceMeta&&typeof raceMeta==='object'&&raceMeta.enabled!==false"),'generic Transformers.js adapter must work without Model Race DOM');
+const expectedResearch=[
+  [2024,12,'DEIM'],[2025,2,'YOLOv12'],[2025,3,'YOLOE'],[2025,3,'DEIM-Nano'],
+  [2025,8,'DINOv3'],[2025,9,'DEIMv2'],[2025,11,'SAM 3'],[2026,1,'YOLO26-Nano'],
+  [2026,3,'EdgeCrafter'],[2026,3,'SAM 3.1']
+];
+for(const [year,month,title] of expectedResearch){
+  const entry=metadataRegistry.timeline.find(item=>item.year===year&&item.month===month&&item.title===title);
+  check(entry?.kind==='research'&&!entry.model&&!entry.experiment,'research-only timeline card is missing or runnable: '+title);
+}
 const yolov1=metadataRegistry.yolov1,yolov1Entry=metadataRegistry.timeline.find(item=>item.model==='yolov1');
 check(yolov1Entry?.year===2016&&yolov1Entry.kind==='runnable','YOLOv1 2016 runnable Time Machine entry is missing');
 check(yolov1?.bytes===541358513&&yolov1.sha256==='122bf7462747d0cf140525ed6c1d90424d64cc10b8d96cf17905343ce0306d49','YOLOv1 published asset size or checksum changed');
