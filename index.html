@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="en" data-build="2026.10.09-v0.25.0">
+<html lang="en" data-build="2026.10.16-v0.26.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="description" content="Vision Evolution Lab: run object detection locally in your browser and explore how computer vision evolved.">
   <meta name="theme-color" content="#f5f0e7">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=0.25.0">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=0.26.0">
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.10.09-v0.25.0';
+      const CURRENT_BUILD = '2026.10.16-v0.26.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -52,77 +52,68 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=0.25.0">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.26.0">
 </head>
 <body>
   <main class="shell">
     <div class="topbar">
       <section class="brand">
-        <div class="eyebrow">Browser-native computer vision</div>
+        <div class="eyebrow">Browser-native computer vision · field notes</div>
         <h1>Vision Evolution Lab</h1>
-        <p class="lede">A living timeline of computer vision, connected to real inference on your own device. Papers explain the idea; your browser shows the cost.</p>
+        <p class="lede">An executable history of computer vision. Run each generation on your image, then inspect what your browser actually did.</p>
       </section>
       <div class="privacy-chip"><span class="privacy-dot"></span><span>Your image stays on this device</span></div>
     </div>
 
     <div id="unsupported" class="unsupported"></div>
 
+    <nav class="activity-groups" id="activity-groups" aria-label="Lab sections">
+      <button class="activity-group" type="button" data-nav-group="experiment" aria-controls="mode-tabs" aria-current="page" aria-pressed="true">Experiment</button>
+      <button class="activity-group" type="button" data-nav-group="compare" aria-controls="mode-tabs" aria-current="false" aria-pressed="false">Compare</button>
+      <button class="activity-group" type="button" data-nav-group="learn" aria-controls="mode-tabs" aria-current="false" aria-pressed="false">Learn</button>
+      <button class="activity-group" type="button" data-nav-group="device" aria-controls="mode-tabs" aria-current="false" aria-pressed="false">Device</button>
+    </nav>
+
     <div class="scroll-shell tabs-shell" data-scroll-shell>
-      <nav class="tabs" role="tablist" aria-label="Lab modes" data-scroll-area>
-        <button class="tab" role="tab" aria-selected="true" aria-controls="time-machine" data-tab="time-machine">Time Machine</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="model-race" data-tab="model-race">Model Race</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="inside-model" data-tab="inside-model">Inside the Model</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="live-camera" data-tab="live-camera">Live Camera</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="efficiency-lab" data-tab="efficiency-lab">Efficiency Lab</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="resolution-microscope" data-tab="resolution-microscope">Resolution Microscope</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="architecture-explorer" data-tab="architecture-explorer">Architecture Explorer</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="model-cache" data-tab="model-cache">Model Storage</button>
+      <div class="mode-context" id="mode-context">Experiment</div>
+      <nav class="tabs mode-tabs" id="mode-tabs" role="tablist" aria-label="Experiment tools" data-scroll-area>
+        <button class="tab" id="tab-time-machine" role="tab" aria-selected="true" aria-controls="time-machine" data-tab="time-machine" data-mode-group="experiment">Time Machine</button>
+        <button class="tab" id="tab-model-race" role="tab" aria-selected="false" aria-controls="model-race" data-tab="model-race" data-mode-group="compare" hidden>Model Race</button>
+        <button class="tab" id="tab-inside-model" role="tab" aria-selected="false" aria-controls="inside-model" data-tab="inside-model" data-mode-group="learn" hidden>Inside the Model</button>
+        <button class="tab" id="tab-live-camera" role="tab" aria-selected="false" aria-controls="live-camera" data-tab="live-camera" data-mode-group="device" hidden>Live Camera</button>
+        <button class="tab" id="tab-efficiency-lab" role="tab" aria-selected="false" aria-controls="efficiency-lab" data-tab="efficiency-lab" data-mode-group="compare" hidden>Efficiency Lab</button>
+        <button class="tab" id="tab-resolution-microscope" role="tab" aria-selected="false" aria-controls="resolution-microscope" data-tab="resolution-microscope" data-mode-group="device" hidden>Resolution Microscope</button>
+        <button class="tab" id="tab-architecture-explorer" role="tab" aria-selected="false" aria-controls="architecture-explorer" data-tab="architecture-explorer" data-mode-group="learn" hidden>Architecture Explorer</button>
+        <button class="tab" id="tab-model-cache" role="tab" aria-selected="false" aria-controls="model-cache" data-tab="model-cache" data-mode-group="device" hidden>Model Storage</button>
       </nav>
-      <div class="scroll-cue" aria-hidden="true">Swipe →</div>
+      <div class="scroll-cue" aria-hidden="true">More tools →</div>
     </div>
 
-    <section class="panel active" id="time-machine" role="tabpanel">
-      <div class="card timeline scroll-shell" data-scroll-shell>
-        <div class="timeline-overview">
-          <div class="timeline-overview-main">
-            <span class="timeline-label">Time Machine · 1980—2026</span>
-            <div class="timeline-current"><span>Selected</span><strong id="timeline-selection" aria-live="polite">2021 · YOLOX-Nano</strong></div>
-          </div>
-          <div class="timeline-scroll-note" aria-hidden="true">Swipe or use ← → to explore</div>
-        </div>
-        <div class="timeline-scroll" data-scroll-area role="region" tabindex="0" aria-label="Computer vision timeline, 1980 through 2026" aria-describedby="timeline-help">
-          <div class="timeline-track" id="timeline-track"></div>
-        </div>
-        <div class="timeline-legend" role="group" aria-label="Timeline legend">
-          <span><i class="legend-marker legend-selected" aria-hidden="true"></i>Selected card</span>
-          <span><i class="legend-marker legend-experiment" aria-hidden="true"></i>Historical experiment</span>
-          <span><i class="legend-marker legend-transformer" aria-hidden="true"></i>Transformer</span>
-          <span><i class="legend-marker legend-history" aria-hidden="true"></i>History only</span>
-          <span><i class="legend-marker legend-research" aria-hidden="true"></i>Research only</span>
-          <span><i class="legend-marker legend-runnable" aria-hidden="true"></i>Other runnable models</span>
-          <span class="legend-hint">Buttons run models or experiments; color does not indicate accuracy.</span>
-        </div>
-        <p class="timeline-help" id="timeline-help">Choose a local image, then select a milestone. Month labels mark the first public paper date when known; older milestones keep year-only dates. Each experiment keeps its own task and output on the same image.</p>
-        <div class="note timeline-evolution" id="timeline-evolution">
-          <strong id="timeline-evolution-title">What changed in this generation?</strong>
-          <span id="timeline-evolution-text">Anchor-free one-stage detection separates classification and box regression heads while keeping a compact real-time CNN path.</span>
-        </div>
-      </div>
-
+    <section class="panel active" id="time-machine" role="tabpanel" aria-labelledby="tab-time-machine">
       <div class="grid" id="time-machine-workspace">
         <section class="card stage-card">
-          <div class="stage-head"><div><div class="stage-title" id="active-model-title">YOLOX-Nano</div><div class="tiny" id="active-model-subtitle">COCO object detection · ONNX · anchor-free CNN</div></div><div class="tiny" id="input-size">No input</div></div>
+          <div class="stage-head"><div><div class="stage-title" id="active-model-title" tabindex="-1">YOLOX-Nano</div><div class="tiny" id="active-model-subtitle">COCO object detection · ONNX · anchor-free CNN</div></div><div class="stage-head-actions"><div class="tiny" id="input-size">No input</div><button class="quiet-button" type="button" data-open-timeline aria-controls="timeline-picker" aria-expanded="false">Change experiment</button></div></div>
           <div class="stage" id="image-stage">
-            <canvas id="image-canvas" hidden></canvas>
+            <canvas id="image-canvas" role="img" aria-label="Selected image and inference result" hidden>Selected image and inference result.</canvas>
             <div class="empty" id="image-empty"><strong>Bring your own image</strong>Nothing is uploaded. Any required model or runtime loads in your browser; inference runs locally.</div>
           </div>
           <div class="controls">
-            <label class="btn" for="image-file">Choose image</label>
-            <input class="file-input" id="image-file" type="file" accept="image/*">
+            <button class="btn" type="button" id="choose-image" aria-controls="image-file">Choose image</button>
+            <input class="file-input" id="image-file" type="file" accept="image/*" aria-labelledby="choose-image">
             <button class="btn secondary" id="rerun" disabled>Run YOLOX-Nano</button>
             <button class="btn secondary" id="benchmark" disabled>Benchmark ×20</button>
             <span class="control-spacer"></span>
             <label class="range-wrap" id="confidence-control">AI confidence <input id="confidence" type="range" min="0.10" max="0.90" step="0.05" value="0.40"><b id="confidence-value">0.40</b></label>
+          </div>
+          <div class="metric-section" id="model-run-metrics">
+            <div class="metric-section-head"><span>Current run</span><small id="m-run-label">not run</small></div>
+            <div class="metrics">
+              <div class="metric"><span>Preprocess</span><b id="m-pre">—</b></div>
+              <div class="metric"><span>Inference</span><b id="m-inf">—</b></div>
+              <div class="metric"><span>Postprocess + draw</span><b id="m-post">—</b></div>
+              <div class="metric"><span>End-to-end</span><b id="m-total">—</b></div>
+              <div class="metric"><span>Detections</span><b id="m-count">—</b></div>
+            </div>
           </div>
           <section class="history-experiment-panel" id="history-experiment-panel" hidden aria-live="polite">
             <div class="history-experiment-head">
@@ -161,7 +152,7 @@
 
         <aside class="card" id="model-device-card">
           <div class="side-head"><div class="side-title">On your device</div><div class="tiny" id="backend-badge">Not loaded</div></div>
-          <div id="status" class="status">Choose an image to load the model and run the first measurement.</div>
+          <div id="status" class="status" role="status" aria-live="polite" aria-atomic="true">Choose an image to load the model and run the first measurement.</div>
           <section class="model-download-warning" id="model-download-warning" hidden aria-live="polite">
             <div class="model-download-warning-copy">
               <strong id="model-download-warning-title">Large model download</strong>
@@ -172,6 +163,14 @@
               <button class="btn secondary" id="model-download-cancel" type="button">Not now</button>
             </div>
           </section>
+          <div class="transfer-progress" aria-label="Model download progress">
+            <div class="model-progress" id="model-progress" role="progressbar" aria-label="Model download" aria-valuemin="0" aria-valuemax="100">
+              <div class="model-progress-bar" id="m-progress-bar"></div>
+            </div>
+            <div class="progress-caption" id="m-progress-text">No model transfer yet.</div>
+          </div>
+          <details class="technical-details" id="technical-details">
+            <summary>Device, timing &amp; provenance</summary>
           <div class="metric-section" id="model-startup-metrics">
             <div class="metric-section-head"><span>Startup</span><small>once per page session</small></div>
             <div class="metrics">
@@ -179,18 +178,6 @@
               <div class="metric"><span id="m-init-label">Session init</span><b id="m-init">—</b></div>
               <div class="metric"><span>Model bytes</span><b id="m-bytes">—</b></div>
               <div class="metric"><span>Cache</span><b id="m-cache">checking…</b></div>
-            </div>
-            <div class="model-progress"><div class="model-progress-bar" id="m-progress-bar"></div></div>
-            <div class="progress-caption" id="m-progress-text">No model transfer yet.</div>
-          </div>
-          <div class="metric-section" id="model-run-metrics">
-            <div class="metric-section-head"><span>Current run</span><small id="m-run-label">not run</small></div>
-            <div class="metrics">
-              <div class="metric"><span>Preprocess</span><b id="m-pre">—</b></div>
-              <div class="metric"><span>Inference</span><b id="m-inf">—</b></div>
-              <div class="metric"><span>Postprocess + draw</span><b id="m-post">—</b></div>
-              <div class="metric"><span>End-to-end</span><b id="m-total">—</b></div>
-              <div class="metric"><span>Detections</span><b id="m-count">—</b></div>
             </div>
           </div>
           <div class="metric-section benchmark-section">
@@ -228,8 +215,36 @@
             <div class="tiny" id="active-provenance-text">Pinned ONNX Model Zoo INT8 export trained on MS COCO 2017. Upstream model-card mAP: 0.2297.</div>
             <div class="links" id="active-provenance-links"></div>
           </div>
+          </details>
         </aside>
       </div>
+
+      <details class="timeline-disclosure" id="timeline-picker">
+        <summary class="timeline-summary">
+          <span class="timeline-summary-label">Explore the history · 1980—2026</span>
+          <strong id="timeline-selection" aria-live="polite">2021 · YOLOX-Nano</strong>
+          <span class="timeline-summary-action">Browse experiments <span aria-hidden="true">↗</span></span>
+        </summary>
+      <div class="card timeline scroll-shell" data-scroll-shell>
+        <div class="timeline-scroll" data-scroll-area role="region" tabindex="0" aria-label="Computer vision timeline, 1980 through 2026" aria-describedby="timeline-help">
+          <div class="timeline-track" id="timeline-track"></div>
+        </div>
+        <div class="timeline-legend" role="group" aria-label="Timeline legend">
+          <span><i class="legend-marker legend-selected" aria-hidden="true"></i>Selected card</span>
+          <span><i class="legend-marker legend-experiment" aria-hidden="true"></i>Historical experiment</span>
+          <span><i class="legend-marker legend-transformer" aria-hidden="true"></i>Transformer</span>
+          <span><i class="legend-marker legend-history" aria-hidden="true"></i>History only</span>
+          <span><i class="legend-marker legend-research" aria-hidden="true"></i>Research only</span>
+          <span><i class="legend-marker legend-runnable" aria-hidden="true"></i>Other runnable models</span>
+          <span class="legend-hint">Buttons run models or experiments; color does not indicate accuracy.</span>
+        </div>
+        <p class="timeline-help" id="timeline-help">Choose a local image, then select a milestone. Month labels mark the first public paper date when known; older milestones keep year-only dates. Each experiment keeps its own task and output on the same image.</p>
+        <details class="timeline-evolution" id="timeline-evolution">
+          <summary><strong id="timeline-evolution-title">What changed in this generation?</strong></summary>
+          <p id="timeline-evolution-text">Anchor-free one-stage detection separates classification and box regression heads while keeping a compact real-time CNN path.</p>
+        </details>
+      </div>
+      </details>
 
       <section class="evolution-section">
         <div class="section-heading">
@@ -316,7 +331,7 @@
       </section>
     </section>
 
-    <section class="panel" id="model-race" role="tabpanel">
+    <section class="panel" id="model-race" role="tabpanel" aria-labelledby="tab-model-race">
       <div class="card race-intro">
         <div>
           <div class="eyebrow" id="race-intro-eyebrow">Executable comparison</div>
@@ -324,8 +339,8 @@
           <p class="lede" id="race-intro-copy">The same source image and confidence threshold run through each compatible detector. Every model keeps its declared preprocessing, label space, and runtime path; timing boundaries are labeled where they differ.</p>
         </div>
         <div class="controls race-controls">
-          <label class="btn" for="race-image-file">Choose race image</label>
-          <input class="file-input" id="race-image-file" type="file" accept="image/*">
+          <button class="btn" type="button" id="choose-race-image" aria-controls="race-image-file">Choose race image</button>
+          <input class="file-input" id="race-image-file" type="file" accept="image/*" aria-labelledby="choose-race-image">
           <button class="btn secondary" id="race-use-coco-sample" type="button">Use COCO val sample</button>
           <button class="btn secondary" id="race-use-current">Use Time Machine image</button>
           <button class="btn secondary" id="race-run" disabled>Run race</button>
@@ -401,7 +416,7 @@
       <div id="race-work-canvases" hidden></div>
     </section>
 
-    <section class="panel" id="inside-model" role="tabpanel">
+    <section class="panel" id="inside-model" role="tabpanel" aria-labelledby="tab-inside-model">
       <div class="card pipeline">
         <div class="eyebrow">Inside the active Time Machine model</div>
         <h2 style="margin:7px 0 4px;font-size:30px;letter-spacing:-.035em">Inside <span id="inside-active-model">YOLOX-Nano</span></h2>
@@ -450,7 +465,7 @@
       </div>
     </section>
 
-    <section class="panel" id="live-camera" role="tabpanel">
+    <section class="panel" id="live-camera" role="tabpanel" aria-labelledby="tab-live-camera">
       <div class="grid">
         <section class="card stage-card camera-wrap">
           <div class="stage-head"><div><div class="stage-title">Live local detection</div><div class="tiny" id="live-model-name">YOLOX-Nano · Sequential inference · no frame queue</div></div><div class="tiny" id="live-size">Camera off</div></div>
@@ -492,7 +507,7 @@
       </div>
     </section>
 
-    <section class="panel" id="efficiency-lab" role="tabpanel">
+    <section class="panel" id="efficiency-lab" role="tabpanel" aria-labelledby="tab-efficiency-lab">
       <div class="card efficiency-intro">
         <div class="efficiency-intro-copy">
           <div class="eyebrow">Measured trade-offs · this browser session</div>
@@ -513,7 +528,7 @@
       </div>
     </section>
 
-    <section class="panel" id="resolution-microscope" role="tabpanel">
+    <section class="panel" id="resolution-microscope" role="tabpanel" aria-labelledby="tab-resolution-microscope">
       <div class="card resolution-intro">
         <div class="resolution-intro-copy">
           <div class="eyebrow">Source-detail stress test · same active model</div>
@@ -536,7 +551,7 @@
       </div>
     </section>
 
-    <section class="panel" id="model-cache" role="tabpanel">
+    <section class="panel" id="model-cache" role="tabpanel" aria-labelledby="tab-model-cache">
       <div class="card cache-intro">
         <div class="eyebrow">On your device</div>
         <h2>Model downloads &amp; storage</h2>
@@ -553,7 +568,7 @@
       <p class="note">Deleting saved files does not unload an existing session or prove memory reclamation. Storage may be evicted by your browser. Sizes are declared model sizes; origin storage usage is an estimate.</p>
     </section>
 
-    <section class="panel" id="architecture-explorer" role="tabpanel">
+    <section class="panel" id="architecture-explorer" role="tabpanel" aria-labelledby="tab-architecture-explorer">
       <div class="card architecture-explorer-intro">
         <div class="architecture-explorer-copy">
           <div class="eyebrow">Cross-generation architecture contracts</div>
@@ -582,25 +597,25 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.25.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.26.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="src/core/runtime-bootstrap.js?v=0.25.0"></script>
-  <script src="src/core/preprocessing.js?v=0.25.0"></script>
-  <script src="src/models/models.js?v=0.25.0"></script>
-  <script src="src/core/detection-metrics.js?v=0.25.0"></script>
-  <script src="src/core/model-runtime.js?v=0.25.0"></script>
-  <script src="src/core/model-loader.js?v=0.25.0"></script>
-  <script src="src/core/external-data-store.js?v=0.25.0"></script>
-  <script src="src/core/model-storage.js?v=0.25.0"></script>
-  <script src="src/app.js?v=0.25.0"></script>
-  <script src="src/models/lwdetr-postprocess.js?v=0.25.0"></script>
-  <script src="src/models/historical-detectors.js?v=0.25.0"></script>
-  <script src="src/models/race.js?v=0.25.0"></script>
-  <script src="src/efficiency.js?v=0.25.0"></script>
-  <script src="src/resolution-microscope.js?v=0.25.0"></script>
-  <script src="src/architecture-explorer.js?v=0.25.0"></script>
-  <script src="src/model-cache.js?v=0.25.0"></script>
-  <script src="src/history/history-experiments.js?v=0.25.0"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.26.0"></script>
+  <script src="src/core/preprocessing.js?v=0.26.0"></script>
+  <script src="src/models/models.js?v=0.26.0"></script>
+  <script src="src/core/detection-metrics.js?v=0.26.0"></script>
+  <script src="src/core/model-runtime.js?v=0.26.0"></script>
+  <script src="src/core/model-loader.js?v=0.26.0"></script>
+  <script src="src/core/external-data-store.js?v=0.26.0"></script>
+  <script src="src/core/model-storage.js?v=0.26.0"></script>
+  <script src="src/app.js?v=0.26.0"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.26.0"></script>
+  <script src="src/models/historical-detectors.js?v=0.26.0"></script>
+  <script src="src/models/race.js?v=0.26.0"></script>
+  <script src="src/efficiency.js?v=0.26.0"></script>
+  <script src="src/resolution-microscope.js?v=0.26.0"></script>
+  <script src="src/architecture-explorer.js?v=0.26.0"></script>
+  <script src="src/model-cache.js?v=0.26.0"></script>
+  <script src="src/history/history-experiments.js?v=0.26.0"></script>
 </body>
 </html>

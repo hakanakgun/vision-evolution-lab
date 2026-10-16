@@ -341,7 +341,7 @@ ${tail||'—'}`;}
     if(state.running||state.benchmarking||state.sanityRunning)return;
     const button=$('race-sanity-run'),body=$('race-sanity-body'),status=$('race-sanity-status'),hidden=document.createElement('canvas');
     state.sanityRunning=true;button.disabled=true;body.replaceChildren();
-    for(const id of ['race-image-file','race-use-current','race-use-coco-sample','race-run','race-benchmark'])$(id).disabled=true;
+    for(const id of ['race-image-file','choose-race-image','race-use-current','race-use-coco-sample','race-run','race-benchmark'])$(id).disabled=true;
     let failures=0;
     try{
       const response=await fetch(SANITY_SUITE_URL,{cache:'no-store'});if(!response.ok)throw new Error('Sanity-suite manifest HTTP '+response.status);
@@ -372,7 +372,7 @@ ${tail||'—'}`;}
     }catch(error){console.error(error);status.textContent='Accuracy sanity failed: '+String(error.message||error)}
     finally{
       await releaseRaceRuntimes();hidden.width=1;hidden.height=1;state.sanityRunning=false;button.disabled=false;
-      $('race-image-file').disabled=false;$('race-use-current').disabled=false;$('race-use-coco-sample').disabled=false;$('race-run').disabled=!state.image;$('race-benchmark').disabled=!state.image;
+      $('race-image-file').disabled=false;$('choose-race-image').disabled=false;$('race-use-current').disabled=false;$('race-use-coco-sample').disabled=false;$('race-run').disabled=!state.image;$('race-benchmark').disabled=!state.image;
     }
   }
   function updateOverlap(){
@@ -434,7 +434,7 @@ ${tail||'—'}`;}
   async function runRace(){
     if(!state.image||state.running||state.sanityRunning)return;
     state.running=true;const image=state.image,specs=getRaceSpecs(image,null,{benchmarking:false});
-    $('race-image-file').disabled=true;$('confidence').disabled=true;$('race-run').disabled=true;$('race-benchmark').disabled=true;$('race-use-current').disabled=true;$('race-use-coco-sample').disabled=true;syncConfidence();
+    $('race-image-file').disabled=true;$('choose-race-image').disabled=true;$('confidence').disabled=true;$('race-run').disabled=true;$('race-benchmark').disabled=true;$('race-use-current').disabled=true;$('race-use-coco-sample').disabled=true;syncConfidence();
     try{
       await releaseRaceRuntimes();
       for(const spec of specs){
@@ -447,7 +447,7 @@ ${tail||'—'}`;}
       const summary=specs.map(spec=>spec.label+' '+(state.lastRun[spec.key]?.visible??0)).join(', ');
       setStatus('Race complete: '+summary+'. Pairwise overlap is shown below.');$('race-benchmark').disabled=false;if(DEEP)$('race-benchmark-diag').disabled=false;
     }catch(err){console.error(err);await updateAccuracy();setStatus(err&&err.message?err.message:String(err),'error')}
-    finally{state.running=false;$('race-image-file').disabled=false;$('confidence').disabled=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false;$('race-use-coco-sample').disabled=false}
+    finally{state.running=false;$('race-image-file').disabled=false;$('choose-race-image').disabled=false;$('confidence').disabled=false;$('race-run').disabled=!state.image;$('race-use-current').disabled=false;$('race-use-coco-sample').disabled=false}
   }
   $('race-run').addEventListener('click',runRace);
   $('race-sanity-run').addEventListener('click',runAccuracySanity);
@@ -468,7 +468,7 @@ ${tail||'—'}`;}
     if(!specs.length){setStatus('Select at least one diagnostic model.','error');return}
     const traceKey=diagnostic?specs[specs.length-1].key:'',keepFinalResident=diagnostic&&options.keepFinalResident!==false,keepKey=keepFinalResident?traceKey:'',runs=20,settleMs=diagnostic?bbSettleMs:0,backendPlan=diagnostic?{...bbBackendPlan}:{};let keptResident=false,benchmarkSucceeded=false;
     state.benchmarking=true;bbPlan=specs.map(x=>x.key);
-    $('race-image-file').disabled=true;$('race-use-current').disabled=true;$('race-use-coco-sample').disabled=true;$('confidence').disabled=true;$('race-benchmark').disabled=true;$('race-run').disabled=true;
+    $('race-image-file').disabled=true;$('choose-race-image').disabled=true;$('race-use-current').disabled=true;$('race-use-coco-sample').disabled=true;$('confidence').disabled=true;$('race-benchmark').disabled=true;$('race-run').disabled=true;
     if(DEEP){$('race-benchmark-diag').disabled=true;$('race-dispose-diag').disabled=true}
     if(diagnostic){bbAttempt+=1;writeLocal(BB_ATTEMPT_KEY,bbAttempt);setDiagnosticControlsDisabled(true);writeDiag('diagnostic-start',{attempt:bbAttempt,plan:[...bbPlan],keepResident:keepKey||null,settleMs,backendPlan})}
     try{
@@ -515,7 +515,7 @@ ${tail||'—'}`;}
     }finally{
       if(diagnostic){writeDiag('diagnostic-finally-start',{keepResident:keptResident?keepKey:null});await releaseRaceRuntimes(keptResident?keepKey:'');writeDiag(keptResident?'diagnostic-finally-complete-'+keepKey+'-resident':'diagnostic-finally-complete-no-resident',{keepResident:keptResident?keepKey:null});setDiagnosticControlsDisabled(false)}
       else await releaseRaceRuntimes();
-      hidden.width=1;hidden.height=1;bbCurrentModel='';bbRequestedBackend='';state.benchmarking=false;$('race-image-file').disabled=false;$('race-use-current').disabled=false;$('race-use-coco-sample').disabled=false;$('confidence').disabled=false;$('race-benchmark').disabled=false;$('race-run').disabled=false;if(DEEP)$('race-benchmark-diag').disabled=false;
+      hidden.width=1;hidden.height=1;bbCurrentModel='';bbRequestedBackend='';state.benchmarking=false;$('race-image-file').disabled=false;$('choose-race-image').disabled=false;$('race-use-current').disabled=false;$('race-use-coco-sample').disabled=false;$('confidence').disabled=false;$('race-benchmark').disabled=false;$('race-run').disabled=false;if(DEEP)$('race-benchmark-diag').disabled=false;
     }
     return benchmarkSucceeded;
   }
