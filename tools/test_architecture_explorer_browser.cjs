@@ -205,6 +205,7 @@ async function main(){
           for(const [name,value] of Object.entries(realInference))if(name!=='bytes'&&name!=='formattedBytes')assert.ok(Number.isFinite(value)&&value>=0,'D-FINE real inference metric '+name);
           assert.equal(realInference.bytes,realInference.formattedBytes);
           assert.ok(Math.abs(realInference.total-(realInference.preprocess+realInference.inference+realInference.postprocess))<1,'end-to-end time must equal measured phases and exclude setup');
+          assert.equal(await page.$eval('.transfer-progress',el=>el.hidden),true,'completed inference must not leave transfer progress visible');
           await page.$eval('#time-machine-workspace',el=>window.scrollTo(0,el.getBoundingClientRect().top+window.scrollY-160));
           await page.screenshot({path:path.join(output,'time-machine-result-1440.png')});
           await page.evaluate(()=>{window.__visionTestSource=window.VisionLab.getImage()});
@@ -237,6 +238,7 @@ async function main(){
           assert.equal(await page.$eval('#benchmark',el=>el.disabled),false,'RF-DETR individual Benchmark ×20 must remain available with an image');
           await page.click('#benchmark');
           await page.waitForFunction(()=>!window.VisionLab.isTimeMachineBusy()&&document.getElementById('status').textContent.includes('Warm benchmark complete'),{timeout:180000});
+          assert.equal(await page.$eval('.transfer-progress',el=>el.hidden),true,'completed Benchmark ×20 must not leave transfer progress visible');
           rfBenchmark=await page.evaluate(()=>({
             p50:Number.parseFloat(document.getElementById('b-inf-med').textContent),
             p90:Number.parseFloat(document.getElementById('b-inf-p90').textContent),
