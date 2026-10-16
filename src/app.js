@@ -35,7 +35,8 @@
     function setMetric(id,value){ $(id).textContent=value; }
     function activeModel(){ return REGISTRY[state.activeModel] || MODEL; }
     function resetRunMetrics(){['m-pre','m-inf','m-post','m-total','m-count'].forEach(id=>setMetric(id,'—'));setMetric('m-run-label','not run');state.lastResults=null;state.lastRunResult=null;state.lastDims=null;state.inferenceCount=0;}
-    function resetStartupMetrics(){setMetric('m-download','—');setMetric('m-init','—');setMetric('m-bytes','—');setMetric('m-cache','—');$('m-progress-bar').style.width='0%';$('model-progress').hidden=true;$('model-progress').removeAttribute('aria-valuenow');$('model-progress').removeAttribute('aria-valuetext');$('m-progress-text').textContent='No model transfer yet.';$('backend-badge').textContent=state.historyExperiment?'Historical method':'Not loaded';}
+    function clearMainModelProgress(label='No active model transfer.'){const host=$('model-progress')?.parentElement;if(host)host.hidden=true;$('m-progress-bar').style.width='0%';$('model-progress').hidden=true;$('model-progress').removeAttribute('aria-valuenow');$('model-progress').removeAttribute('aria-valuetext');$('m-progress-text').textContent=label;}
+    function resetStartupMetrics(){setMetric('m-download','—');setMetric('m-init','—');setMetric('m-bytes','—');setMetric('m-cache','—');clearMainModelProgress('No model transfer yet.');$('backend-badge').textContent=state.historyExperiment?'Historical method':'Not loaded';}
     function drawSourceOnly(source=state.image){if(!source)return;const canvas=$('image-canvas'),{w,h}=sourceSize(source),scale=Math.min(1,640/Math.max(w,h));canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));canvas.getContext('2d').drawImage(source,0,0,canvas.width,canvas.height);$('image-empty').hidden=true;canvas.hidden=false;}
     function renderProvenance(model){const ui=model.ui||{};$('active-provenance-title').textContent=model.title;$('active-provenance-text').textContent=ui.provenance||`${model.family} · ${model.license}`;const links=$('active-provenance-links');links.replaceChildren();for(const link of ui.links||[]){const a=document.createElement('a');a.href=link.url;a.textContent=link.label;a.target='_blank';a.rel='noreferrer';links.appendChild(a);}}
     function canBenchmark(model=activeModel()){return RuntimeRegistry.capabilityEnabled(model,'benchmark')}
@@ -62,7 +63,7 @@
       }else setStatus(activeModel().title+' selected. Choose an image to run this generation.');
       if(scroll)$('image-stage')?.scrollIntoView({behavior:'smooth',block:'center'});
     }
-    function reportRuntimeEvent(model,event){if(model!==state.activeModel||state.historyExperiment||!event)return;if(event.type==='progress')updateMainModelProgress(event.info||{});if(event.type==='cache')setMetric('m-cache',event.text||'checking…');if(event.type==='runtime'){if(event.backend)$('backend-badge').textContent=event.dtype?`${String(event.backend).toUpperCase()} · ${event.dtype}`:String(event.backend).toUpperCase();if(Number.isFinite(event.downloadMs))setMetric('m-download',ms(event.downloadMs));if(Number.isFinite(event.initMs))setMetric('m-init',ms(event.initMs));if(event.bytes)setMetric('m-bytes',bytes(event.bytes));if(event.source)setMetric('m-cache',event.cacheState?`${event.cacheState} · ${event.source}`:event.source);}}
+    function reportRuntimeEvent(model,event){if(model!==state.activeModel||state.historyExperiment||!event)return;if(event.type==='progress'&&(state.running||state.benchmarking))updateMainModelProgress(event.info||{});if(event.type==='cache')setMetric('m-cache',event.text||'checking…');if(event.type==='runtime'){if(event.backend)$('backend-badge').textContent=event.dtype?`${String(event.backend).toUpperCase()} · ${event.dtype}`:String(event.backend).toUpperCase();if(Number.isFinite(event.downloadMs))setMetric('m-download',ms(event.downloadMs));if(Number.isFinite(event.initMs))setMetric('m-init',ms(event.initMs));if(event.bytes)setMetric('m-bytes',bytes(event.bytes));if(event.source)setMetric('m-cache',event.cacheState?`${event.cacheState} · ${event.source}`:event.source);}}
     let diagnosticHook=null,baselineSessionRuns=0;
     function traceDiagnostic(event,meta={}){if(typeof diagnosticHook!=='function')return;try{diagnosticHook(event,meta)}catch(_){}}
 
@@ -234,6 +235,7 @@
       const bar=$('m-progress-bar');if(bar)bar.style.width=pct===null?'18%':`${pct.toFixed(1)}%`;
       const text=$('m-progress-text');if(text)text.textContent=pct===null?`${bytes(info.loaded)} downloaded`:`${pct.toFixed(0)}% · ${bytes(info.loaded)} / ${bytes(info.total)}`;
       const progress=$('model-progress');if(progress){progress.hidden=false;if(pct===null){progress.removeAttribute('aria-valuenow');progress.removeAttribute('aria-valuetext')}else{progress.setAttribute('aria-valuenow',pct.toFixed(0));progress.setAttribute('aria-valuetext',text?.textContent||`${pct.toFixed(0)}%`)}}
+      const host=progress?.parentElement;if(host)host.hidden=false;
       if(state.modelDownloadController&&state.modelDownloadModel===state.activeModel){
         const warning=$('model-download-warning'),warningText=$('model-download-warning-text');
         warning?.classList.add('downloading');
@@ -533,6 +535,7 @@
         else{console.error(err);setStatus(err.message||String(err),'error');}
       }finally{
         if(controller&&state.modelDownloadController===controller)endModelDownload();
+        clearMainModelProgress();
         state.running=false;$('image-file').disabled=false;$('choose-image').disabled=false;$('rerun').disabled=!state.image;$('benchmark').disabled=!state.image||!canBenchmark();
         syncHistoryControls();
       }
@@ -597,6 +600,7 @@
         setStatus(err.message || String(err),'error');
         $('benchmark-note').textContent='Benchmark failed; current-run metrics were left unchanged.';
       }finally{
+        clearMainModelProgress();
         state.benchmarking=false;
         $('image-file').disabled=false;$('choose-image').disabled=false;
         $('confidence').disabled=false;
