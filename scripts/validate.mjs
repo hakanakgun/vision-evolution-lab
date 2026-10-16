@@ -131,7 +131,9 @@ for(const [tab,group] of Object.entries({'time-machine':'experiment','model-race
   check(files.index.includes(`data-tab="${tab}"`)&&files.index.includes(`data-mode-group="${group}"`),`Grouped navigation assignment missing: ${tab}`);
   check(files.index.includes(`id="${tab}" role="tabpanel" aria-labelledby="tab-${tab}"`),`Tab panel needs an accessible label: ${tab}`);
 }
-check(files.index.indexOf('id="time-machine-workspace"')<files.index.indexOf('id="timeline-picker"'),'Time Machine result and controls must appear before the collapsed historical rail');
+check(files.index.indexOf('id="timeline-picker"')<files.index.indexOf('id="time-machine-workspace"'),'Time Machine timeline must appear before the result workspace');
+check(files.index.includes('id="timeline-picker" open>'),'Time Machine timeline should be visible on initial load');
+check(files.index.includes('Research-only milestones are references and cannot be run.'),'Time Machine timeline must explain that research-only milestones are not executable');
 check(files.app.includes("event.key==='ArrowRight'")&&files.app.includes("event.key==='Home'")&&files.app.includes("event.key==='End'"),'Secondary tabs must support arrow, Home, and End keyboard navigation');
 check(files.app.includes("$('choose-image').addEventListener('click'")&&files.app.includes("$('choose-race-image').addEventListener('click'"),'Image-picking buttons must have working browser-native handlers');
 check(files.app.includes("progress.setAttribute('aria-valuenow'")&&files.app.includes("$('technical-details').open=true"),'Transfer progress and completed warm-benchmark details must be exposed');

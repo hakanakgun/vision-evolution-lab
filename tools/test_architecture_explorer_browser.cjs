@@ -71,7 +71,17 @@ async function main(){
         assert.equal(await page.$eval('html',el=>el.dataset.build),manifest.build);
         assert.equal(await page.evaluate(()=>window.VisionLab.getActiveModel()),'yolox');
         assert.equal(await page.evaluate(()=>Boolean(window.VisionLab.getImage())),false);
-        assert.equal(await page.$eval('#timeline-picker',el=>el.open),false,'the historical rail should begin collapsed');
+        assert.equal(await page.$eval('#timeline-picker',el=>el.open),true,'the historical rail should be visible at the top on initial load');
+        assert.equal(await page.evaluate(()=>Boolean(document.getElementById('timeline-picker').compareDocumentPosition(document.getElementById('time-machine-workspace'))&Node.DOCUMENT_POSITION_FOLLOWING)),true,'the Time Machine timeline must sit above the image and result workspace');
+        const timelineHelp=await page.$eval('#timeline-help',el=>el.textContent);
+        assert.match(timelineHelp,/choosing a runnable model or historical experiment starts it automatically/i);
+        assert.match(timelineHelp,/Research-only milestones are references and cannot be run/i);
+        assert.equal(await page.$eval('#timeline-help',el=>getComputedStyle(el).display!=='none'),true,'the top timeline should expose its experiment guidance');
+        await page.screenshot({path:path.join(output,'time-machine-timeline-'+viewport.width+'.png')});
+        await page.click('#timeline-picker > summary');
+        await page.waitForFunction(()=>!document.getElementById('timeline-picker').open);
+        await page.click('#timeline-picker > summary');
+        await page.waitForFunction(()=>document.getElementById('timeline-picker').open);
         assert.equal(await page.$eval('#tab-time-machine',el=>el.getAttribute('aria-selected')),'true');
         if(viewport.width===390){
           await page.screenshot({path:path.join(output,'time-machine-390.png')});

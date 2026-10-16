@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="en" data-build="2026.10.16-v0.26.0">
+<html lang="en" data-build="2026.10.16-v0.27.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="description" content="Vision Evolution Lab: run object detection locally in your browser and explore how computer vision evolved.">
   <meta name="theme-color" content="#f5f0e7">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=0.26.0">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=0.27.0">
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.10.16-v0.26.0';
+      const CURRENT_BUILD = '2026.10.16-v0.27.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -52,7 +52,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=0.26.0">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.27.0">
 </head>
 <body>
   <main class="shell">
@@ -90,6 +90,33 @@
     </div>
 
     <section class="panel active" id="time-machine" role="tabpanel" aria-labelledby="tab-time-machine">
+      <details class="timeline-disclosure" id="timeline-picker" open>
+        <summary class="timeline-summary">
+          <span class="timeline-summary-label">Choose a milestone · 1980—2026</span>
+          <strong id="timeline-selection" aria-live="polite">2021 · YOLOX-Nano</strong>
+          <span class="timeline-summary-action"><span id="timeline-action-label">Browse experiments</span><span class="timeline-summary-chevron" aria-hidden="true">⌄</span></span>
+        </summary>
+      <div class="card timeline scroll-shell" data-scroll-shell>
+        <div class="timeline-scroll" data-scroll-area role="region" tabindex="0" aria-label="Computer vision timeline, 1980 through 2026" aria-describedby="timeline-help">
+          <div class="timeline-track" id="timeline-track"></div>
+        </div>
+        <div class="timeline-legend" role="group" aria-label="Timeline legend">
+          <span><i class="legend-marker legend-selected" aria-hidden="true"></i>Selected card</span>
+          <span><i class="legend-marker legend-experiment" aria-hidden="true"></i>Historical experiment</span>
+          <span><i class="legend-marker legend-transformer" aria-hidden="true"></i>Transformer</span>
+          <span><i class="legend-marker legend-history" aria-hidden="true"></i>History only</span>
+          <span><i class="legend-marker legend-research" aria-hidden="true"></i>Research only · not runnable</span>
+          <span><i class="legend-marker legend-runnable" aria-hidden="true"></i>Other runnable models</span>
+          <span class="legend-hint">Runnable choices use your image; colors describe type, never accuracy.</span>
+        </div>
+        <p class="timeline-help" id="timeline-help">Choose a milestone to use with the current Time Machine image. If no image is selected, choose a local one in the result card below. With an image selected, choosing a runnable model or historical experiment starts it automatically; use Run to repeat the selected task. Experiments keep their own task and output type. Research-only milestones are references and cannot be run. Dates mark the first public paper when known; colors show type or family, never accuracy.</p>
+        <details class="timeline-evolution" id="timeline-evolution">
+          <summary><strong id="timeline-evolution-title">What changed in this generation?</strong></summary>
+          <p id="timeline-evolution-text">Anchor-free one-stage detection separates classification and box regression heads while keeping a compact real-time CNN path.</p>
+        </details>
+      </div>
+      </details>
+
       <div class="grid" id="time-machine-workspace">
         <section class="card stage-card">
           <div class="stage-head"><div><div class="stage-title" id="active-model-title" tabindex="-1">YOLOX-Nano</div><div class="tiny" id="active-model-subtitle">COCO object detection · ONNX · anchor-free CNN</div></div><div class="stage-head-actions"><div class="tiny" id="input-size">No input</div><button class="quiet-button" type="button" data-open-timeline aria-controls="timeline-picker" aria-expanded="false">Change experiment</button></div></div>
@@ -218,33 +245,6 @@
           </details>
         </aside>
       </div>
-
-      <details class="timeline-disclosure" id="timeline-picker">
-        <summary class="timeline-summary">
-          <span class="timeline-summary-label">Explore the history · 1980—2026</span>
-          <strong id="timeline-selection" aria-live="polite">2021 · YOLOX-Nano</strong>
-          <span class="timeline-summary-action"><span id="timeline-action-label">Browse experiments</span><span class="timeline-summary-chevron" aria-hidden="true">⌄</span></span>
-        </summary>
-      <div class="card timeline scroll-shell" data-scroll-shell>
-        <div class="timeline-scroll" data-scroll-area role="region" tabindex="0" aria-label="Computer vision timeline, 1980 through 2026" aria-describedby="timeline-help">
-          <div class="timeline-track" id="timeline-track"></div>
-        </div>
-        <div class="timeline-legend" role="group" aria-label="Timeline legend">
-          <span><i class="legend-marker legend-selected" aria-hidden="true"></i>Selected card</span>
-          <span><i class="legend-marker legend-experiment" aria-hidden="true"></i>Historical experiment</span>
-          <span><i class="legend-marker legend-transformer" aria-hidden="true"></i>Transformer</span>
-          <span><i class="legend-marker legend-history" aria-hidden="true"></i>History only</span>
-          <span><i class="legend-marker legend-research" aria-hidden="true"></i>Research only</span>
-          <span><i class="legend-marker legend-runnable" aria-hidden="true"></i>Other runnable models</span>
-          <span class="legend-hint">Buttons run models or experiments; color does not indicate accuracy.</span>
-        </div>
-        <p class="timeline-help" id="timeline-help">Choose a local image, then select a milestone. Month labels mark the first public paper date when known; older milestones keep year-only dates. Each experiment keeps its own task and output on the same image.</p>
-        <details class="timeline-evolution" id="timeline-evolution">
-          <summary><strong id="timeline-evolution-title">What changed in this generation?</strong></summary>
-          <p id="timeline-evolution-text">Anchor-free one-stage detection separates classification and box regression heads while keeping a compact real-time CNN path.</p>
-        </details>
-      </div>
-      </details>
 
       <section class="evolution-section">
         <div class="section-heading">
@@ -597,25 +597,25 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.26.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.27.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="src/core/runtime-bootstrap.js?v=0.26.0"></script>
-  <script src="src/core/preprocessing.js?v=0.26.0"></script>
-  <script src="src/models/models.js?v=0.26.0"></script>
-  <script src="src/core/detection-metrics.js?v=0.26.0"></script>
-  <script src="src/core/model-runtime.js?v=0.26.0"></script>
-  <script src="src/core/model-loader.js?v=0.26.0"></script>
-  <script src="src/core/external-data-store.js?v=0.26.0"></script>
-  <script src="src/core/model-storage.js?v=0.26.0"></script>
-  <script src="src/app.js?v=0.26.0"></script>
-  <script src="src/models/lwdetr-postprocess.js?v=0.26.0"></script>
-  <script src="src/models/historical-detectors.js?v=0.26.0"></script>
-  <script src="src/models/race.js?v=0.26.0"></script>
-  <script src="src/efficiency.js?v=0.26.0"></script>
-  <script src="src/resolution-microscope.js?v=0.26.0"></script>
-  <script src="src/architecture-explorer.js?v=0.26.0"></script>
-  <script src="src/model-cache.js?v=0.26.0"></script>
-  <script src="src/history/history-experiments.js?v=0.26.0"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.27.0"></script>
+  <script src="src/core/preprocessing.js?v=0.27.0"></script>
+  <script src="src/models/models.js?v=0.27.0"></script>
+  <script src="src/core/detection-metrics.js?v=0.27.0"></script>
+  <script src="src/core/model-runtime.js?v=0.27.0"></script>
+  <script src="src/core/model-loader.js?v=0.27.0"></script>
+  <script src="src/core/external-data-store.js?v=0.27.0"></script>
+  <script src="src/core/model-storage.js?v=0.27.0"></script>
+  <script src="src/app.js?v=0.27.0"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.27.0"></script>
+  <script src="src/models/historical-detectors.js?v=0.27.0"></script>
+  <script src="src/models/race.js?v=0.27.0"></script>
+  <script src="src/efficiency.js?v=0.27.0"></script>
+  <script src="src/resolution-microscope.js?v=0.27.0"></script>
+  <script src="src/architecture-explorer.js?v=0.27.0"></script>
+  <script src="src/model-cache.js?v=0.27.0"></script>
+  <script src="src/history/history-experiments.js?v=0.27.0"></script>
 </body>
 </html>

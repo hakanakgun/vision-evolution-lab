@@ -8,7 +8,7 @@ The current runtime is intentionally client-side so users can compare computer-v
 
 ## Main modules
 
-- `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints.
+- `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints. Within Time Machine, the timeline disclosure precedes the image/result workspace; preserve this DOM order so experiment choice stays at the top of the activity.
 - `src/models/models.js` — five general-object Model Race models, seven additional Time Machine runtimes, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
 - `src/core/model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
 - `src/core/model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, cancellable transfers, and memory-bounded preallocated streaming when the expected byte size is known.
@@ -71,6 +71,8 @@ Live Camera keeps independent model selection and confidence state backed by the
 ## Historical experiments in Time Machine
 
 Historical experiments consume the current Time Machine source image and render their task-specific output onto the same image canvas. Selecting one does not replace the active general-object model, so Inside the Model continues to follow the selected runnable AI model.
+
+Selecting a historical milestone runs its task automatically when a source image is available; otherwise the interface prompts for an image and leaves the explicit “Run selected experiment” control disabled until one is chosen. The experiment keeps its own output type and is never presented as a detector or accuracy result. The timeline's research-only milestones are reference cards with no execution handler.
 
 These experiments are registered under `models.js:historyExperiments`, outside `VisionRuntimeRegistry`. Each history experiment declares an image input, its task, and an output type such as a response map or labeled boxes. A future image-and-prompt VLM can add a text or grounded-text output adapter without changing the general-object race contract; no VLM runtime is loaded now.
 
