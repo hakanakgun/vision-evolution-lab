@@ -164,7 +164,7 @@
             </div>
           </section>
           <div class="transfer-progress" aria-label="Model download progress">
-            <div class="model-progress" id="model-progress" role="progressbar" aria-label="Model download" aria-valuemin="0" aria-valuemax="100">
+            <div class="model-progress" id="model-progress" role="progressbar" aria-label="Model download" aria-valuemin="0" aria-valuemax="100" hidden>
               <div class="model-progress-bar" id="m-progress-bar"></div>
             </div>
             <div class="progress-caption" id="m-progress-text">No model transfer yet.</div>
@@ -223,7 +223,7 @@
         <summary class="timeline-summary">
           <span class="timeline-summary-label">Explore the history · 1980—2026</span>
           <strong id="timeline-selection" aria-live="polite">2021 · YOLOX-Nano</strong>
-          <span class="timeline-summary-action">Browse experiments <span aria-hidden="true">↗</span></span>
+          <span class="timeline-summary-action"><span id="timeline-action-label">Browse experiments</span><span class="timeline-summary-chevron" aria-hidden="true">⌄</span></span>
         </summary>
       <div class="card timeline scroll-shell" data-scroll-shell>
         <div class="timeline-scroll" data-scroll-area role="region" tabindex="0" aria-label="Computer vision timeline, 1980 through 2026" aria-describedby="timeline-help">

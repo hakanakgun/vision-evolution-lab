@@ -92,7 +92,7 @@ async function main(){
           const selector='[data-tab="'+name+'"]',group=await page.$eval(selector,el=>el.dataset.modeGroup);
           if(await page.$eval(selector,el=>el.hidden))await page.click('[data-nav-group="'+group+'"]');
           await page.waitForFunction(selector=>!document.querySelector(selector).hidden,{},selector);
-          await page.$eval(selector,el=>el.scrollIntoView({block:'nearest',inline:'nearest'}));
+          await page.$eval(selector,el=>el.scrollIntoView({block:'center',inline:'nearest'}));
           await page.click(selector);
           await page.waitForSelector('#'+name+'.active');
         };

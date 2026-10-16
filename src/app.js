@@ -35,7 +35,7 @@
     function setMetric(id,value){ $(id).textContent=value; }
     function activeModel(){ return REGISTRY[state.activeModel] || MODEL; }
     function resetRunMetrics(){['m-pre','m-inf','m-post','m-total','m-count'].forEach(id=>setMetric(id,'—'));setMetric('m-run-label','not run');state.lastResults=null;state.lastRunResult=null;state.lastDims=null;state.inferenceCount=0;}
-    function resetStartupMetrics(){setMetric('m-download','—');setMetric('m-init','—');setMetric('m-bytes','—');setMetric('m-cache','—');$('m-progress-bar').style.width='0%';$('model-progress').removeAttribute('aria-valuenow');$('model-progress').removeAttribute('aria-valuetext');$('m-progress-text').textContent='No model transfer yet.';$('backend-badge').textContent=state.historyExperiment?'Historical method':'Not loaded';}
+    function resetStartupMetrics(){setMetric('m-download','—');setMetric('m-init','—');setMetric('m-bytes','—');setMetric('m-cache','—');$('m-progress-bar').style.width='0%';$('model-progress').hidden=true;$('model-progress').removeAttribute('aria-valuenow');$('model-progress').removeAttribute('aria-valuetext');$('m-progress-text').textContent='No model transfer yet.';$('backend-badge').textContent=state.historyExperiment?'Historical method':'Not loaded';}
     function drawSourceOnly(source=state.image){if(!source)return;const canvas=$('image-canvas'),{w,h}=sourceSize(source),scale=Math.min(1,640/Math.max(w,h));canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));canvas.getContext('2d').drawImage(source,0,0,canvas.width,canvas.height);$('image-empty').hidden=true;canvas.hidden=false;}
     function renderProvenance(model){const ui=model.ui||{};$('active-provenance-title').textContent=model.title;$('active-provenance-text').textContent=ui.provenance||`${model.family} · ${model.license}`;const links=$('active-provenance-links');links.replaceChildren();for(const link of ui.links||[]){const a=document.createElement('a');a.href=link.url;a.textContent=link.label;a.target='_blank';a.rel='noreferrer';links.appendChild(a);}}
     function canBenchmark(model=activeModel()){return RuntimeRegistry.capabilityEnabled(model,'benchmark')}
@@ -166,15 +166,19 @@
       picker.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
       picker.querySelector('summary').focus({preventScroll:true});
     }));
-    $('timeline-picker').addEventListener('toggle',()=>document.querySelectorAll('[data-open-timeline]').forEach(button=>button.setAttribute('aria-expanded',String($('timeline-picker').open))));
+    $('timeline-picker').addEventListener('toggle',()=>{
+      const open=$('timeline-picker').open;document.querySelectorAll('[data-open-timeline]').forEach(button=>button.setAttribute('aria-expanded',String(open)));
+      $('timeline-action-label').textContent=open?'Hide timeline':'Browse experiments';
+    });
     $('choose-image').addEventListener('click',()=>{if(!$('image-file').disabled)$('image-file').click()});
     $('choose-race-image').addEventListener('click',()=>{if(!$('race-image-file').disabled)$('race-image-file').click()});
-    document.addEventListener('focusin',event=>{
-      if(event.target.matches('input:not([type="file"]),select,textarea'))document.body.classList.add('is-editing-control');
-    });
-    document.addEventListener('focusout',()=>setTimeout(()=>{
-      if(!document.activeElement?.matches('input:not([type="file"]),select,textarea'))document.body.classList.remove('is-editing-control');
-    },0));
+    if(window.visualViewport){
+      const syncKeyboardSpace=()=>{
+        const controlFocused=document.activeElement?.matches('input:not([type="file"]),select,textarea');
+        document.body.classList.toggle('keyboard-open',Boolean(controlFocused&&window.visualViewport.height<window.innerHeight*.72));
+      };
+      window.visualViewport.addEventListener('resize',syncKeyboardSpace);document.addEventListener('focusin',syncKeyboardSpace);document.addEventListener('focusout',()=>setTimeout(syncKeyboardSpace,0));syncKeyboardSpace();
+    }
     document.querySelectorAll('[data-history-experiment]').forEach(btn=>btn.addEventListener('click',()=>selectHistoryExperiment(btn.dataset.historyExperiment)));
     $('history-run').addEventListener('click',()=>void runUploaded());
     $('history-release').addEventListener('click',()=>void window.VisionHistoryExperiments?.release());
@@ -229,7 +233,7 @@
       const pct=Number.isFinite(info.percent)?Math.max(0,Math.min(100,info.percent)):null;
       const bar=$('m-progress-bar');if(bar)bar.style.width=pct===null?'18%':`${pct.toFixed(1)}%`;
       const text=$('m-progress-text');if(text)text.textContent=pct===null?`${bytes(info.loaded)} downloaded`:`${pct.toFixed(0)}% · ${bytes(info.loaded)} / ${bytes(info.total)}`;
-      const progress=$('model-progress');if(progress){if(pct===null){progress.removeAttribute('aria-valuenow');progress.removeAttribute('aria-valuetext')}else{progress.setAttribute('aria-valuenow',pct.toFixed(0));progress.setAttribute('aria-valuetext',text?.textContent||`${pct.toFixed(0)}%`)}}
+      const progress=$('model-progress');if(progress){progress.hidden=false;if(pct===null){progress.removeAttribute('aria-valuenow');progress.removeAttribute('aria-valuetext')}else{progress.setAttribute('aria-valuenow',pct.toFixed(0));progress.setAttribute('aria-valuetext',text?.textContent||`${pct.toFixed(0)}%`)}}
       if(state.modelDownloadController&&state.modelDownloadModel===state.activeModel){
         const warning=$('model-download-warning'),warningText=$('model-download-warning-text');
         warning?.classList.add('downloading');

@@ -31,7 +31,7 @@ The timeline scroll area has an accessible region label and description. Model a
 
 ## Activity navigation and result order
 
-The four primary sections are Experiment, Compare, Learn, and Device. Each reveals only its related secondary tabs. Desktop keeps this navigation near the top of the workspace; portrait phones use a safe-area-aware, four-item bottom bar, with the active tool directly above it. The bottom bar leaves scroll space for its footprint and moves back into document flow while a form control has focus. Secondary tabs use the standard tablist arrow, Home, and End behavior.
+The four primary sections are Experiment, Compare, Learn, and Device. Each reveals only its related secondary tabs. Desktop keeps the main sections and secondary tabs together near the top of the workspace; portrait phones use a safe-area-aware, four-item bottom bar, with the active tool directly above it. The bottom bar leaves scroll space for its footprint and hides when the visual viewport indicates that a software keyboard is open. Secondary tabs use the standard tablist arrow, Home, and End behavior.
 
 Time Machine presents the source image and its current result before the historical rail. The current-run phase measurements stay adjacent to the result. The timeline opens on demand and closes after a model or historical task is selected, while preserving the source image. Device status, startup values, warm-benchmark details, runtime diagnostics, and provenance are progressively disclosed. Download feedback remains visible while a transfer is in progress. A warm Benchmark ×20 completion opens its measured details and keeps startup measurements separate.
 
