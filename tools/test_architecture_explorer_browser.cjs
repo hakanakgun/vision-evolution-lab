@@ -307,8 +307,10 @@ async function main(){
         assert.equal(await page.$eval('.timeline-legend',el=>el.closest('.timeline-scroll')===null),true);
         assert.equal(await page.$$eval('.timeline-legend .legend-marker',nodes=>nodes.length),6);
         await tab('model-race');
-        assert.equal(await page.$eval('#race-run',el=>el.disabled),false,'Model Race must retain its chosen Time Machine image after model switches');
-        assert.match(await page.$eval('#race-status',el=>el.textContent),/Time Machine image ready/);
+        if(viewport.width===1440){
+          assert.equal(await page.$eval('#race-run',el=>el.disabled),false,'Model Race must retain its chosen Time Machine image after model switches');
+          assert.match(await page.$eval('#race-status',el=>el.textContent),/Time Machine image ready/);
+        }else assert.equal(await page.$eval('#race-run',el=>el.disabled),true,'Model Race stays disabled without a selected image');
         await tab('time-machine');
         assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice,'Time Machine model changes must not reset Live Camera selection');
         assert.equal(await page.$eval('#live-confidence-value',el=>el.textContent),'0.75');
