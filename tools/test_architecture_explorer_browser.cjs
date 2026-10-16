@@ -102,7 +102,7 @@ async function main(){
         };
         await page.click('[data-nav-group="device"]');
         await tab('live-camera');
-        const liveModels=await page.$eval('#live-model-select option',options=>options.map(option=>option.value));
+        const liveModels=await page.$$eval('#live-model-select option',options=>options.map(option=>option.value));
         assert.ok(liveModels.includes('yolox')&&!liveModels.includes('rfdetr')&&!liveModels.includes('dinov3'),'Live Camera must expose only live-eligible models');
         const liveChoice=liveModels.find(key=>key!=='yolox');
         assert.ok(liveChoice,'Live Camera should expose another independently selectable model');
@@ -115,7 +115,7 @@ async function main(){
         assert.equal(await page.$eval('#live-confidence-value',el=>el.textContent),'0.75');
         assert.equal(await page.$eval('#confidence-value',el=>el.textContent),'0.40','Live Camera confidence must not change Time Machine confidence');
         await page.click('[data-nav-group="compare"]');
-        assert.deepEqual(await page.$eval('.tab:not([hidden])',nodes=>nodes.map(node=>node.dataset.tab)),['model-race','efficiency-lab']);
+        assert.deepEqual(await page.$$eval('.tab:not([hidden])',nodes=>nodes.map(node=>node.dataset.tab)),['model-race','efficiency-lab']);
         const raceKeys=await page.evaluate(()=>window.VisionRuntimeRegistry.list({capability:'race',group:'general-object'}).map(adapter=>adapter.key));
         assert.ok(raceKeys.length>0&&!raceKeys.includes('rfdetr')&&!raceKeys.includes('dinov3'),'Model Race must stay within eligible detector runtimes');
         assert.equal(await page.$eval('#race-run',el=>el.disabled),true,'Model Race needs its own image before running');
