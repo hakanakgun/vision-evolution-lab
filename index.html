@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="en" data-build="2026.10.09-v0.23.1">
+<html lang="en" data-build="2026.10.09-v0.25.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="description" content="Vision Evolution Lab: run object detection locally in your browser and explore how computer vision evolved.">
   <meta name="theme-color" content="#f5f0e7">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=0.23.1">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=0.25.0">
   <title>Vision Evolution Lab</title>
   <script>
     (() => {
-      const CURRENT_BUILD = '2026.10.09-v0.23.1';
+      const CURRENT_BUILD = '2026.10.09-v0.25.0';
       const VERSION_FILE = 'version.json';
       const LAST_CHECK_KEY = 'vel:last-version-check';
       let checking = false;
@@ -52,7 +52,7 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/styles.css?v=0.23.1">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0.25.0">
 </head>
 <body>
   <main class="shell">
@@ -85,12 +85,12 @@
       <div class="card timeline scroll-shell" data-scroll-shell>
         <div class="timeline-overview">
           <div class="timeline-overview-main">
-            <span class="timeline-label">Time Machine · 1980—2024</span>
+            <span class="timeline-label">Time Machine · 1980—2026</span>
             <div class="timeline-current"><span>Selected</span><strong id="timeline-selection" aria-live="polite">2021 · YOLOX-Nano</strong></div>
           </div>
           <div class="timeline-scroll-note" aria-hidden="true">Swipe or use ← → to explore</div>
         </div>
-        <div class="timeline-scroll" data-scroll-area role="region" tabindex="0" aria-label="Computer vision timeline, 1980 through 2024" aria-describedby="timeline-help">
+        <div class="timeline-scroll" data-scroll-area role="region" tabindex="0" aria-label="Computer vision timeline, 1980 through 2026" aria-describedby="timeline-help">
           <div class="timeline-track" id="timeline-track"></div>
         </div>
         <div class="timeline-legend" role="group" aria-label="Timeline legend">
@@ -98,6 +98,7 @@
           <span><i class="legend-marker legend-experiment" aria-hidden="true"></i>Historical experiment</span>
           <span><i class="legend-marker legend-transformer" aria-hidden="true"></i>Transformer</span>
           <span><i class="legend-marker legend-history" aria-hidden="true"></i>History only</span>
+          <span><i class="legend-marker legend-research" aria-hidden="true"></i>Research only</span>
           <span><i class="legend-marker legend-runnable" aria-hidden="true"></i>Other runnable models</span>
           <span class="legend-hint">Buttons run models or experiments; color does not indicate accuracy.</span>
         </div>
@@ -137,6 +138,14 @@
               <div class="metric"><span>Inference</span><b id="history-inference">—</b></div>
               <div class="metric"><span>Runtime / model setup</span><b id="history-load">—</b></div>
             </div>
+            <section class="history-feature-controls" id="history-feature-controls" hidden aria-labelledby="history-feature-title">
+              <div class="history-feature-heading"><h4 id="history-feature-title">Patch feature similarity</h4><span class="tiny">Cosine similarity · −1 to 1</span></div>
+              <label class="feature-reference-control" for="feature-reference">Reference patch
+                <span class="feature-reference-input"><input id="feature-reference" type="range" min="0" max="195" step="1" value="105" aria-describedby="feature-reference-value feature-map-note"><output id="feature-reference-value" for="feature-reference">row 8, column 8 / 14×14</output></span>
+              </label>
+              <div class="feature-similarity-legend"><span>−1 · lower</span><span class="feature-similarity-gradient" aria-hidden="true"></span><span>1 · higher</span></div>
+              <p class="tiny" id="feature-map-note">Click the map, or use the slider with arrow keys. Color shows within-image feature similarity, not a detector score.</p>
+            </section>
             <section class="history-classification" id="history-classification" hidden aria-labelledby="history-classification-title">
               <h4 id="history-classification-title">AlexNet top-5 ImageNet labels</h4>
               <ol id="history-classification-results"></ol>
@@ -573,25 +582,25 @@
     <canvas id="input-canvas" hidden></canvas>
     <canvas id="benchmark-canvas" hidden></canvas>
     <canvas id="historical-model-work" hidden></canvas>
-    <footer class="footer"><span>v0.23.1 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
+    <footer class="footer"><span>v0.25.0 · static GitHub Pages</span><span>Runtime: <span class="kbd">onnxruntime-web 1.30.0 · platform-selected bundle</span> · <a href="docs/BENCHMARK_METHODOLOGY.md">methodology</a> · <a href="docs/MODEL_CATALOG.md">model catalog</a> · <a href="docs/README.md">docs</a> · <a href="docs/THIRD_PARTY_LICENSES.md">third-party notices</a></span></footer>
   </main>
 
-  <script src="src/core/runtime-bootstrap.js?v=0.23.1"></script>
-  <script src="src/core/preprocessing.js?v=0.23.1"></script>
-  <script src="src/models/models.js?v=0.23.1"></script>
-  <script src="src/core/detection-metrics.js?v=0.23.1"></script>
-  <script src="src/core/model-runtime.js?v=0.23.1"></script>
-  <script src="src/core/model-loader.js?v=0.23.1"></script>
-  <script src="src/core/external-data-store.js?v=0.23.1"></script>
-  <script src="src/core/model-storage.js?v=0.23.1"></script>
-  <script src="src/app.js?v=0.23.1"></script>
-  <script src="src/models/lwdetr-postprocess.js?v=0.23.1"></script>
-  <script src="src/models/historical-detectors.js?v=0.23.1"></script>
-  <script src="src/models/race.js?v=0.23.1"></script>
-  <script src="src/efficiency.js?v=0.23.1"></script>
-  <script src="src/resolution-microscope.js?v=0.23.1"></script>
-  <script src="src/architecture-explorer.js?v=0.23.1"></script>
-  <script src="src/model-cache.js?v=0.23.1"></script>
-  <script src="src/history/history-experiments.js?v=0.23.1"></script>
+  <script src="src/core/runtime-bootstrap.js?v=0.25.0"></script>
+  <script src="src/core/preprocessing.js?v=0.25.0"></script>
+  <script src="src/models/models.js?v=0.25.0"></script>
+  <script src="src/core/detection-metrics.js?v=0.25.0"></script>
+  <script src="src/core/model-runtime.js?v=0.25.0"></script>
+  <script src="src/core/model-loader.js?v=0.25.0"></script>
+  <script src="src/core/external-data-store.js?v=0.25.0"></script>
+  <script src="src/core/model-storage.js?v=0.25.0"></script>
+  <script src="src/app.js?v=0.25.0"></script>
+  <script src="src/models/lwdetr-postprocess.js?v=0.25.0"></script>
+  <script src="src/models/historical-detectors.js?v=0.25.0"></script>
+  <script src="src/models/race.js?v=0.25.0"></script>
+  <script src="src/efficiency.js?v=0.25.0"></script>
+  <script src="src/resolution-microscope.js?v=0.25.0"></script>
+  <script src="src/architecture-explorer.js?v=0.25.0"></script>
+  <script src="src/model-cache.js?v=0.25.0"></script>
+  <script src="src/history/history-experiments.js?v=0.25.0"></script>
 </body>
 </html>

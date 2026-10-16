@@ -63,6 +63,18 @@
 .history-experiment-head h3{margin:5px 0 0;font-size:18px;letter-spacing:-.025em}
 .history-experiment-description{margin:8px 16px 0;color:var(--muted);font-size:12px;line-height:1.5}
 .history-experiment-note.note{margin:10px 16px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,253,248,.72)}
+.history-feature-controls{margin:0 15px 14px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:rgba(255,253,248,.84)}
+.history-feature-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.history-feature-heading h4{margin:0;font-size:14px}
+.feature-reference-control{display:block;margin-top:11px;font-size:12px;font-weight:650}
+.feature-reference-input{display:grid;grid-template-columns:minmax(100px,1fr) auto;align-items:center;gap:12px;margin-top:5px}
+.feature-reference-input input{width:100%;min-width:0;accent-color:var(--accent)}
+.feature-reference-input output{color:var(--muted);font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
+.feature-similarity-legend{display:grid;grid-template-columns:auto minmax(70px,1fr) auto;align-items:center;gap:9px;margin-top:10px;font:600 10px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
+.feature-similarity-gradient{height:8px;border:1px solid var(--line);border-radius:999px;background:linear-gradient(90deg,var(--accent2),var(--muted),var(--accent))}
+.history-feature-controls>p{margin:8px 0 0;line-height:1.45}
+#image-canvas.feature-map-active{cursor:crosshair;touch-action:manipulation}
+@media(max-width:520px){.history-feature-heading{display:block}.history-feature-heading .tiny{display:block;margin-top:3px}.feature-reference-input{grid-template-columns:1fr}.feature-reference-input output{white-space:normal}}
 .history-experiment-metrics{padding-top:4px;padding-bottom:6px}
 .history-classification{margin:0 15px 14px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:rgba(255,253,248,.84)}
 .history-classification h4{margin:0 0 8px;font-size:14px}
@@ -173,3 +185,4 @@
 @media(max-width:600px){.cache-model{align-items:stretch;flex-direction:column;gap:12px}.cache-actions .btn{flex:1}.timeline-legend{padding:10px 16px;gap:10px 14px}}
 
     .grid.historical-mode{grid-template-columns:minmax(0,1fr)}
+    .legend-research{border:2px dashed #97988f;background:transparent}
