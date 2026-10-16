@@ -71,12 +71,60 @@ async function main(){
         assert.equal(await page.$eval('html',el=>el.dataset.build),manifest.build);
         assert.equal(await page.evaluate(()=>window.VisionLab.getActiveModel()),'yolox');
         assert.equal(await page.evaluate(()=>Boolean(window.VisionLab.getImage())),false);
+        assert.equal(await page.$eval('#timeline-picker',el=>el.open),false,'the historical rail should begin collapsed');
+        assert.equal(await page.$eval('#tab-time-machine',el=>el.getAttribute('aria-selected')),'true');
+        if(viewport.width===390){
+          await page.screenshot({path:path.join(output,'time-machine-390.png')});
+          for(const width of [320,430]){
+            await page.setViewport({width,height:844});
+            const shell=await page.evaluate(()=>{
+              const nav=document.querySelector('.activity-groups').getBoundingClientRect();
+              const controls=[...document.querySelectorAll('.activity-group')].map(button=>button.getBoundingClientRect().height);
+              return {width:innerWidth,documentWidth:document.documentElement.scrollWidth,navLeft:nav.left,navRight:nav.right,touchTargets:controls.every(height=>height>=44)};
+            });
+            assert.equal(shell.documentWidth,width,'document must not overflow at '+width+'px');
+            assert.ok(shell.navLeft>=0&&shell.navRight<=width&&shell.touchTargets,'mobile navigation must fit and retain touch targets at '+width+'px');
+            if(width===320)await page.screenshot({path:path.join(output,'time-machine-320.png')});
+          }
+          await page.setViewport(viewport);
+        }else await page.screenshot({path:path.join(output,'time-machine-1440.png')});
         const tab=async name=>{
-          const selector='[data-tab="'+name+'"]';
-          await page.$eval(selector,el=>el.scrollIntoView({block:'nearest',inline:'nearest'}));
+          const selector='[data-tab="'+name+'"]',group=await page.$eval(selector,el=>el.dataset.modeGroup);
+          if(await page.$eval(selector,el=>el.hidden))await page.click('[data-nav-group="'+group+'"]');
+          await page.waitForFunction(selector=>!document.querySelector(selector).hidden,{},selector);
+          await page.$eval(selector,el=>el.scrollIntoView({block:'center',inline:'nearest'}));
           await page.click(selector);
           await page.waitForSelector('#'+name+'.active');
         };
+        const timelineAction=async selector=>{
+          await page.evaluate(()=>{document.getElementById('timeline-picker').open=true});
+          await page.$eval(selector,el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+        };
+        await page.click('[data-nav-group="device"]');
+        await tab('live-camera');
+        const liveModels=await page.$$eval('#live-model-select option',options=>options.map(option=>option.value));
+        assert.ok(liveModels.includes('yolox')&&!liveModels.includes('rfdetr')&&!liveModels.includes('dinov3'),'Live Camera must expose only live-eligible models');
+        const liveChoice=liveModels.find(key=>key!=='yolox');
+        assert.ok(liveChoice,'Live Camera should expose another independently selectable model');
+        await page.select('#live-model-select',liveChoice);
+        await page.$eval('#live-confidence',el=>{el.value='0.75';el.dispatchEvent(new Event('input',{bubbles:true}))});
+        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice);
+        assert.equal(await page.$eval('#live-confidence-value',el=>el.textContent),'0.75');
+        await tab('time-machine');
+        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice,'Time Machine navigation must preserve the independent Live Camera model');
+        assert.equal(await page.$eval('#live-confidence-value',el=>el.textContent),'0.75');
+        assert.equal(await page.$eval('#confidence-value',el=>el.textContent),'0.40','Live Camera confidence must not change Time Machine confidence');
+        await page.click('[data-nav-group="compare"]');
+        assert.deepEqual(await page.$$eval('.tab:not([hidden])',nodes=>nodes.map(node=>node.dataset.tab)),['model-race','efficiency-lab']);
+        const raceKeys=await page.evaluate(()=>window.VisionRuntimeRegistry.list({capability:'race',group:'general-object'}).map(adapter=>adapter.key));
+        assert.ok(raceKeys.length>0&&!raceKeys.includes('rfdetr')&&!raceKeys.includes('dinov3'),'Model Race must stay within eligible detector runtimes');
+        assert.equal(await page.$eval('#race-run',el=>el.disabled),true,'Model Race needs its own image before running');
+        await page.focus('#tab-model-race');await page.keyboard.press('ArrowRight');
+        assert.equal(await page.evaluate(()=>document.querySelector('.tab[aria-selected="true"]').dataset.tab),'efficiency-lab');
+        await page.keyboard.press('End');assert.equal(await page.evaluate(()=>document.activeElement.dataset.tab),'efficiency-lab');
+        await page.keyboard.press('Home');assert.equal(await page.evaluate(()=>document.activeElement.dataset.tab),'model-race');
+        await page.click('[data-nav-group="learn"]');
+        assert.deepEqual(await page.$$eval('.tab:not([hidden])',nodes=>nodes.map(node=>node.dataset.tab)),['inside-model','architecture-explorer']);
         await tab('architecture-explorer');
         await page.select('#architecture-a','lwdetr');await page.select('#architecture-b','dfine');
         for(let count=0;count<5;count++){await tab('time-machine');await tab('architecture-explorer');}
@@ -88,7 +136,7 @@ async function main(){
         await page.focus('#architecture-a');await page.keyboard.press('Tab');
         assert.equal(await page.evaluate(()=>document.activeElement.id),'architecture-b');
         const focus=await page.$eval('#architecture-b',el=>{const style=getComputedStyle(el);return {width:style.outlineWidth,style:style.outlineStyle};});
-        assert.equal(focus.width,'2px');assert.equal(focus.style,'solid');
+        assert.ok(Number.parseFloat(focus.width)>=2);assert.equal(focus.style,'solid');
         const layout=await page.evaluate(()=>{
           const selectors=document.querySelector('.architecture-selectors').getBoundingClientRect();
           const a=document.getElementById('architecture-profile-a').getBoundingClientRect();
@@ -104,7 +152,7 @@ async function main(){
         await page.click('#architecture-profile-a .architecture-open');
         await page.waitForSelector('#time-machine.active');
         assert.equal(await page.evaluate(()=>window.VisionLab.getActiveModel()),'lwdetr');
-        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),'yolox');
+        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice);
         await tab('architecture-explorer');
         assert.equal(await page.$eval('#architecture-a',el=>el.value),'lwdetr');
         // Every declared model must render its own profile and registry links.
@@ -124,8 +172,8 @@ async function main(){
           document.getElementById('m-inf').textContent='700 ms';
           document.getElementById('m-total').textContent='2400 ms';
         });
-        await page.$eval('[data-history-experiment="hog-pedestrians"]',el=>el.scrollIntoView({block:'center',inline:'center'}));
-        await page.click('[data-history-experiment="hog-pedestrians"]');
+        await timelineAction('[data-history-experiment="hog-pedestrians"]');
+        assert.equal(await page.$eval('#timeline-picker',el=>el.open),false,'selecting an experiment should return focus to the result');
         const historyUi=await page.evaluate(()=>({
           panelHidden:document.getElementById('history-experiment-panel').hidden,
           confidenceHidden:document.getElementById('confidence-control').hidden,
@@ -143,7 +191,7 @@ async function main(){
         }));
         assert.deepEqual(historyUi,{panelHidden:false,confidenceHidden:true,confidenceDisabled:true,startupHidden:true,runHidden:true,deviceCardHidden:true,historicalLayout:true,bytes:'—',cache:'—',transfer:'—',inference:'—',total:'—',badge:'Historical method'});
         await page.screenshot({path:path.join(output,'historical-state-'+viewport.width+'.png'),fullPage:true});
-        await page.$eval('[data-runnable-model="dfine"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+        await timelineAction('[data-runnable-model="dfine"]');
         await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='dfine');
         assert.deepEqual(await page.evaluate(()=>({
           confidenceHidden:document.getElementById('confidence-control').hidden,
@@ -157,7 +205,7 @@ async function main(){
           kb:window.VisionModelLoader.formatBytes(26_143)
         }));
         assert.deepEqual(units,{mb:'7.81 MB',kb:'26 KB'});
-        let realInference=null;
+        let realInference=null,rfBenchmark=null;
         if(viewport.width===1440){
           const imageInput=await page.$('#image-file');assert.ok(imageInput,'Time Machine image input missing');await imageInput.uploadFile(path.join(root,'assets/benchmark/coco-val-000000397133.jpg'));
           await page.waitForFunction(()=>document.getElementById('m-run-label').textContent==='first inference',{timeout:120000});
@@ -174,8 +222,23 @@ async function main(){
           for(const [name,value] of Object.entries(realInference))if(name!=='bytes'&&name!=='formattedBytes')assert.ok(Number.isFinite(value)&&value>=0,'D-FINE real inference metric '+name);
           assert.equal(realInference.bytes,realInference.formattedBytes);
           assert.ok(Math.abs(realInference.total-(realInference.preprocess+realInference.inference+realInference.postprocess))<1,'end-to-end time must equal measured phases and exclude setup');
+          assert.equal(await page.$eval('.transfer-progress',el=>el.hidden),true,'completed inference must not leave transfer progress visible');
+          await page.$eval('#time-machine-workspace',el=>window.scrollTo(0,el.getBoundingClientRect().top+window.scrollY-160));
+          await page.screenshot({path:path.join(output,'time-machine-result-1440.png')});
+          await tab('model-race');
+          await page.click('#race-use-current');
+          assert.match(await page.$eval('#race-status',el=>el.textContent),/Time Machine image ready/);
+          assert.equal(await page.$eval('#race-run',el=>el.disabled),false,'Model Race should reuse the current Time Machine image');
+          assert.equal(await page.$eval('#race-benchmark',el=>el.disabled),true,'Model Race benchmark remains unavailable until a race completes');
+          await tab('time-machine');
+          await page.evaluate(()=>{window.__visionTestSource=window.VisionLab.getImage()});
+          await timelineAction('[data-runnable-model="yolox"]');
+          await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='yolox'&&window.VisionLab.isTimeMachineBusy(),{timeout:30000});
+          await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='yolox'&&!window.VisionLab.isTimeMachineBusy(),{timeout:120000});
+          assert.equal(await page.evaluate(()=>window.VisionLab.getImage()===window.__visionTestSource),true,'switching to YOLOX must retain the selected local source image');
+          assert.equal(await page.$eval('#m-run-label',el=>el.textContent),'first inference','selecting YOLOX with an image must automatically run it');
           // The first frontier integration must execute on the same local image in CI.
-          await page.$eval('[data-runnable-model="rfdetr"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+          await timelineAction('[data-runnable-model="rfdetr"]');
           await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='rfdetr'&&Boolean(window.VisionLab.getImage())&&window.VisionLab.isTimeMachineBusy(),{timeout:30000});
           await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='rfdetr'&&Boolean(window.VisionLab.getImage())&&!window.VisionLab.isTimeMachineBusy(),{timeout:180000});
           const rfInference=await page.evaluate(()=>{
@@ -192,7 +255,28 @@ async function main(){
           assert.ok(Number.isFinite(rfInference.detections)&&rfInference.detections>=0,'RF-DETR detections must be a numeric pipeline result');
           assert.match(rfInference.bytes,/28\.8 MB|54\.4 MB/,'RF-DETR must report the selected pinned runtime size');
           assert.match(rfInference.backend,/WASM|WebGPU/i,'RF-DETR must report its selected browser backend');
-          await page.$eval('[data-history-experiment="dinov3-features"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+          assert.equal(await page.evaluate(()=>window.VisionLab.getImage()===window.__visionTestSource),true,'switching to RF-DETR must retain the Time Machine image');
+          const rfCapabilities=await page.evaluate(()=>({timeMachine:window.VisionRuntimeRegistry.capabilityEnabled(window.VisionModels.rfdetr,'timeMachine'),benchmark:window.VisionRuntimeRegistry.capabilityEnabled(window.VisionModels.rfdetr,'benchmark'),race:window.VisionRuntimeRegistry.capabilityEnabled(window.VisionModels.rfdetr,'race'),live:window.VisionRuntimeRegistry.capabilityEnabled(window.VisionModels.rfdetr,'live')}));
+          assert.deepEqual(rfCapabilities,{timeMachine:true,benchmark:true,race:false,live:false},'RF-DETR preview eligibility must stay model-specific');
+          assert.equal(await page.$eval('#benchmark',el=>el.disabled),false,'RF-DETR individual Benchmark ×20 must remain available with an image');
+          await page.click('#benchmark');
+          await page.waitForFunction(()=>!window.VisionLab.isTimeMachineBusy()&&document.getElementById('status').textContent.includes('Warm benchmark complete'),{timeout:180000});
+          assert.equal(await page.$eval('.transfer-progress',el=>el.hidden),true,'completed Benchmark ×20 must not leave transfer progress visible');
+          rfBenchmark=await page.evaluate(()=>({
+            p50:Number.parseFloat(document.getElementById('b-inf-med').textContent),
+            p90:Number.parseFloat(document.getElementById('b-inf-p90').textContent),
+            range:document.getElementById('b-inf-range').textContent,
+            cv:document.getElementById('b-cv').textContent,
+            total:Number.parseFloat(document.getElementById('b-total-med').textContent),
+            fps:Number.parseFloat(document.getElementById('b-fps').textContent),
+            detailsOpen:document.getElementById('technical-details').open,
+            startupText:document.querySelector('#model-startup-metrics .metric-section-head small').textContent,
+            note:document.getElementById('benchmark-note').textContent
+          }));
+          for(const field of ['p50','p90','total','fps'])assert.ok(Number.isFinite(rfBenchmark[field])&&rfBenchmark[field]>0,'RF-DETR warm benchmark '+field+' must be measured');
+          assert.match(rfBenchmark.range,/ms/);assert.match(rfBenchmark.cv,/%/);assert.equal(rfBenchmark.detailsOpen,true);
+          assert.match(rfBenchmark.startupText,/once per page session/);assert.match(rfBenchmark.note,/warm/i,'benchmark boundary must state warm execution');
+          await timelineAction('[data-history-experiment="dinov3-features"]');
           await page.waitForFunction(()=>window.VisionLab.isTimeMachineBusy(),{timeout:30000});
           await page.waitForFunction(()=>!window.VisionLab.isTimeMachineBusy()&&document.getElementById('history-output-count').textContent.includes('196 patch vectors'),{timeout:180000});
           const dinoResult=await page.evaluate(()=>{
@@ -206,19 +290,33 @@ async function main(){
           assert.match(dinoResult.runtime,/DINOv3.*q4\/WASM.*ready/,'DINOv3 must report q4/WASM runtime state');
           assert.match(dinoResult.load,/≈14\.9 MB/,'DINOv3 model footprint must be shown');
           assert.equal(dinoResult.canvasClass,true,'DINOv3 similarity map must render over the current image');
+          assert.equal(await page.evaluate(()=>window.VisionLab.getImage()===window.__visionTestSource),true,'DINOv3 must reuse the selected Time Machine image');
           await page.$eval('#image-canvas',el=>{const rect=el.getBoundingClientRect();el.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:rect.left+rect.width*.25,clientY:rect.top+rect.height*.25}))});
           assert.equal(await page.$eval('#feature-reference',el=>el.value),'45','clicking the patch map must select its 14×14 reference patch');
           assert.match(await page.$eval('#history-status',el=>el.textContent),/patch row 4, column 4/,'selected patch feedback must be readable');
           await page.focus('#feature-reference');await page.keyboard.press('ArrowRight');
           assert.equal(await page.$eval('#feature-reference',el=>el.value),'46','the reference patch must also be keyboard selectable');
         }
-        await page.$eval('[data-runnable-model="yolox"]',el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+        await timelineAction('[data-runnable-model="yolox"]');
         await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='yolox'&&!window.VisionLab.isTimeMachineBusy());
+        if(viewport.width===1440){
+          assert.equal(await page.evaluate(()=>window.VisionLab.getImage()===window.__visionTestSource),true,'returning to YOLOX must retain the source image');
+          assert.equal(await page.$eval('#image-canvas',el=>el.classList.contains('feature-map-active')),false,'changing away from DINOv3 must remove the stale similarity map');
+          assert.equal(await page.$eval('#history-feature-controls',el=>el.hidden),true,'DINOv3 reference controls must be removed from the detector result');
+        }
         assert.equal(await page.$eval('.timeline-legend',el=>el.closest('.timeline-scroll')===null),true);
         assert.equal(await page.$$eval('.timeline-legend .legend-marker',nodes=>nodes.length),6);
+        await tab('model-race');
+        if(viewport.width===1440){
+          assert.equal(await page.$eval('#race-run',el=>el.disabled),false,'Model Race must retain its chosen Time Machine image after model switches');
+          assert.match(await page.$eval('#race-status',el=>el.textContent),/Time Machine image ready/);
+        }else assert.equal(await page.$eval('#race-run',el=>el.disabled),true,'Model Race stays disabled without a selected image');
+        await tab('time-machine');
+        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice,'Time Machine model changes must not reset Live Camera selection');
+        assert.equal(await page.$eval('#live-confidence-value',el=>el.textContent),'0.75');
         await tab('model-cache');
         await page.waitForFunction(()=>document.querySelectorAll('.cache-model').length===13);
-        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),'yolox');
+        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice);
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
         // Exercise the real storage implementation with tiny deterministic assets.
         const storageResult=await page.evaluate(async()=>{
@@ -289,7 +387,7 @@ async function main(){
           }
           assert.equal(await page.evaluate(()=>window.VisionLab.getActiveModel()),'yolox');
         }
-        results.push({viewport,status:'PASS',models:keys.length,build:manifest.build,historicalState:historyUi,units,realInference});
+        results.push({viewport,status:'PASS',models:keys.length,build:manifest.build,historicalState:historyUi,units,realInference,rfBenchmark});
       }catch(error){
         await page.screenshot({path:path.join(output,'failure-'+viewport.width+'.png'),fullPage:true}).catch(()=>{});
         throw error;

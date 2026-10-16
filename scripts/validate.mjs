@@ -126,6 +126,15 @@ check(idSet.has('live-confidence')&&idSet.has('live-confidence-value'),'Live Cam
 for(const id of ['efficiency-lab','efficiency-status','efficiency-grid'])check(idSet.has(id),'Efficiency Lab DOM contract missing: '+id);
 for(const id of ['resolution-microscope','resolution-run','resolution-context','resolution-status','resolution-grid'])check(idSet.has(id),'Resolution Microscope DOM contract missing: '+id);
 for(const id of ['architecture-explorer','architecture-a','architecture-b','architecture-status','architecture-profile-a','architecture-profile-b'])check(idSet.has(id),'Architecture Explorer DOM contract missing: '+id);
+for(const id of ['activity-groups','mode-tabs','mode-context','choose-image','choose-race-image','timeline-picker','technical-details','model-run-metrics','model-progress'])check(idSet.has(id),'Redesigned navigation/experiment DOM contract missing: '+id);
+for(const [tab,group] of Object.entries({'time-machine':'experiment','model-race':'compare','efficiency-lab':'compare','inside-model':'learn','architecture-explorer':'learn','live-camera':'device','resolution-microscope':'device','model-cache':'device'})){
+  check(files.index.includes(`data-tab="${tab}"`)&&files.index.includes(`data-mode-group="${group}"`),`Grouped navigation assignment missing: ${tab}`);
+  check(files.index.includes(`id="${tab}" role="tabpanel" aria-labelledby="tab-${tab}"`),`Tab panel needs an accessible label: ${tab}`);
+}
+check(files.index.indexOf('id="time-machine-workspace"')<files.index.indexOf('id="timeline-picker"'),'Time Machine result and controls must appear before the collapsed historical rail');
+check(files.app.includes("event.key==='ArrowRight'")&&files.app.includes("event.key==='Home'")&&files.app.includes("event.key==='End'"),'Secondary tabs must support arrow, Home, and End keyboard navigation');
+check(files.app.includes("$('choose-image').addEventListener('click'")&&files.app.includes("$('choose-race-image').addEventListener('click'"),'Image-picking buttons must have working browser-native handlers');
+check(files.app.includes("progress.setAttribute('aria-valuenow'")&&files.app.includes("$('technical-details').open=true"),'Transfer progress and completed warm-benchmark details must be exposed');
 check(files.index.includes('data-tab="efficiency-lab"')&&files.index.includes('data-jump="model-race"'),'Efficiency Lab navigation contract missing');
 check(files.index.includes('data-tab="resolution-microscope"')&&files.index.includes('data-jump="time-machine"'),'Resolution Microscope navigation contract missing');
 check(files.index.includes('data-tab="architecture-explorer"'),'Architecture Explorer navigation contract missing');
@@ -228,7 +237,7 @@ check(expectedTimeMachineKeys.every(key=>timelineKeys.includes(key))&&timelineKe
 check(metadataRegistry.defaults?.timeMachine==='yolox'&&expectedTimeMachineKeys.includes(metadataRegistry.defaults.timeMachine),'Time Machine must open on the lightweight YOLOX-Nano starting model');
 check(files.index.includes('id="timeline-track"')&&files.index.includes('id="preprocess-table"'),'dynamic Time Machine/inspection containers missing');
 check(files.index.includes('class="timeline-scroll" data-scroll-area role="region" tabindex="0"')&&files.index.includes('aria-describedby="timeline-help"')&&files.index.includes('id="timeline-selection"'),'timeline scroll region and selection label must be accessible');
-check(files.index.includes('id="active-model-title">YOLOX-Nano')&&files.index.includes('id="rerun" disabled>Run YOLOX-Nano')&&files.index.includes('id="inside-active-model">YOLOX-Nano'),'initial Time Machine and inspector labels must match the default model');
+check(files.index.includes('id="active-model-title" tabindex="-1">YOLOX-Nano')&&files.index.includes('id="rerun" disabled>Run YOLOX-Nano')&&files.index.includes('id="inside-active-model">YOLOX-Nano'),'initial Time Machine and inspector labels must match the default model');
 check(files.app.includes("button.setAttribute('aria-pressed',String(selected))")&&files.app.includes("$('timeline-selection').textContent=")&&!files.app.includes('track.style.minWidth'),'timeline selection state must stay synchronized without page-width expansion');
 check(files.app.includes("setStatus('Running '+activeModel().title+' on the current Time Machine image…','loading')")&&files.app.includes('void runUploaded();'),'selecting a runnable Time Machine model with an existing image must auto-run that image');
 check(!files.app.includes("selected. Run the current image when ready."),'Time Machine selection must not require a second manual Run action when an image is already selected');

@@ -1,6 +1,6 @@
 {
-  "version": "0.25.0",
-  "build": "2026.10.09-v0.25.0",
-  "published": "2026-10-09",
+  "version": "0.26.0",
+  "build": "2026.10.16-v0.26.0",
+  "published": "2026-10-16",
   "cacheStrategy": "version-manifest-no-store"
 }
