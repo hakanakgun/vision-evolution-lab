@@ -100,8 +100,25 @@ async function main(){
           await page.evaluate(()=>{document.getElementById('timeline-picker').open=true});
           await page.$eval(selector,el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
         };
+        await page.click('[data-nav-group="device"]');
+        await tab('live-camera');
+        const liveModels=await page.$eval('#live-model-select option',options=>options.map(option=>option.value));
+        assert.ok(liveModels.includes('yolox')&&!liveModels.includes('rfdetr')&&!liveModels.includes('dinov3'),'Live Camera must expose only live-eligible models');
+        const liveChoice=liveModels.find(key=>key!=='yolox');
+        assert.ok(liveChoice,'Live Camera should expose another independently selectable model');
+        await page.select('#live-model-select',liveChoice);
+        await page.$eval('#live-confidence',el=>{el.value='0.75';el.dispatchEvent(new Event('input',{bubbles:true}))});
+        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice);
+        assert.equal(await page.$eval('#live-confidence-value',el=>el.textContent),'0.75');
+        await tab('time-machine');
+        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice,'Time Machine navigation must preserve the independent Live Camera model');
+        assert.equal(await page.$eval('#live-confidence-value',el=>el.textContent),'0.75');
+        assert.equal(await page.$eval('#confidence-value',el=>el.textContent),'0.40','Live Camera confidence must not change Time Machine confidence');
         await page.click('[data-nav-group="compare"]');
-        assert.deepEqual(await page.$$eval('.tab:not([hidden])',nodes=>nodes.map(node=>node.dataset.tab)),['model-race','efficiency-lab']);
+        assert.deepEqual(await page.$eval('.tab:not([hidden])',nodes=>nodes.map(node=>node.dataset.tab)),['model-race','efficiency-lab']);
+        const raceKeys=await page.evaluate(()=>window.VisionRuntimeRegistry.list({capability:'race',group:'general-object'}).map(adapter=>adapter.key));
+        assert.ok(raceKeys.length>0&&!raceKeys.includes('rfdetr')&&!raceKeys.includes('dinov3'),'Model Race must stay within eligible detector runtimes');
+        assert.equal(await page.$eval('#race-run',el=>el.disabled),true,'Model Race needs its own image before running');
         await page.focus('#tab-model-race');await page.keyboard.press('ArrowRight');
         assert.equal(await page.evaluate(()=>document.querySelector('.tab[aria-selected="true"]').dataset.tab),'efficiency-lab');
         await page.keyboard.press('End');assert.equal(await page.evaluate(()=>document.activeElement.dataset.tab),'efficiency-lab');
@@ -135,7 +152,7 @@ async function main(){
         await page.click('#architecture-profile-a .architecture-open');
         await page.waitForSelector('#time-machine.active');
         assert.equal(await page.evaluate(()=>window.VisionLab.getActiveModel()),'lwdetr');
-        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),'yolox');
+        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice);
         await tab('architecture-explorer');
         assert.equal(await page.$eval('#architecture-a',el=>el.value),'lwdetr');
         // Every declared model must render its own profile and registry links.
@@ -208,6 +225,12 @@ async function main(){
           assert.equal(await page.$eval('.transfer-progress',el=>el.hidden),true,'completed inference must not leave transfer progress visible');
           await page.$eval('#time-machine-workspace',el=>window.scrollTo(0,el.getBoundingClientRect().top+window.scrollY-160));
           await page.screenshot({path:path.join(output,'time-machine-result-1440.png')});
+          await tab('model-race');
+          await page.click('#race-use-current');
+          assert.match(await page.$eval('#race-status',el=>el.textContent),/Time Machine image ready/);
+          assert.equal(await page.$eval('#race-run',el=>el.disabled),false,'Model Race should reuse the current Time Machine image');
+          assert.equal(await page.$eval('#race-benchmark',el=>el.disabled),true,'Model Race benchmark remains unavailable until a race completes');
+          await tab('time-machine');
           await page.evaluate(()=>{window.__visionTestSource=window.VisionLab.getImage()});
           await timelineAction('[data-runnable-model="yolox"]');
           await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='yolox'&&window.VisionLab.isTimeMachineBusy(),{timeout:30000});
@@ -283,9 +306,15 @@ async function main(){
         }
         assert.equal(await page.$eval('.timeline-legend',el=>el.closest('.timeline-scroll')===null),true);
         assert.equal(await page.$$eval('.timeline-legend .legend-marker',nodes=>nodes.length),6);
+        await tab('model-race');
+        assert.equal(await page.$eval('#race-run',el=>el.disabled),false,'Model Race must retain its chosen Time Machine image after model switches');
+        assert.match(await page.$eval('#race-status',el=>el.textContent),/Time Machine image ready/);
+        await tab('time-machine');
+        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice,'Time Machine model changes must not reset Live Camera selection');
+        assert.equal(await page.$eval('#live-confidence-value',el=>el.textContent),'0.75');
         await tab('model-cache');
         await page.waitForFunction(()=>document.querySelectorAll('.cache-model').length===13);
-        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),'yolox');
+        assert.equal(await page.evaluate(()=>window.VisionLab.getLiveModel()),liveChoice);
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
         // Exercise the real storage implementation with tiny deterministic assets.
         const storageResult=await page.evaluate(async()=>{
