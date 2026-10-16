@@ -205,7 +205,7 @@ async function main(){
           for(const [name,value] of Object.entries(realInference))if(name!=='bytes'&&name!=='formattedBytes')assert.ok(Number.isFinite(value)&&value>=0,'D-FINE real inference metric '+name);
           assert.equal(realInference.bytes,realInference.formattedBytes);
           assert.ok(Math.abs(realInference.total-(realInference.preprocess+realInference.inference+realInference.postprocess))<1,'end-to-end time must equal measured phases and exclude setup');
-          await page.$eval('#time-machine-workspace',el=>el.scrollIntoView({block:'start'}));
+          await page.$eval('#time-machine-workspace',el=>window.scrollTo(0,el.getBoundingClientRect().top+window.scrollY-160));
           await page.screenshot({path:path.join(output,'time-machine-result-1440.png')});
           await page.evaluate(()=>{window.__visionTestSource=window.VisionLab.getImage()});
           await timelineAction('[data-runnable-model="yolox"]');
