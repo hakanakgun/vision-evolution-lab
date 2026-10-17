@@ -132,7 +132,10 @@ for(const [tab,group] of Object.entries({'time-machine':'experiment','model-race
   check(files.index.includes(`id="${tab}" role="tabpanel" aria-labelledby="tab-${tab}"`),`Tab panel needs an accessible label: ${tab}`);
 }
 check(files.index.indexOf('id="timeline-picker"')<files.index.indexOf('id="time-machine-workspace"'),'Time Machine timeline must appear before the result workspace');
-check(files.index.includes('id="timeline-picker" open>'),'Time Machine timeline should be visible on initial load');
+const timelineSection=files.index.match(/<section class="timeline-section" id="timeline-picker"[^>]*>/);
+check(Boolean(timelineSection)&&!/<details\b|\bhidden\b/.test(timelineSection?.[0]||''),'Time Machine timeline must be a permanently visible section, not a disclosure');
+check(!/Hide timeline|Browse experiments|closeTimelinePicker|picker\.open=false/.test(files.index+files.app),'Time Machine must not expose or restore a timeline hide action');
+check(files.app.includes('function focusTimeMachineResult()')&&files.app.includes("picker.querySelector('[data-scroll-area]')?.focus({preventScroll:true})"),'Time Machine selection/focus should preserve the rail and provide a return path to it');
 check(files.index.includes('Research-only milestones are references and cannot be run.'),'Time Machine timeline must explain that research-only milestones are not executable');
 check(files.app.includes("event.key==='ArrowRight'")&&files.app.includes("event.key==='Home'")&&files.app.includes("event.key==='End'"),'Secondary tabs must support arrow, Home, and End keyboard navigation');
 check(files.app.includes("$('choose-image').addEventListener('click'")&&files.app.includes("$('choose-race-image').addEventListener('click'"),'Image-picking buttons must have working browser-native handlers');
@@ -238,7 +241,7 @@ check(new Set(timelineKeys).size===timelineKeys.length,'Time Machine timeline co
 check(expectedTimeMachineKeys.every(key=>timelineKeys.includes(key))&&timelineKeys.every(key=>expectedTimeMachineKeys.includes(key)),'Time Machine timeline/model capability membership mismatch');
 check(metadataRegistry.defaults?.timeMachine==='yolox'&&expectedTimeMachineKeys.includes(metadataRegistry.defaults.timeMachine),'Time Machine must open on the lightweight YOLOX-Nano starting model');
 check(files.index.includes('id="timeline-track"')&&files.index.includes('id="preprocess-table"'),'dynamic Time Machine/inspection containers missing');
-check(files.index.includes('class="timeline-scroll" data-scroll-area role="region" tabindex="0"')&&files.index.includes('aria-describedby="timeline-help"')&&files.index.includes('id="timeline-selection"'),'timeline scroll region and selection label must be accessible');
+check(files.index.includes('class="timeline-scroll" id="timeline-scroll-region" data-scroll-area role="region" tabindex="0"')&&files.index.includes('aria-describedby="timeline-help"')&&files.index.includes('id="timeline-selection"'),'timeline scroll region and selection label must be accessible');
 check(files.index.includes('id="active-model-title" tabindex="-1">YOLOX-Nano')&&files.index.includes('id="rerun" disabled>Run YOLOX-Nano')&&files.index.includes('id="inside-active-model">YOLOX-Nano'),'initial Time Machine and inspector labels must match the default model');
 check(files.app.includes("button.setAttribute('aria-pressed',String(selected))")&&files.app.includes("$('timeline-selection').textContent=")&&!files.app.includes('track.style.minWidth'),'timeline selection state must stay synchronized without page-width expansion');
 check(files.app.includes("setStatus('Running '+activeModel().title+' on the current Time Machine image…','loading')")&&files.app.includes('void runUploaded();'),'selecting a runnable Time Machine model with an existing image must auto-run that image');

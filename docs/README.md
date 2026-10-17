@@ -13,7 +13,7 @@ This directory contains implementation and investigation notes that are too deta
 
 Stable project reference documents live alongside the implementation notes in this directory:
 
-- [Design direction](DESIGN.md) — visual system, Time Machine timeline placement, result hierarchy, and mobile interactions.
+- [Design direction](DESIGN.md) — visual system, always-open Time Machine timeline, result hierarchy, and mobile interactions.
 - [Benchmark methodology](BENCHMARK_METHODOLOGY.md)
 - [Model catalog](MODEL_CATALOG.md)
 - [Model sources and provenance](MODEL_SOURCES.md)

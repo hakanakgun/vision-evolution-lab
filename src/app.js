@@ -42,16 +42,12 @@
     function canBenchmark(model=activeModel()){return RuntimeRegistry.capabilityEnabled(model,'benchmark')}
     function updateActiveModelUI(){const model=activeModel(),ui=model.ui||{},runtimeUi=ui.runtime||{},inspection=model.capabilities?.inspection;$('active-model-title').textContent=model.title;$('active-model-subtitle').textContent=ui.subtitle||`${model.task} · ${model.family}`;$('rerun').textContent=`Run ${model.title}`;$('m-transfer-label').textContent='Model transfer';$('m-init-label').textContent=runtimeUi.initLabel||'Session init';setMetric('m-bytes',runtimeUi.bytesText||bytes(model.bytes));setMetric('m-cache',runtimeUi.cacheInitial||'checking…');setMetric('d-input',inspection&&typeof inspection==='object'?inspection.input:(model.input?`${model.input}×${model.input}`:'dynamic'));$('input-size').textContent=state.image?'Source ready · not run':'No input';$('benchmark').disabled=!state.image||!canBenchmark(model);renderProvenance(model);updateInsideModelUI(state.activeModel,state.lastRunResult,state.image);}
     async function updateActiveCacheState(){const key=state.activeModel,model=activeModel();if(!Array.isArray(model.sources)||!model.sources.length)return;try{const info=await ModelLoader.status(model);if(state.activeModel===key&&!state.historyExperiment)setMetric('m-cache',info.source?`${info.state} · ${info.source}`:info.state);}catch(_){}}
-    function closeTimelinePicker({focusResult=false}={}){
-      const picker=$('timeline-picker');if(!picker)return;
-      picker.open=false;document.querySelectorAll('[data-open-timeline]').forEach(button=>button.setAttribute('aria-expanded','false'));
-      if(focusResult)$('active-model-title')?.focus({preventScroll:true});
-    }
+    function focusTimeMachineResult(){$('active-model-title')?.focus({preventScroll:true})}
     function selectActiveModel(key,{scroll=true}={}){
       if(state.running||state.benchmarking){setStatus('Finish the current run or benchmark before switching models.');return;}
       if(!REGISTRY[key]||!RuntimeRegistry.capabilityEnabled(REGISTRY[key],'timeMachine'))return;
       const previousKey=state.activeModel;
-      closeTimelinePicker({focusResult:true});
+      focusTimeMachineResult();
       const details=$('technical-details');if(details)details.open=false;
       state.historyExperiment='';state.historyTransition=Promise.resolve(window.VisionHistoryExperiments?.clear?.());state.activeModel=key;syncHistoryControls();
       if(previousKey!==key){const previousAdapter=RuntimeRegistry.get(previousKey);state.runtimeTransition=state.runtimeTransition.catch(()=>{}).then(async()=>{if(state.live&&state.liveModel===previousKey)return;await state.liveInference.catch(()=>{});await previousAdapter?.release();}).catch(error=>console.warn('Previous model runtime release failed',error));}
@@ -163,14 +159,10 @@
     paintNavigation();
     document.querySelectorAll('[data-jump]').forEach(btn=>btn.addEventListener('click',event=>{if(btn.tagName==='A')event.preventDefault();selectTab(btn.dataset.jump)}));
     document.querySelectorAll('[data-open-timeline]').forEach(button=>button.addEventListener('click',()=>{
-      const picker=$('timeline-picker');picker.open=true;button.setAttribute('aria-expanded','true');
-      picker.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
-      picker.querySelector('summary').focus({preventScroll:true});
+      const picker=$('timeline-picker');
+      picker.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
+      picker.querySelector('[data-scroll-area]')?.focus({preventScroll:true});
     }));
-    $('timeline-picker').addEventListener('toggle',()=>{
-      const open=$('timeline-picker').open;document.querySelectorAll('[data-open-timeline]').forEach(button=>button.setAttribute('aria-expanded',String(open)));
-      $('timeline-action-label').textContent=open?'Hide timeline':'Browse experiments';
-    });
     $('choose-image').addEventListener('click',()=>{if(!$('image-file').disabled)$('image-file').click()});
     $('choose-race-image').addEventListener('click',()=>{if(!$('race-image-file').disabled)$('race-image-file').click()});
     if(window.visualViewport){
@@ -203,7 +195,7 @@
       if(state.running||state.benchmarking)return;
       if(!REGISTRY.historyExperiments?.[key])return;
       if(key!=='alexnet-classification'){$('history-classification').hidden=true;$('history-classification-results').replaceChildren()}
-      state.historyExperiment=key;syncHistoryControls();closeTimelinePicker({focusResult:true});const details=$('technical-details');if(details)details.open=false;
+      state.historyExperiment=key;syncHistoryControls();focusTimeMachineResult();const details=$('technical-details');if(details)details.open=false;
       const spec=REGISTRY.historyExperiments[key];
       resetRunMetrics();resetBenchmark();resetStartupMetrics();updateInsideModelUI(state.activeModel,null,state.image);
       $('active-model-title').textContent=spec.year+' · '+spec.title;
