@@ -71,17 +71,20 @@ async function main(){
         assert.equal(await page.$eval('html',el=>el.dataset.build),manifest.build);
         assert.equal(await page.evaluate(()=>window.VisionLab.getActiveModel()),'yolox');
         assert.equal(await page.evaluate(()=>Boolean(window.VisionLab.getImage())),false);
-        assert.equal(await page.$eval('#timeline-picker',el=>el.open),true,'the historical rail should be visible at the top on initial load');
+        const assertTimelineExpanded=async stage=>{
+          const state=await page.$eval('#timeline-picker',el=>({tag:el.tagName,hidden:el.hidden,display:getComputedStyle(el).display,rendered:el.getClientRects().length>0,collapsible:el.matches('details')||Boolean(el.querySelector(':scope > summary')),hideAction:[...el.querySelectorAll('button')].some(button=>/hide timeline|browse experiments/i.test(button.textContent))}));
+          assert.deepEqual(state,{tag:'SECTION',hidden:false,display:'block',rendered:true,collapsible:false,hideAction:false},`Time Machine timeline must stay expanded ${stage}`);
+        };
+        await assertTimelineExpanded('on initial load');
         assert.equal(await page.evaluate(()=>Boolean(document.getElementById('timeline-picker').compareDocumentPosition(document.getElementById('time-machine-workspace'))&Node.DOCUMENT_POSITION_FOLLOWING)),true,'the Time Machine timeline must sit above the image and result workspace');
         const timelineHelp=await page.$eval('#timeline-help',el=>el.textContent);
         assert.match(timelineHelp,/choosing a runnable model or historical experiment starts it automatically/i);
         assert.match(timelineHelp,/Research-only milestones are references and cannot be run/i);
         assert.equal(await page.$eval('#timeline-help',el=>getComputedStyle(el).display!=='none'),true,'the top timeline should expose its experiment guidance');
         await page.screenshot({path:path.join(output,'time-machine-timeline-'+viewport.width+'.png')});
-        await page.click('#timeline-picker > summary');
-        await page.waitForFunction(()=>!document.getElementById('timeline-picker').open);
-        await page.click('#timeline-picker > summary');
-        await page.waitForFunction(()=>document.getElementById('timeline-picker').open);
+        await page.click('[data-open-timeline]');
+        await page.waitForFunction(()=>document.activeElement?.id==='timeline-scroll-region');
+        await assertTimelineExpanded('after using Change experiment');
         assert.equal(await page.$eval('#tab-time-machine',el=>el.getAttribute('aria-selected')),'true');
         if(viewport.width===390){
           await page.screenshot({path:path.join(output,'time-machine-390.png')});
@@ -107,8 +110,8 @@ async function main(){
           await page.waitForSelector('#'+name+'.active');
         };
         const timelineAction=async selector=>{
-          await page.evaluate(()=>{document.getElementById('timeline-picker').open=true});
           await page.$eval(selector,el=>{el.scrollIntoView({block:'center',inline:'center'});el.click()});
+          await assertTimelineExpanded('after selecting '+selector);
         };
         await page.click('[data-nav-group="device"]');
         await tab('live-camera');
@@ -183,7 +186,7 @@ async function main(){
           document.getElementById('m-total').textContent='2400 ms';
         });
         await timelineAction('[data-history-experiment="hog-pedestrians"]');
-        assert.equal(await page.$eval('#timeline-picker',el=>el.open),false,'selecting an experiment should return focus to the result');
+        await assertTimelineExpanded('after historical experiment selection');
         const historyUi=await page.evaluate(()=>({
           panelHidden:document.getElementById('history-experiment-panel').hidden,
           confidenceHidden:document.getElementById('confidence-control').hidden,
@@ -233,6 +236,9 @@ async function main(){
           assert.equal(realInference.bytes,realInference.formattedBytes);
           assert.ok(Math.abs(realInference.total-(realInference.preprocess+realInference.inference+realInference.postprocess))<1,'end-to-end time must equal measured phases and exclude setup');
           assert.equal(await page.$eval('.transfer-progress',el=>el.hidden),true,'completed inference must not leave transfer progress visible');
+          await assertTimelineExpanded('after the first completed inference');
+          await page.$eval('#timeline-picker',el=>el.scrollIntoView({block:'start'}));
+          await page.screenshot({path:path.join(output,'time-machine-timeline-after-inference-1440.png')});
           await page.$eval('#time-machine-workspace',el=>window.scrollTo(0,el.getBoundingClientRect().top+window.scrollY-160));
           await page.screenshot({path:path.join(output,'time-machine-result-1440.png')});
           await tab('model-race');
@@ -247,6 +253,7 @@ async function main(){
           await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='yolox'&&!window.VisionLab.isTimeMachineBusy(),{timeout:120000});
           assert.equal(await page.evaluate(()=>window.VisionLab.getImage()===window.__visionTestSource),true,'switching to YOLOX must retain the selected local source image');
           assert.equal(await page.$eval('#m-run-label',el=>el.textContent),'first inference','selecting YOLOX with an image must automatically run it');
+          await assertTimelineExpanded('after switching back to YOLOX');
           // The first frontier integration must execute on the same local image in CI.
           await timelineAction('[data-runnable-model="rfdetr"]');
           await page.waitForFunction(()=>window.VisionLab.getActiveModel()==='rfdetr'&&Boolean(window.VisionLab.getImage())&&window.VisionLab.isTimeMachineBusy(),{timeout:30000});
@@ -265,6 +272,7 @@ async function main(){
           assert.ok(Number.isFinite(rfInference.detections)&&rfInference.detections>=0,'RF-DETR detections must be a numeric pipeline result');
           assert.match(rfInference.bytes,/28\.8 MB|54\.4 MB/,'RF-DETR must report the selected pinned runtime size');
           assert.match(rfInference.backend,/WASM|WebGPU/i,'RF-DETR must report its selected browser backend');
+          await assertTimelineExpanded('after RF-DETR inference');
           assert.equal(await page.evaluate(()=>window.VisionLab.getImage()===window.__visionTestSource),true,'switching to RF-DETR must retain the Time Machine image');
           const rfCapabilities=await page.evaluate(()=>({timeMachine:window.VisionRuntimeRegistry.capabilityEnabled(window.VisionModels.rfdetr,'timeMachine'),benchmark:window.VisionRuntimeRegistry.capabilityEnabled(window.VisionModels.rfdetr,'benchmark'),race:window.VisionRuntimeRegistry.capabilityEnabled(window.VisionModels.rfdetr,'race'),live:window.VisionRuntimeRegistry.capabilityEnabled(window.VisionModels.rfdetr,'live')}));
           assert.deepEqual(rfCapabilities,{timeMachine:true,benchmark:true,race:false,live:false},'RF-DETR preview eligibility must stay model-specific');
@@ -299,6 +307,7 @@ async function main(){
           assert.match(dinoResult.inference,/^[0-9.]+ ms/,'DINOv3 pipeline inference time must be measured');
           assert.match(dinoResult.runtime,/DINOv3.*q4\/WASM.*ready/,'DINOv3 must report q4/WASM runtime state');
           assert.match(dinoResult.load,/≈14\.9 MB/,'DINOv3 model footprint must be shown');
+          await assertTimelineExpanded('after DINOv3 feature extraction');
           assert.equal(dinoResult.canvasClass,true,'DINOv3 similarity map must render over the current image');
           assert.equal(await page.evaluate(()=>window.VisionLab.getImage()===window.__visionTestSource),true,'DINOv3 must reuse the selected Time Machine image');
           await page.$eval('#image-canvas',el=>{const rect=el.getBoundingClientRect();el.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:rect.left+rect.width*.25,clientY:rect.top+rect.height*.25}))});
@@ -314,6 +323,7 @@ async function main(){
           assert.equal(await page.$eval('#image-canvas',el=>el.classList.contains('feature-map-active')),false,'changing away from DINOv3 must remove the stale similarity map');
           assert.equal(await page.$eval('#history-feature-controls',el=>el.hidden),true,'DINOv3 reference controls must be removed from the detector result');
         }
+        await assertTimelineExpanded('after returning to YOLOX');
         assert.equal(await page.$eval('.timeline-legend',el=>el.closest('.timeline-scroll')===null),true);
         assert.equal(await page.$$eval('.timeline-legend .legend-marker',nodes=>nodes.length),6);
         await tab('model-race');
