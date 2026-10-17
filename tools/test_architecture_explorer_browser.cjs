@@ -237,7 +237,7 @@ async function main(){
           assert.ok(Math.abs(realInference.total-(realInference.preprocess+realInference.inference+realInference.postprocess))<1,'end-to-end time must equal measured phases and exclude setup');
           assert.equal(await page.$eval('.transfer-progress',el=>el.hidden),true,'completed inference must not leave transfer progress visible');
           await assertTimelineExpanded('after the first completed inference');
-          await page.$eval('#timeline-picker',el=>el.scrollIntoView({block:'start'}));
+          await page.$eval('#timeline-picker',el=>el.scrollIntoView({block:'center'}));
           await page.screenshot({path:path.join(output,'time-machine-timeline-after-inference-1440.png')});
           await page.$eval('#time-machine-workspace',el=>window.scrollTo(0,el.getBoundingClientRect().top+window.scrollY-160));
           await page.screenshot({path:path.join(output,'time-machine-result-1440.png')});
