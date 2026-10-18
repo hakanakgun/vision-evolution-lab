@@ -63,7 +63,7 @@
   }
   $('cache-refresh').addEventListener('click',()=>{if(!operation)void refresh()});
   $('cache-cancel').addEventListener('click',()=>{operation?.controller.abort();status('Cancelling download…')});
-  document.querySelector('[data-tab="model-cache"]').addEventListener('click',()=>void refresh());
+  document.addEventListener('vision:tabchange',event=>{if(event.detail?.tab==='model-cache')void refresh()});
   window.addEventListener('pagehide',()=>operation?.controller.abort());
   window.VisionModelCache=Object.freeze({refresh,isBusy:()=>Boolean(operation)});
 })();

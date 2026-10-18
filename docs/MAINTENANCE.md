@@ -38,6 +38,14 @@ Always run:
 
 `node scripts/validate.mjs`
 
+Also run the dependency-free regression suite:
+
+`node --test tools/test_camera_lifecycle.cjs tools/test_model_cache_ui.cjs tools/test_model_storage.cjs tools/test_validation.cjs`
+
+These tests execute the actual browser scripts with controlled DOM, media, fetch, Cache API and OPFS boundaries, and run the actual repository validator against isolated asset fixtures. They cover asynchronous camera cancellation, Model Storage navigation and saved-file state, corrupted/truncated cache recovery, cancellation during persistence, and the shipped LW-DETR asset's size/SHA-256 gate. They do not execute model graphs or establish browser/device compatibility.
+
+`python3 -B -S tools/test_yolov1_feasibility.py -v` checks the exporter’s native/FP32/INT8 minimum-label gate using the standard library, without importing model dependencies or downloading/exporting a model. A failed INT8 golden check deletes that candidate through the existing error path; the workflow's required ONNX smoke cannot publish a missing candidate. The full exporter and ORT smokes remain separate manual/model checks.
+
 Then add the smallest check that can fail for the changed behavior:
 
 - UI/layout: affected desktop width plus narrow mobile width.
@@ -87,4 +95,4 @@ When a check was not run, say so.
 
 ## Model Storage verification
 
-The Chrome UI check also checks the visible timeline legend and 12-row Model Storage layout. Tiny deterministic assets exercise direct Cache API reuse, pinned Transformers.js cache keys, cancellation cleanup and scoped deletion preserving unrelated entries. A real pinned YOLOX and YOLOS-tiny downloads are then checked across page reload and deleted through the UI. No inference is needed for this storage-only path. Evidence includes Model Storage screenshots at desktop and mobile widths; physical iOS/WebKit storage behavior remains a separate check.
+The Chrome UI check also checks the visible timeline legend and 13-row Model Storage layout. Tiny deterministic assets exercise direct Cache API reuse, pinned Transformers.js cache keys, cancellation cleanup and scoped deletion preserving unrelated entries. Real pinned YOLOX and YOLOS-tiny downloads are then checked across page reload and deleted through the UI. No inference is needed for this storage-only path. Evidence includes Model Storage screenshots at desktop and mobile widths; physical iOS/WebKit storage behavior remains a separate check. Failures retain a JSON report with the original error, console errors and failed requests as well as the viewport screenshot.

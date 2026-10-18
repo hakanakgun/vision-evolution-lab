@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const registry=window.VisionModels,loader=window.VisionModelLoader;
+  const loader=window.VisionModelLoader;
   const resolve=value=>new URL(value,location.href).href;
   const cancelled=()=>new DOMException('Download cancelled.','AbortError');
   const check=signal=>{if(signal?.aborted)throw cancelled()};
@@ -58,6 +58,7 @@
     if(!model.modelId){
       try{await loader.load(model,{signal,onProgress})}finally{loader.evictMemory(model)}
       const result=await inspect(model);
+      check(signal);
       if(!result.stored)throw new Error('Download completed, but model files could not be saved. Check available storage.');
       return;
     }
@@ -91,7 +92,8 @@
         throw error;
       }
     }
-    if(!(await inspect(model)).stored)throw new Error('Model files were not saved.');
+    const result=await inspect(model);check(signal);
+    if(!result.stored)throw new Error('Model files were not saved.');
   }
   window.VisionModelStorage=Object.freeze({plan,inspect,download,remove});
 })();

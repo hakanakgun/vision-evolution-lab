@@ -25,6 +25,10 @@ jobs:
         run: |
           node --version
           node scripts/validate.mjs
+      - name: Test runtime and validation regressions
+        run: node --test tools/test_camera_lifecycle.cjs tools/test_model_cache_ui.cjs tools/test_model_storage.cjs tools/test_validation.cjs
+      - name: Test YOLOv1 golden-label gate
+        run: python3 -B -S tools/test_yolov1_feasibility.py -v
 
   architecture-browser:
     runs-on: ubuntu-latest

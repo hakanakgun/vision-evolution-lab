@@ -16,10 +16,6 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
-import onnxruntime as ort
-from huggingface_hub import hf_hub_download
-
 HF_REPO = "LibreYOLO/LibreYOLO1b"
 HF_REVISION = "4349c7a823974cea5d29c5f306a99bcf441ef437"
 HF_FILENAME = "LibreYOLO1b.pt"
@@ -28,7 +24,6 @@ INPUT_SHAPE = [1, 3, 448, 448]
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "artifacts" / "yolov1-feasibility"
-OUT.mkdir(parents=True, exist_ok=True)
 
 
 def sha256(path: Path) -> str:
@@ -43,7 +38,15 @@ def mib(size: int) -> float:
     return size / 1024 / 1024
 
 
+def require_golden_labels(labels: list[str], artifact: str) -> None:
+    if not {"dog", "bicycle", "car"}.issubset(labels):
+        raise RuntimeError(f"{artifact} golden changed: {labels}")
+
+
 def validate_ort(path: Path) -> dict:
+    import numpy as np
+    import onnxruntime as ort
+
     started = time.perf_counter()
     session = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
     init_s = time.perf_counter() - started
@@ -65,6 +68,9 @@ def validate_ort(path: Path) -> dict:
 
 
 def main() -> None:
+    from huggingface_hub import hf_hub_download
+
+    OUT.mkdir(parents=True, exist_ok=True)
     report: dict = {
         "source": {
             "hf_repo": HF_REPO,
@@ -105,8 +111,7 @@ def main() -> None:
     native_result = native_result[0] if isinstance(native_result, list) else native_result
     native_labels = sorted({model.names[int(value)] for value in native_result.boxes.cls})
     report["golden"] = {"native_labels": native_labels}
-    if not {"dog", "bicycle", "car"}.issubset(native_labels):
-        raise RuntimeError(f"Native YOLOv1 golden changed: {native_labels}")
+    require_golden_labels(native_labels, "Native YOLOv1")
 
     print("Exporting fixed 448x448 FP32 ONNX…", flush=True)
     export_started = time.perf_counter()
@@ -136,8 +141,7 @@ def main() -> None:
     fp32_result = fp32_result[0] if isinstance(fp32_result, list) else fp32_result
     fp32_labels = sorted({fp32_model.names[int(value)] for value in fp32_result.boxes.cls})
     report["artifacts"]["fp32"]["golden_labels"] = fp32_labels
-    if not {"dog", "bicycle", "car"}.issubset(fp32_labels):
-        raise RuntimeError(f"FP32 ONNX golden changed: {fp32_labels}")
+    require_golden_labels(fp32_labels, "FP32 ONNX")
     print(f"FP32 ONNX: {mib(fp32.stat().st_size):.1f} MiB", flush=True)
 
     int8 = OUT / "yolov1-voc20-int8.onnx"
@@ -165,6 +169,7 @@ def main() -> None:
         int8_labels = sorted({int8_model.names[int(value)] for value in int8_result.boxes.cls})
         report["artifacts"]["int8"]["golden_labels"] = int8_labels
         report["artifacts"]["int8"]["golden_required_present"] = sorted({"dog", "bicycle", "car"} & set(int8_labels))
+        require_golden_labels(int8_labels, "INT8 ONNX")
         print(f"INT8 ONNX: {mib(int8.stat().st_size):.1f} MiB · labels={int8_labels}", flush=True)
     except Exception as error:
         report["int8_error"] = f"{type(error).__name__}: {error}"

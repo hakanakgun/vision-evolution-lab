@@ -8,11 +8,18 @@
   const abortError=()=>{const error=new Error('Model download cancelled.');error.name='AbortError';return error};
   const throwIfAborted=signal=>{if(signal?.aborted)throw abortError()};
   async function sha256Hex(view){if(!globalThis.crypto?.subtle)throw new Error('SHA-256 verification is unavailable in this browser.');const digest=await crypto.subtle.digest('SHA-256',view);return[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('')}
+  async function verifyDirectBuffer(model,buffer,signal){
+    throwIfAborted(signal);
+    if(!model.sha256)return;
+    const hash=await sha256Hex(buffer);throwIfAborted(signal);
+    if(hash!==model.sha256)throw new Error('model SHA-256 mismatch');
+  }
   async function openCache(){if(!('caches'in window))return null;try{return await caches.open(CACHE_NAME)}catch(_){return null}}
   async function readResponse(response,onProgress,label,expectedBytes=0,signal){
     throwIfAborted(signal);
+    // Direct-asset bytes are exact, independently of compressed HTTP lengths.
     const headerTotal=Number(response.headers.get('content-length'))||0,expectedTotal=Number(expectedBytes)||0,total=expectedTotal>0?expectedTotal:headerTotal;
-    if(!response.body||!response.body.getReader){const buffer=await response.arrayBuffer();throwIfAborted(signal);onProgress?.({label,loaded:buffer.byteLength,total:total||buffer.byteLength,percent:total?Math.min(100,buffer.byteLength/total*100):100});return buffer}
+    if(!response.body||!response.body.getReader){const buffer=await response.arrayBuffer();throwIfAborted(signal);if(expectedTotal>0&&buffer.byteLength!==expectedTotal)throw new Error(`model size mismatch: expected ${expectedTotal}, got ${buffer.byteLength}`);onProgress?.({label,loaded:buffer.byteLength,total:total||buffer.byteLength,percent:total?Math.min(100,buffer.byteLength/total*100):100});return buffer}
     const reader=response.body.getReader(),fixed=total>0?new Uint8Array(total):null,chunks=fixed?null:[];let loaded=0;
     try{
       while(true){
@@ -30,6 +37,7 @@
       if(error?.name==='AbortError'||signal?.aborted)throw abortError();
       throw error;
     }
+    if(expectedTotal>0&&loaded!==expectedTotal)throw new Error(`model size mismatch: expected ${expectedTotal}, got ${loaded}`);
     let buffer;
     if(fixed){
       if(loaded!==fixed.byteLength)buffer=fixed.slice(0,loaded).buffer;
@@ -115,7 +123,7 @@
         offset+=loaded;await cacheWrite;trace('part-read-complete',{source:source.label,part:index+1,origin,bytes:loaded});
       }catch(error){
         await cacheWrite.catch(()=>{});
-        if(origin==='app-cache'&&cache)try{await cache.delete(canonicalUrl)}catch(_){}
+        if(cache)try{await cache.delete(canonicalUrl)}catch(_){}
         throw error;
       }
     }
@@ -128,9 +136,17 @@
   async function load(model,{onState,onProgress,onTrace,signal}={}){
     const trace=(event,meta={})=>{try{onTrace?.(event,meta)}catch(_){}};
     throwIfAborted(signal);
-    if(memory.has(model.id)){const hit=memory.get(model.id);trace('memory-hit',{source:hit.source,bytes:hit.buffer.byteLength});onState?.({state:'memory',source:hit.source});onProgress?.({label:hit.source,loaded:hit.buffer.byteLength,total:hit.buffer.byteLength,percent:100});return {...hit,cacheState:'memory',downloadMs:0}}
+    if(memory.has(model.id)){
+      const hit=memory.get(model.id);let valid=true;
+      try{if(hit.integrity!=='sha256-parts'&&hit.integrity!=='unverified-parts')await verifyDirectBuffer(model,hit.buffer,signal)}catch(error){
+        memory.delete(model.id);
+        if(error?.name==='AbortError'||signal?.aborted)throw abortError();
+        valid=false;trace('memory-read-error',{source:hit.source,message:String(error?.message||error).slice(0,300)});
+      }
+      if(valid){trace('memory-hit',{source:hit.source,bytes:hit.buffer.byteLength});onState?.({state:'memory',source:hit.source});onProgress?.({label:hit.source,loaded:hit.buffer.byteLength,total:hit.buffer.byteLength,percent:100});return {...hit,cacheState:'memory',downloadMs:0}}
+    }
     trace('cache-open-start');const cache=await openCache();throwIfAborted(signal);trace('cache-open-complete',{available:Boolean(cache)});
-    if(cache)for(const source of model.sources||[]){if(hasParts(source))continue;try{throwIfAborted(signal);trace('cache-match-start',{source:source.label});const response=await cache.match(resolveSourceUrl(source));throwIfAborted(signal);if(!response){trace('cache-match-miss',{source:source.label});continue}trace('cache-match-hit',{source:source.label});onState?.({state:'cache',source:source.label});const t=performance.now(),buffer=await readResponse(response,onProgress,source.label,model.bytes,signal);trace('arraybuffer-obtained',{source:source.label,origin:'app-cache',bytes:buffer.byteLength});const hit={buffer,source:source.label,cacheState:'browser cache',downloadMs:performance.now()-t,bytes:buffer.byteLength};memory.set(model.id,hit);return hit}catch(err){if(err?.name==='AbortError'||signal?.aborted){trace('cache-read-abort',{source:source.label});throw abortError()}trace('cache-read-error',{source:source.label,name:err?.name||'Error',message:String(err?.message||err).slice(0,300)});console.warn('Model cache read failed',source.label,err)}}
+    if(cache)for(const source of model.sources||[]){if(hasParts(source))continue;try{throwIfAborted(signal);trace('cache-match-start',{source:source.label});const response=await cache.match(resolveSourceUrl(source));throwIfAborted(signal);if(!response){trace('cache-match-miss',{source:source.label});continue}trace('cache-match-hit',{source:source.label});onState?.({state:'cache',source:source.label});const t=performance.now(),buffer=await readResponse(response,onProgress,source.label,model.bytes,signal);await verifyDirectBuffer(model,buffer,signal);trace('arraybuffer-obtained',{source:source.label,origin:'app-cache',bytes:buffer.byteLength});const hit={buffer,source:source.label,cacheState:'browser cache',downloadMs:performance.now()-t,bytes:buffer.byteLength};memory.set(model.id,hit);return hit}catch(err){if(err?.name==='AbortError'||signal?.aborted){trace('cache-read-abort',{source:source.label});throw abortError()}try{await cache.delete(resolveSourceUrl(source))}catch(_){}trace('cache-read-error',{source:source.label,name:err?.name||'Error',message:String(err?.message||err).slice(0,300)});console.warn('Model cache read failed',source.label,err)}}
     const errors=[];
     for(const source of model.sources||[])for(let attempt=0;attempt<2;attempt++){const t=performance.now();try{
       throwIfAborted(signal);
@@ -140,8 +156,7 @@
       onState?.({state:'network',source:source.label,attempt:attempt+1});trace('fetch-start',{source:source.label,attempt:attempt+1,fetchCacheMode:attempt?'no-store':'default',httpCacheHit:'not-exposed'});const canonicalUrl=resolveSourceUrl(source),url=new URL(canonicalUrl);if(attempt)url.searchParams.set('_retry',String(Date.now()));
       const response=await fetch(url.href,{mode:'cors',cache:attempt?'no-store':'default',signal});throwIfAborted(signal);trace('fetch-response',{source:source.label,attempt:attempt+1,status:response.status,contentLength:Number(response.headers.get('content-length'))||null,httpCacheHit:'not-exposed'});if(!response.ok)throw new Error(`HTTP ${response.status}`);
       const type=response.headers.get('content-type')||'application/octet-stream',buffer=await readResponse(response,onProgress,source.label,model.bytes,signal);trace('arraybuffer-obtained',{source:source.label,origin:'fetch',bytes:buffer.byteLength});
-      if(model.bytes&&buffer.byteLength<Math.min(model.bytes*.7,1000000))throw new Error(`unexpected payload size ${buffer.byteLength}`);
-      throwIfAborted(signal);const hit={buffer,source:source.label,cacheState:'network',downloadMs:performance.now()-t,bytes:buffer.byteLength};memory.set(model.id,hit);trace('cache-write-start',{source:source.label,bytes:buffer.byteLength});const stored=await putCache(canonicalUrl,buffer,type);trace('cache-write-complete',{source:source.label,stored});return hit;
+      await verifyDirectBuffer(model,buffer,signal);const hit={buffer,source:source.label,cacheState:'network',downloadMs:performance.now()-t,bytes:buffer.byteLength};trace('cache-write-start',{source:source.label,bytes:buffer.byteLength});const stored=await putCache(canonicalUrl,buffer,type);trace('cache-write-complete',{source:source.label,stored});throwIfAborted(signal);memory.set(model.id,hit);return hit;
     }catch(err){if(err?.name==='AbortError'||signal?.aborted){trace('fetch-abort',{source:source.label,attempt:attempt+1});throw abortError()}const message=err&&err.message?err.message:String(err);trace('fetch-error',{source:source.label,attempt:attempt+1,name:err?.name||'Error',message:message.slice(0,300)});errors.push(`${source.label} attempt ${attempt+1}: ${message}`);console.warn('Model source failed',source.label,attempt+1,err)}}
     throw new Error(`Model download failed. ${errors.join(' | ')}`);
   }

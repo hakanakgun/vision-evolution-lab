@@ -15,7 +15,7 @@ function chromeExecutable(){
 }
 async function main(){
   let server,browser;
-  const errors=[],results=[],optionalProbes=[];
+  const errors=[],results=[],optionalProbes=[],failedRequests=[];
   try{
     let target=process.env.VISION_LAB_URL;
     if(!target){
@@ -48,6 +48,7 @@ async function main(){
       await page.setViewport(viewport);
       await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
       page.on('response',response=>{if(response.status()>=400)console.log('HTTP resource error:',response.status(),response.url());});
+      page.on('requestfailed',request=>failedRequests.push({url:request.url(),error:request.failure()?.errorText}));
       page.on('pageerror',error=>errors.push(error.message));
       const optionalTokenizerProbes=new Set([
         'https://huggingface.co/Xenova/yolos-tiny/resolve/main/tokenizer_config.json',
@@ -414,9 +415,14 @@ async function main(){
       }finally{await page.close();}
     }
     assert.deepEqual(errors,[],'Browser errors');
-    const report={url:target,build:manifest.build,browser:await browser.version(),results,errors,optionalProbes};
+    const report={status:'PASS',url:target,build:manifest.build,browser:await browser.version(),results,errors,optionalProbes,failedRequests};
     fs.writeFileSync(path.join(output,'report.json'),JSON.stringify(report,null,2));
     console.log('Architecture Explorer browser checks: PASS '+JSON.stringify(report));
+  }catch(error){
+    const report={status:'FAIL',build:manifest.build,error:{name:error.name,message:error.message},results,errors,optionalProbes,failedRequests};
+    fs.writeFileSync(path.join(output,'report.json'),JSON.stringify(report,null,2));
+    console.error('Browser failure evidence:',JSON.stringify(report));
+    throw error;
   }finally{
     if(browser)await browser.close();
     if(server)await new Promise(resolve=>server.close(resolve));

@@ -147,7 +147,9 @@ check(!files.index.includes('Confidence uses the Time Machine setting.'),'Live C
 for(const id of ['camera-flip','camera-zoom-controls','camera-zoom-out','camera-zoom-reset','camera-zoom-in'])check(idSet.has(id),'Live Camera device control missing: '+id);
 check(files.app.includes("function liveModelKeys()")&&files.app.includes("state.liveModel===modelKey"),'Live Camera must use its independent live model state');
 check(files.app.includes('getHistoryExperiment:()=>state.historyExperiment')&&files.app.includes('isTimeMachineBusy:()=>state.running||state.benchmarking'),'Resolution Microscope must read Time Machine task/busy state without reaching into private state');
-check(files.loader.includes('const mb=v/1e6')&&files.loader.includes('(v/1000).toFixed(0)'),'model storage byte formatter must use decimal MB and KB units');
+for(const [value,expected] of [[0,'—'],[-1,'—'],[NaN,'—'],[Infinity,'—'],[1_500_000,'1.50 MB'],[12_500_000,'12.5 MB']]){
+  check(relativeLoaderWindow.VisionModelLoader.formatBytes(value)===expected,'model byte formatter must handle decimal units and unavailable sizes');
+}
 
 const {version,build}=files.version;
 check(files.index.includes(`data-build="${build}"`),'index data-build does not match version.json');
@@ -434,6 +436,10 @@ const lw=metadataRegistry.lwdetr,lwEntry=metadataRegistry.timeline.find(item=>it
 check(lwEntry?.year===2024&&lwEntry.month===6&&lwEntry.kind==='runnable','LW-DETR-tiny June 2024 Time Machine entry is missing');
 check(lw.bytes===38313297&&lw.sha256==='dadac1a335e108a5d1a52c4ac0280cd9b71ea2f7c39400e2d532f3a1f663dea0'&&lw.runtime.wasm.device==='wasm'&&lw.runtime.wasm.dtype==='fp32','LW-DETR artifact integrity metadata or WASM fp32 path changed');
 check(lw.sources?.some(source=>source.url===`assets/models/lw-detr-tiny.onnx?sha256=${lw.sha256}`),'LW-DETR must use the checksum-pinned same-origin Pages asset');
+const lwPagesAsset='assets/models/lw-detr-tiny.onnx';
+check(exists(lwPagesAsset),'LW-DETR Pages asset is missing');
+check(fs.statSync(path.join(root,lwPagesAsset)).size===lw.bytes,'LW-DETR Pages asset size mismatch');
+check(createHash('sha256').update(fs.readFileSync(path.join(root,lwPagesAsset))).digest('hex')===lw.sha256,'LW-DETR Pages asset checksum mismatch');
 check(lw.sourceModel==='AnnaZhang/lwdetr_tiny_60e_coco'&&lw.sourceRevision==='4b636b514dcf623f6eafc9e1ab63b8ad5c513925'&&lw.labels.length===91,'LW-DETR checkpoint revision or label map changed');
 const lwLive=metadataWindow.VisionRuntimeRegistry.liveMeta(lw);
 check(lw.capabilities.timeMachine&&lw.capabilities.benchmark&&lwLive?.order===70&&!lw.capabilities.race&&lw.capabilities.inspection?.mode==='query-output-contract','LW-DETR must support Time Machine benchmark + Live Camera while remaining outside Model Race');

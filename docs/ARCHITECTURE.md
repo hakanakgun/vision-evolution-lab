@@ -9,7 +9,7 @@ The current runtime is intentionally client-side so users can compare computer-v
 ## Main modules
 
 - `index.html` — page structure, release freshness guard, diagnostic controls, and runtime script entrypoints. Within Time Machine, the always-visible timeline section precedes the image/result workspace; preserve this DOM order so experiment choice stays at the top of the activity.
-- `src/models/models.js` — five general-object Model Race models, seven additional Time Machine runtimes, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
+- `src/models/models.js` — five general-object Model Race models, eight additional Time Machine runtimes, and separate task-specific history-experiment metadata, provenance, preprocessing contracts, pinned revisions, and labels.
 - `src/core/model-runtime.js` — runtime adapter registry and contract validation shared by Time Machine, Live Camera, and Model Race.
 - `src/core/model-loader.js` — raw ONNX asset loading, Cache API persistence, streamed progress, retry/fallback, cancellable transfers, and memory-bounded preallocated streaming when the expected byte size is known.
 - `src/core/external-data-store.js` — large-model OPFS staging for YOLOv1: verifies one existing Pages chunk at a time, writes the canonical byte stream to Origin Private File System, validates the generated small graph, and returns an OPFS `File` for Blob-backed ONNX external data.
@@ -144,6 +144,8 @@ Both RT-DETR variants use an aspect-preserving staging canvas capped at 640 px o
 
 ## Model selection and UI state
 
+Live Camera startup is owned by an attempt token. Leaving its panel, changing the selected live model during startup, Stop, or `pagehide` invalidates that attempt. A late permission, playback, or device-metadata result can close only its own stream and cannot clear the busy state or detach the stream of a newer attempt. The camera tests exercise these async boundaries with controlled media promises; physical-device behavior still requires separate validation.
+
 Time Machine owns the active runnable model. Selecting a generation does not navigate to Model Race. If a source image is already selected, choosing any runnable generation clears the stale overlay, waits for the prior runtime-release transition, and automatically runs the same image through the newly active adapter. The explicit Run button remains a rerun control rather than a required second step.
 
 The timeline itself is registry-driven and remains expanded during model loading, inference, benchmarking, and historical experiments. `src/models/models.js` owns chronological entries, their short `evolution` explanations, the default Time Machine AI model, and a separate `historyExperiments` table. Time Machine opens with YOLOX-Nano as a lightweight fast-inference starting point. Live Camera also defaults to YOLOX-Nano but keeps an independent selection state. General-object model entries reference runtime model keys; earlier task-specific experiments reference their own runner metadata. Selecting an experiment does not change the active AI model or collapse the timeline. “Change experiment” scrolls to and focuses the timeline's horizontal region. `src/app.js` renders the timeline and derives selection eligibility from the `timeMachine` capability instead of a model-name allow-list.
@@ -215,11 +217,7 @@ A service worker is intentionally not used solely for cache invalidation because
 
 ## Temporary diagnostics
 
-`?diag=1` provides the basic lifecycle probe.
-
-`?diag=2` provides the lightweight Black Box and the existing all-WASM R1-R4 reclamation matrix.
-
-`?diag=3` adds bounded deep, crash-safe telemetry. It is diagnostic-only and must not change the normal benchmark contract.
+Only `?diag=3` activates bounded deep, crash-safe telemetry. The earlier `diag=1`, `diag=2`, and R1–R4 reclamation matrix were retired in `24a6e47`; their historical evidence remains in the diagnostics document. The independent `?ort=wasm` and `?ort=jsep` bundle controls remain supported. Diagnostics must not change the normal benchmark contract.
 
 See [IOS_WEBKIT_DIAGNOSTICS.md](IOS_WEBKIT_DIAGNOSTICS.md).
 
@@ -235,4 +233,6 @@ The Model Storage tab uses `src/core/model-storage.js` and `src/model-cache.js`.
 
 Downloads are sequential and explicitly user initiated. Large transfers ask for confirmation; cancellation preserves completed files while incomplete streamed writes are removed. Per-model deletion removes only registered model URLs / the pinned Transformers.js repository revision / declared OPFS data and marker. It does not clear whole shared caches, delete user images, release active sessions, or claim native memory reclamation. Runtime adapter runs reject while a storage operation is active; storage actions require idle Time Machine and camera.
 
-The inventory covers the 12 AI models, not historical experiment assets. Model sizes are declared values; StorageManager estimates cover the whole origin. Cache access or writes can fail due to policy or quota. A saved-files status is not an inference-success or offline-ready status: CDN runtime scripts, WASM, OPFS manifests and other application assets may still need the network. Browser eviction remains possible.
+The inventory covers the 13 AI models, not historical experiment assets. It refreshes on the shared tab-activation event, including keyboard and activity-group navigation. Direct ONNX downloads enforce their declared exact byte size and configured SHA-256 before accepting network/cache/memory data; malformed cached files are evicted so retries can recover. YOLOv1 retains per-part verification without an additional full-model digest. Invalid cached external-data chunks are replaced from the network and verified before OPFS writes. Cancellation is checked after asynchronous verification, persistence and inventory work, so a late cancellation still rejects the operation; fully saved files can remain reusable.
+
+Transformers.js model sizes are estimates, not exact config/weight validation contracts. StorageManager estimates cover the whole origin. Cache access or writes can fail due to policy or quota. A saved-files status is not an inference-success or offline-ready status: CDN runtime scripts, WASM, OPFS manifests and other application assets may still need the network. Browser eviction remains possible.
