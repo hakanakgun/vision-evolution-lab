@@ -51,4 +51,6 @@
 - [x] Run targeted regressions and `node scripts/validate.mjs` after the final patch.
 - [x] Run the existing browser suite and relevant model checks where dependencies/access permit.
 - [x] Review the complete diff and obtain a fresh independent review.
-- [ ] Document removed items, retained coverage, commands/results, untested paths, and blockers; prepare the PR without deploying.
+- [x] Document removed items, retained coverage, commands/results, untested paths, and blockers; prepare the PR without deploying.
+
+Delivery: draft PR #76; implementation commit `3dc24d1` passed validation/browser workflow `39107019628` and YOLOv1 external-data workflow `39107019621`. See the dated audit report for the local certificate blocker and physical-device/benchmark coverage limits.
