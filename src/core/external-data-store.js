@@ -66,7 +66,7 @@
     return new Uint8Array(buffer);
   }
 
-  async function cachedOrNetworkResponse(part,cache,signal){
+  async function cachedOrNetworkResponse(part,cache,signal,cacheMode='default'){
     const canonicalUrl=resolveUrl(part.url);
     if(cache){
       try{
@@ -74,9 +74,18 @@
         if(hit)return{response:hit,origin:'app-cache',canonicalUrl};
       }catch(error){if(error?.name==='AbortError'||signal?.aborted)throw abortError()}
     }
-    const response=await fetch(canonicalUrl,{mode:'cors',cache:'default',signal});throwIfAborted(signal);
+    const response=await fetch(canonicalUrl,{mode:'cors',cache:cacheMode,signal});throwIfAborted(signal);
     if(!response.ok)throw new Error(`External-data part HTTP ${response.status}.`);
     return{response,origin:'network',canonicalUrl};
+  }
+
+  async function verifiedPartBuffer(response,part,index,signal){
+    const buffer=await response.arrayBuffer();throwIfAborted(signal);
+    const expected=Number(part.bytes);
+    if(buffer.byteLength!==expected)throw new Error(`External-data part ${index+1} size mismatch: expected ${expected}, got ${buffer.byteLength}.`);
+    const hash=await sha256Hex(buffer);throwIfAborted(signal);
+    if(hash!==part.sha256)throw new Error(`External-data part ${index+1} SHA-256 mismatch.`);
+    return buffer;
   }
 
   async function materialize(model,manifest,{signal,onProgress,onState}={}){
@@ -104,13 +113,19 @@
         throwIfAborted(signal);
         const part=source.parts[index],expected=Number(part.bytes)||0;
         if(expected<=0||!/^[0-9a-f]{64}$/.test(part.sha256||''))throw new Error(`External-data part ${index+1} metadata is incomplete.`);
-        const {response,origin,canonicalUrl}=await cachedOrNetworkResponse(part,cache,signal);
+        let {response,origin,canonicalUrl}=await cachedOrNetworkResponse(part,cache,signal);
         if(origin!=='app-cache')allCached=false;
         onState?.({state:origin==='app-cache'?'cache':'network',source:source.label,part:index+1,parts:source.parts.length});
-        let buffer=await response.arrayBuffer();throwIfAborted(signal);
-        if(buffer.byteLength!==expected)throw new Error(`External-data part ${index+1} size mismatch: expected ${expected}, got ${buffer.byteLength}.`);
-        const hash=await sha256Hex(buffer);throwIfAborted(signal);
-        if(hash!==part.sha256)throw new Error(`External-data part ${index+1} SHA-256 mismatch.`);
+        let buffer;
+        try{buffer=await verifiedPartBuffer(response,part,index,signal)}catch(error){
+          if(error?.name==='AbortError'||signal?.aborted)throw abortError();
+          if(origin!=='app-cache')throw error;
+          try{await cache.delete(canonicalUrl)}catch(_){}
+          ({response,origin}=await cachedOrNetworkResponse(part,null,signal,'no-store'));
+          allCached=false;
+          onState?.({state:'network',source:source.label,part:index+1,parts:source.parts.length});
+          buffer=await verifiedPartBuffer(response,part,index,signal);
+        }
         if(origin==='app-cache'&&cache){
           try{await cache.delete(canonicalUrl)}catch(error){console.warn('Legacy YOLOv1 chunk cache cleanup failed',index+1,error)}
         }

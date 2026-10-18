@@ -140,7 +140,7 @@
       const tab=document.querySelector('.tab[data-tab="'+id+'"]');if(!tab)return;
       activeTabId=id;activeNavGroup=tab.dataset.modeGroup;lastTabByGroup[activeNavGroup]=id;paintNavigation();
       document.querySelectorAll('.panel').forEach(panel=>panel.classList.toggle('active',panel.id===id));
-      if(id!=='live-camera'&&state.live)stopCamera();
+      if(id!=='live-camera'&&(state.live||state.cameraStarting))stopCamera();
       if(focus)tab.focus();
       document.dispatchEvent(new CustomEvent('vision:tabchange',{detail:{tab:id}}));
     }
@@ -624,6 +624,11 @@
     function formatZoom(value){return Number.isFinite(value)?Number(value.toFixed(1)).toString()+'×':'—'}
     function cameraFacingName(){return state.cameraFacing==='user'?'Front':'Rear'}
     function stopMediaStream(stream){for(const track of stream?.getTracks?.()||[])try{track.stop()}catch(_){}}
+    function detachCameraStream(stream){
+      stopMediaStream(stream);
+      if(state.stream===stream)state.stream=null;
+      const video=$('camera-video');if(video.srcObject===stream)video.srcObject=null;
+    }
     function cameraConstraints(facing,{exact=false}={}){return{video:{facingMode:exact?{exact:facing}:{ideal:facing},width:{ideal:1280},height:{ideal:720}},audio:false}}
     function requestCameraStream(facing,options={}){return navigator.mediaDevices.getUserMedia(cameraConstraints(facing,options))}
     function quantizeCameraZoom(range,value){
@@ -654,13 +659,15 @@
       return{min,max,step,defaultValue,value};
     }
     async function refreshCameraTrackState(requestedFacing=state.cameraFacing){
-      const track=currentCameraTrack();if(!track){state.cameraCanFlip=false;state.cameraZoom=null;renderCameraControls();return}
+      const stream=state.stream,track=currentCameraTrack();if(!track){state.cameraCanFlip=false;state.cameraZoom=null;renderCameraControls();return}
       let settings={};try{settings=track.getSettings?.()||{}}catch(_){}
-      if(settings.facingMode==='user'||settings.facingMode==='environment')state.cameraFacing=settings.facingMode;else state.cameraFacing=requestedFacing;
-      state.cameraCanFlip=false;
+      let canFlip=false;
       if(typeof navigator.mediaDevices?.enumerateDevices==='function'){
-        try{const devices=await navigator.mediaDevices.enumerateDevices();state.cameraCanFlip=devices.filter(device=>device.kind==='videoinput').length>1}catch(_){}
+        try{const devices=await navigator.mediaDevices.enumerateDevices();canFlip=devices.filter(device=>device.kind==='videoinput').length>1}catch(_){}
       }
+      if(state.stream!==stream)return;
+      if(settings.facingMode==='user'||settings.facingMode==='environment')state.cameraFacing=settings.facingMode;else state.cameraFacing=requestedFacing;
+      state.cameraCanFlip=canFlip;
       state.cameraZoom=readCameraZoom(track);renderCameraControls();
     }
     function cameraFeatureSummary(){
@@ -682,11 +689,17 @@
       reset.setAttribute('aria-label',`Reset camera zoom to ${formatZoom(zoom.defaultValue)}. Current zoom ${formatZoom(zoom.value)}`);
       zoomControls.setAttribute('aria-label',`Rear camera zoom ${formatZoom(zoom.min)} to ${formatZoom(zoom.max)}`);
     }
-    async function attachCameraStream(stream,requestedFacing){
-      const video=$('camera-video');video.srcObject=stream;
-      try{await video.play()}catch(error){video.srcObject=null;stopMediaStream(stream);throw error}
-      state.stream=stream;await refreshCameraTrackState(requestedFacing);
+    async function attachCameraStream(stream,requestedFacing,token){
+      const video=$('camera-video');video.srcObject=stream;state.stream=stream;
+      const isCurrent=()=>token===state.cameraStartToken&&state.stream===stream;
+      try{
+        await video.play();
+        if(!isCurrent()){detachCameraStream(stream);return false}
+        await refreshCameraTrackState(requestedFacing);
+        if(!isCurrent()){detachCameraStream(stream);return false}
+      }catch(error){detachCameraStream(stream);if(token!==state.cameraStartToken)return false;throw error}
       $('live-size').textContent=`${video.videoWidth} × ${video.videoHeight} camera`;
+      return true;
     }
     async function applyCameraZoom(value){
       if(!state.live||state.liveSwitching||state.cameraZoomChanging||state.cameraFacing!=='environment')return;
@@ -716,7 +729,7 @@
           const oldStream=state.stream;state.stream=null;$('camera-video').srcObject=null;stopMediaStream(oldStream);state.cameraCanFlip=false;state.cameraZoom=null;renderCameraControls();
           const stream=await requestCameraStream(targetFacing,{exact:true});
           if(token!==state.cameraStartToken||!state.live){stopMediaStream(stream);return}
-          await attachCameraStream(stream,targetFacing);
+          if(!await attachCameraStream(stream,targetFacing,token))return;
           resetLiveMetrics();
           if(state.live&&state.liveModel===modelKey)liveLoop(adapter,modelKey,++state.liveLoopToken);
         });
@@ -730,7 +743,8 @@
         try{
           const rollback=await requestCameraStream(previousFacing,{exact:true});
           if(token!==state.cameraStartToken||!state.live){stopMediaStream(rollback);return}
-          await attachCameraStream(rollback,previousFacing);resetLiveMetrics();liveLoop(adapter,modelKey,++state.liveLoopToken);restored=true;
+          if(!await attachCameraStream(rollback,previousFacing,token))return;
+          resetLiveMetrics();liveLoop(adapter,modelKey,++state.liveLoopToken);restored=true;
         }catch(rollbackError){console.error('Camera switch rollback failed',rollbackError)}
         if(!restored&&state.live)stopCamera('Camera switch failed and the previous camera could not be restored.');
         else if(restored)setLiveStatus((targetFacing==='user'?'Front':'Rear')+' camera could not be opened. '+cameraFacingName()+' camera was restored.','error');
@@ -748,7 +762,7 @@
       const model=REGISTRY[state.liveModel],adapter=currentLiveAdapter(),meta=RuntimeRegistry.liveMeta(model);
       label.textContent=model.title+' · '+(meta?.summary||'Sequential inference');
       select.disabled=state.liveSwitching;
-      $('camera-start').disabled=state.live||state.liveSwitching||!adapter;
+      $('camera-start').disabled=state.live||state.cameraStarting||state.liveSwitching||!adapter;
       if(!adapter&&!state.liveSwitching)$('live-backend').textContent='Runtime loading';
       renderCameraControls();
     }
@@ -758,6 +772,7 @@
       if(!adapter||!RuntimeRegistry.capabilityEnabled(adapter.model,'live')){renderLiveModels();return}
       const previousKey=state.liveModel,previousAdapter=RuntimeRegistry.get(previousKey),wasLive=state.live;
       if(!wasLive){
+        if(state.cameraStarting)stopCamera();
         state.liveModel=key;resetLiveMetrics();$('live-backend').textContent='Not loaded';renderLiveModels();setLiveStatus(adapter.model.title+' selected. Start camera when ready.');return;
       }
       state.liveSwitching=true;state.liveLoopToken++;renderLiveModels();setLiveStatus('Loading '+adapter.model.title+'…');
@@ -794,7 +809,7 @@
     }
     async function startCamera(){
       if(window.VisionModelCache?.isBusy()){setStatus('Finish or cancel the model storage operation first.');return}
-      if(state.live||state.liveSwitching)return;
+      if(state.live||state.cameraStarting||state.liveSwitching)return;
       const modelKey=state.liveModel,token=++state.cameraStartToken,adapter=currentLiveAdapter();
       if(!adapter){renderLiveModels();setLiveStatus('Live Camera runtime is still loading.','error');return}
       state.cameraStarting=true;$('camera-start').disabled=true;setLiveStatus('Loading '+adapter.model.title+'…');
@@ -807,8 +822,8 @@
         setLiveBackend(adapter);
         const stream=await requestCameraStream(state.cameraFacing,{exact:false});
         if(token!==state.cameraStartToken||state.liveModel!==modelKey){stopMediaStream(stream);return}
-        await attachCameraStream(stream,state.cameraFacing);
-        if(token!==state.cameraStartToken||state.liveModel!==modelKey){stopMediaStream(state.stream);state.stream=null;return}
+        if(!await attachCameraStream(stream,state.cameraFacing,token))return;
+        if(token!==state.cameraStartToken||state.liveModel!==modelKey){detachCameraStream(stream);return}
         state.live=true;resetLiveMetrics();
         $('camera-empty').hidden=true;$('camera-canvas').hidden=false;$('live-badge').classList.add('on');$('camera-stop').disabled=false;
         renderLiveModels();renderCameraControls();setLiveStatus(`${adapter.model.title} is running locally. ${cameraFeatureSummary()}.`);
@@ -818,7 +833,7 @@
         console.error(err);
         stopMediaStream(state.stream);state.stream=null;
         const video=$('camera-video');video.srcObject=null;$('camera-empty').hidden=false;$('camera-empty').innerHTML=`<strong>Camera unavailable</strong>${(err.message||String(err)).replace(/[<>]/g,'')}`;renderLiveModels();renderCameraControls();setLiveStatus('Camera could not start with '+adapter.model.title+'.','error');
-      }finally{state.cameraStarting=false}
+      }finally{if(token===state.cameraStartToken){state.cameraStarting=false;renderLiveModels()}}
     }
 
     async function liveLoop(adapter,modelKey,loopToken){
@@ -843,7 +858,7 @@
     }
 
     function stopCamera(message=''){
-      state.cameraStartToken++;state.liveLoopToken++;state.live=false;stopMediaStream(state.stream);state.stream=null;state.cameraCanFlip=false;state.cameraZoom=null;state.cameraZoomChanging=false;
+      state.cameraStartToken++;state.cameraStarting=false;state.liveLoopToken++;state.live=false;stopMediaStream(state.stream);state.stream=null;state.cameraCanFlip=false;state.cameraZoom=null;state.cameraZoomChanging=false;
       const video=$('camera-video');video.srcObject=null;$('live-badge').classList.remove('on');$('camera-stop').disabled=true;$('camera-canvas').hidden=true;$('camera-empty').hidden=false;$('live-size').textContent='Camera off';renderLiveModels();renderCameraControls();
       setLiveStatus(typeof message==='string'&&message?message:(state.liveModel&&REGISTRY[state.liveModel]?REGISTRY[state.liveModel].title+' remains selected.':'Camera stopped.'));
     }

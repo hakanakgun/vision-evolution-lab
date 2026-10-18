@@ -10,6 +10,7 @@ This directory contains implementation and investigation notes that are too deta
 - [Historical model milestones](MODEL_HISTORY.md) — source-backed timeline context, executable early task-specific experiments, the 2025 DINOv3 feature run, and later paper-only references.
 - [iOS / WebKit diagnostics](IOS_WEBKIT_DIAGNOSTICS.md) — the ongoing post-benchmark reload investigation, physical-device evidence, diagnostic modes, upstream research, and next experiments.
 - [Maintenance and release workflow](MAINTENANCE.md) — source-of-truth checks, branching, validation, version/cache rules, squash merge, and exact-SHA Pages verification.
+- [2026-10-18 legacy-code and test audit](audits/2026-10-18-legacy-tests.md) — removal evidence, reproduced defects, regression coverage and remaining validation limits.
 
 Stable project reference documents live alongside the implementation notes in this directory:
 
